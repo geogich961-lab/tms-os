@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "monitoring",
+  "name": "Resource Monitor",
+  "version": "11.5.0",
+  "description": "CPU, memory, storage and service monitoring.",
+  "category": "Observability",
+  "icon": "⌁",
+  "route": "/monitoring",
+  "core": false,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

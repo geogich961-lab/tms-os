@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "backup-center",
+  "name": "Backup & Snapshot",
+  "version": "11.0.0",
+  "description": "System, configuration and website backup/restore.",
+  "category": "Safety",
+  "icon": "◈",
+  "route": "/backups",
+  "core": true,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

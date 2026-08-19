@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "runtime-packages",
+  "name": "Runtime Packages",
+  "version": "11.5.0",
+  "description": "Install approved Termux packages and runtimes.",
+  "category": "Development",
+  "icon": "◫",
+  "route": "/packages",
+  "core": false,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

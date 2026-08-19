@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "network-center",
+  "name": "Network Center",
+  "version": "11.0.0",
+  "description": "LAN address and connectivity information.",
+  "category": "Network",
+  "icon": "⌁",
+  "route": "/network",
+  "core": false,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

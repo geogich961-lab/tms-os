@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "app-installer",
+  "name": "App Marketplace",
+  "version": "11.5.0",
+  "description": "Deploy curated web applications.",
+  "category": "Applications",
+  "icon": "▣",
+  "route": "/apps",
+  "core": false,
+  "dependencies": [
+    "core-system",
+    "website-manager"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

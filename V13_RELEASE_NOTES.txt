@@ -1,0 +1,7 @@
+TMS OS Platform V13.0 — Unified Core
+
+- Hợp nhất trạng thái dịch vụ về UnifiedSystemCoreService.
+- Service Manager, Guardian, Diagnostics, Terminal và Dashboard dùng chung adapter.
+- Dọn queue/pending/worker lock cũ trong quá trình nâng cấp.
+- Giữ queue worker độc lập và adapter Termux của V12.2.
+- Nâng cache PWA lên V13 để loại bỏ giao diện cũ.

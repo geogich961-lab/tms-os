@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "update-center",
+  "name": "Update Center",
+  "version": "11.0.0",
+  "description": "Stage and inspect TMS OS update packages.",
+  "category": "System",
+  "icon": "↻",
+  "route": "/updates",
+  "core": true,
+  "dependencies": [
+    "core-system",
+    "backup-center"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

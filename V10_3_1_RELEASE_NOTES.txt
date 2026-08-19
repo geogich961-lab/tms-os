@@ -1,0 +1,10 @@
+TMS OS Platform V10.3.1 — Verified Tunnel URL Engine
+
+- Sửa Pinggy dùng free.pinggy.io theo tài liệu chính thức.
+- Trích URL tunnel từ log và từ chối dashboard.pinggy.io.
+- Chỉ chấp nhận hostname đúng mẫu của từng nhà cung cấp.
+- Theo dõi redirect để phát hiện URL bị chuyển sang dashboard/landing page.
+- Chỉ coi HTTP 2xx/3xx là phản hồi hợp lệ.
+- So sánh nội dung URL công khai với website nội bộ để chặn kết nối giả HTTP 200.
+- Phát hiện trang landing/warning của Pinggy, localhost.run và Ngrok.
+- Giữ nguyên các chức năng ổn định của V10.3.

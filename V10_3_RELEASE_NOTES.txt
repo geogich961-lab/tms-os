@@ -1,0 +1,10 @@
+TMS OS Platform V10.3 — Internet Access Center & TMS Relay
+
+Smart fallback order:
+Cloudflare -> Pinggy -> localhost.run -> Ngrok -> TMS Relay
+
+Lưu ý:
+- Pinggy và localhost.run cần OpenSSH.
+- Ngrok cần binary ngrok và Authtoken.
+- TMS Relay cần VPS, SSH key và reverse proxy được cấu hình trước.
+- Không dịch vụ tunnel nào có thể đảm bảo vượt qua mọi chính sách chặn của Wi-Fi công cộng.

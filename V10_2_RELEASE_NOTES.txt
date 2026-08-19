@@ -1,0 +1,23 @@
+TMS OS Platform V10.2 — Website Control Center + Backup & Snapshot
+Baseline: TMS OS Platform Stable V10.1 — Local Domain & LAN Access Center
+
+Nâng cấp chính:
+- Website Control Center tối ưu lại cho mobile.
+- Sửa URL, đường dẫn dài và nội dung diagnostic bị tràn khung.
+- Tăng khoảng cách và kích thước chạm của các nút.
+- Tách label/URL, sắp xếp lại form domain và đổi cổng.
+- Nhân bản website với port và domain mới.
+- Tạo snapshot riêng cho từng website.
+- Tự động snapshot trước khi đổi port, đổi domain hoặc xóa website.
+- Backup toàn hệ thống, backup cấu hình, backup website.
+- Khóa/mở khóa, tải xuống, xóa và khôi phục snapshot.
+- Tự động tạo snapshot an toàn trước restore.
+- Splash screen nền tối, logo nhỏ hơn và có hiệu ứng loading.
+
+Kiểm tra đã thực hiện:
+- PHP syntax lint toàn bộ mã nguồn: PASS.
+- Giữ nguyên route và module của V10.1; chỉ bổ sung route V10.2.
+
+Lưu ý:
+- Hãy giữ nguyên file ZIP V10.1 để rollback.
+- Khi cài thử V10.2, nên chạy System Check trước khi thao tác restore.

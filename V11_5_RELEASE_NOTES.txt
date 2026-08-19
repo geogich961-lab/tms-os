@@ -1,0 +1,32 @@
+TMS OS Platform V11.5 — Mini VPS Foundation Suite
+
+V11.1 Package Manager
+- Expanded curated Termux catalog.
+- Installed-version detection.
+- Safe install and guarded removal.
+- Core package protection.
+
+V11.2 Service Manager
+- Nginx, PHP, MariaDB, SSH and Redis status.
+- Start, stop and restart.
+- PID, log and autostart profiles.
+
+V11.3 File Explorer Pro
+- Recursive filename search within protected roots.
+- Safe chmod validation.
+- Existing upload, editor, ZIP and download retained.
+
+V11.4 Resource Monitor
+- CPU load, memory, storage, process count.
+- Battery via Termux:API when available.
+- Thermal and network counters when Android exposes them.
+
+V11.5 App Marketplace
+- WordPress, Adminer, PHP Info.
+- Static Landing and PHP JSON API local templates.
+- Website rollback remains active when installation fails.
+
+Security
+- CSRF validation on mutations.
+- Fixed package/service allowlists.
+- Protected filesystem roots and ZIP traversal checks.

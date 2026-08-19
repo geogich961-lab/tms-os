@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "diagnostics",
+  "name": "System Check",
+  "version": "11.0.0",
+  "description": "Health diagnostics and safe repair actions.",
+  "category": "Safety",
+  "icon": "✓",
+  "route": "/diagnostics",
+  "core": true,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

@@ -1,0 +1,28 @@
+TMS OS Platform V12.1 — Service Manager Pro
+BÁO CÁO KIỂM TRA ĐÓNG GÓI
+
+1. Nền mã nguồn
+- Nâng cấp trực tiếp từ V12.0.1 Resource Monitor Stability Hotfix.
+- Không xóa controller, service, view, route hoặc script cũ.
+
+2. Kiểm tra tĩnh
+- PHP lint: 68/68 file hợp lệ.
+- JavaScript syntax: app.js và service-worker.js hợp lệ.
+- RELEASE.json: JSON hợp lệ.
+- Bash syntax: installer và toàn bộ scripts/*.sh hợp lệ.
+
+3. Kiểm tra bảo mật/thao tác
+- Catalog dịch vụ cố định, không nhận command tùy ý từ request.
+- CSRF tiếp tục áp dụng cho Start, Stop, Restart, Restart All và Auto Start.
+- Timeout cứng bằng proc_open/proc_terminate.
+- File lock riêng theo dịch vụ ngăn thao tác đồng thời.
+- Log path lấy từ catalog cố định.
+- API /api/services yêu cầu đăng nhập và tắt cache.
+
+4. Kiểm tra tương thích
+- Giữ nguyên routes và module V12.0.1.
+- Cache PWA đã tăng phiên bản lên v12.1.
+- Asset query version đã tăng lên v12.1 để tránh dùng CSS/JS cũ.
+
+5. Giới hạn môi trường kiểm tra
+- Các lệnh Nginx, PHP-FPM, MariaDB, SSH và Redis cần được xác minh lần cuối trên thiết bị Termux thật vì môi trường đóng gói không phải Android/Termux.

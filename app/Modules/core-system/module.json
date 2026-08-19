@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "id": "core-system",
+  "name": "TMS Core System",
+  "version": "11.0.0",
+  "description": "Kernel services, authentication, routing and protected system functions.",
+  "category": "Core",
+  "icon": "⚙",
+  "route": "/",
+  "core": true,
+  "dependencies": [],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

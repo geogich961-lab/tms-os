@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "terminal",
+  "name": "Terminal",
+  "version": "11.0.0",
+  "description": "Controlled web terminal for local administration.",
+  "category": "Development",
+  "icon": "›_",
+  "route": "/terminal",
+  "core": false,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

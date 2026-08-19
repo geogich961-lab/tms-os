@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "file-explorer",
+  "name": "TMS Explorer",
+  "version": "11.5.0",
+  "description": "Mobile-first file manager and source editor.",
+  "category": "Storage",
+  "icon": "▤",
+  "route": "/files",
+  "core": true,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

@@ -1,0 +1,18 @@
+NÂNG CẤP TỪ TMS OS 4.0 LÊN 5.0
+================================
+1. Sao lưu:
+   cp -r ~/tms-os ~/tms-os-backup-v4
+
+2. Giải nén gói 5.0 vào thư mục tạm, sau đó chép đè toàn bộ source vào ~/tms-os.
+
+3. Kiểm tra PHP:
+   find ~/tms-os -name '*.php' -print0 | xargs -0 -n1 php -l
+
+4. Kiểm tra Nginx:
+   nginx -t
+
+5. Khởi động lại PHP-FPM và reload Nginx.
+
+Hoàn tác:
+   rm -rf ~/tms-os
+   cp -r ~/tms-os-backup-v4 ~/tms-os

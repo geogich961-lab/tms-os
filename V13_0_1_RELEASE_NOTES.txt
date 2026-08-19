@@ -1,0 +1,8 @@
+TMS OS Platform V13.0.1 — LAN Address Stability Update
+
+- Không còn tạo địa chỉ LAN dựa trên 127.0.0.1.
+- Tự phát hiện IPv4 Wi-Fi bằng nhiều cơ chế tương thích Android/Termux.
+- Hiển thị URL LAN trực tiếp ngắn gọn: http://IP_DIEN_THOAI:PORT.
+- Giữ tên .lan ngắn gọn cho thiết bị đã nhập file hosts.
+- Chỉ hiển thị sslip.io khi có IP LAN hợp lệ và chuyển vào mục nâng cao.
+- Giữ nguyên Unified Core, Service Queue và toàn bộ chức năng V13.0.

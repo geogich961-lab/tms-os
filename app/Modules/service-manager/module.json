@@ -1,0 +1,13 @@
+{
+  "id": "service-manager",
+  "name": "Service Manager",
+  "version": "11.5.0",
+  "description": "Quản lý dịch vụ máy chủ, trạng thái, log và tự khởi động.",
+  "category": "system",
+  "core": false,
+  "dependencies": [
+    "core-system",
+    "runtime-packages"
+  ],
+  "route": "/services"
+}

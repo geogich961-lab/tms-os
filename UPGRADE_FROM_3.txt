@@ -1,0 +1,29 @@
+NÂNG CẤP TMS OS 3.0 LÊN 4.0
+
+1) Sao lưu:
+   cd ~
+   cp -r ~/tms-os ~/tms-os-backup-v3-before-v4
+
+2) Giải nén file TMS_OS_4_0_FULL.zip vào thư mục tạm:
+   rm -rf ~/tms-os-v4-update
+   mkdir -p ~/tms-os-v4-update
+   unzip -o ~/storage/downloads/TMS_OS_4_0_FULL.zip -d ~/tms-os-v4-update
+
+3) Chép bản đầy đủ nhưng giữ tài khoản quản trị bên ngoài project:
+   cp -r ~/tms-os-v4-update/* ~/tms-os/
+
+4) Kiểm tra cú pháp toàn bộ PHP:
+   find ~/tms-os -name '*.php' -print0 | xargs -0 -n1 php -l
+
+5) Kiểm tra Nginx:
+   nginx -t
+   nginx -s reload
+
+6) Mở:
+   http://127.0.0.1:8888
+   http://127.0.0.1:8888/network
+   http://127.0.0.1:8888/diagnostics
+
+Hoàn tác:
+   rm -rf ~/tms-os
+   cp -r ~/tms-os-backup-v3-before-v4 ~/tms-os

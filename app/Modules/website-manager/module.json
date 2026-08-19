@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "website-manager",
+  "name": "Website Manager",
+  "version": "11.0.0",
+  "description": "Create, clone, start, stop and manage local websites.",
+  "category": "Hosting",
+  "icon": "◎",
+  "route": "/websites",
+  "core": true,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

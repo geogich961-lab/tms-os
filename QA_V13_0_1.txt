@@ -1,0 +1,12 @@
+TMS OS Platform V13.0.1 QA
+
+PHP lint: 69/69 PASS
+Shell syntax: 16/16 PASS
+JSON: PASS
+JavaScript syntax: PASS
+LAN rules:
+- 127.0.0.1 is rejected as LAN IPv4.
+- Direct LAN URL uses detected Wi-Fi IPv4 and website port.
+- sslip.io is only generated when a valid non-loopback IPv4 exists.
+- Missing LAN IPv4 produces a clear UI warning instead of a broken URL.
+Note: Real cross-device connectivity must still be verified on the target Android/Termux Wi-Fi network.

@@ -1,0 +1,23 @@
+TMS OS PLATFORM V11.0 — MODULE CORE ARCHITECTURE
+================================================
+
+Nền tảng: TMS OS Platform Stable V10.3.1
+Mục tiêu: chuyển TMS OS sang kiến trúc module an toàn mà không làm mất chức năng hiện có.
+
+TÍNH NĂNG MỚI
+- Module Center và registry trung tâm.
+- Mỗi module có module.json riêng.
+- Kiểm tra cấu trúc manifest, phiên bản, route và dependency.
+- Module lõi được bảo vệ, không thể vô tình tắt.
+- Module tùy chọn có thể bật/tắt và lưu trạng thái.
+- Đồng bộ/làm sạch registry bằng một nút.
+- Tách Runtime Packages khỏi Module Center.
+- Giao diện responsive cho điện thoại.
+
+TƯƠNG THÍCH
+- Giữ nguyên Website Manager, Backup/Snapshot, Internet Access, TMS Relay.
+- Giữ redirect /plugins sang /modules để tránh liên kết cũ bị lỗi.
+- Không ghi đè V10.3.1.
+
+LƯU Ý KIẾN TRÚC
+V11.0 là lớp nền đầu tiên. Manifest không được phép thực thi lệnh tùy ý. Route và service vẫn được lõi TMS OS nạp theo danh sách kiểm soát nhằm bảo đảm an toàn và khả năng rollback.

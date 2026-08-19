@@ -1,0 +1,1 @@
+<?php if(!empty($showShell)): ?></main></div><div class="sidebar-overlay" data-sidebar-overlay></div><?php endif; ?><div class="pwa-update-banner" data-pwa-update hidden><span>Có phiên bản giao diện mới.</span><button class="btn btn-primary btn-small" data-pwa-reload>Cập nhật</button></div></body></html>

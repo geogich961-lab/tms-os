@@ -1,0 +1,7 @@
+TMS OS Platform V12.1.2 — Installer Compatibility Hotfix
+
+- Loại bỏ flock khỏi tms-php-engine.sh để tránh descriptor khóa còn sống từ tiến trình cũ.
+- Chống thao tác trùng vẫn được giữ ở tầng Service Manager Web bằng khóa riêng của PHP.
+- Installer tự dọn php-engine.lock cũ trước khi khởi động dịch vụ.
+- Khôi phục trải nghiệm cài đặt đơn giản: giải nén và chạy install.sh như các bản ổn định trước.
+- Giữ nguyên toàn bộ tính năng Service Manager Pro của V12.1.

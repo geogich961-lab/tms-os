@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "id": "internet-access",
+  "name": "Internet Access Center",
+  "version": "11.0.0",
+  "description": "Verified public tunnel providers and fallback engine.",
+  "category": "Network",
+  "icon": "☁",
+  "route": "/internet-access",
+  "core": false,
+  "dependencies": [
+    "core-system",
+    "website-manager"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}

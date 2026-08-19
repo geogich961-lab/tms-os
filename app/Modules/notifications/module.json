@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "id": "notifications",
+  "name": "Notifications",
+  "version": "11.0.0",
+  "description": "System and service alert center.",
+  "category": "Observability",
+  "icon": "♢",
+  "route": "/notifications",
+  "core": false,
+  "dependencies": [
+    "core-system"
+  ],
+  "author": "TMS OS / THCGaming",
+  "compatibility": {
+    "tms_os": ">=11.0.0",
+    "platform": "android-termux"
+  }
+}
