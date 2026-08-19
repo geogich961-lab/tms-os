@@ -1,9 +1,0 @@
-CÀI TMS OS
-==========
-
-Chép TMS_OS_Installer.sh và TMS_OS_ZERO_COMMAND.zip vào Download.
-Mở Termux rồi copy/paste:
-
-bash ~/storage/downloads/TMS_OS_Installer.sh
-
-Làm theo hướng dẫn trên màn hình.

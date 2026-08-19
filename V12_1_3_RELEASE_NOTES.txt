@@ -1,7 +1,0 @@
-TMS OS Platform V12.1.3 — Restart All Reliability Hotfix
-
-- Sửa Restart All tự ngắt request khi restart PHP-FPM.
-- PHP Engine được xếp lịch restart ngoài request và luôn xử lý cuối cùng.
-- MariaDB được chờ tối đa 12 giây để xác minh trạng thái sau restart.
-- Nginx được xác minh bằng tiến trình master thay vì chỉ một phép dò cứng.
-- Giữ nguyên toàn bộ tính năng và dữ liệu của V12.1.2.

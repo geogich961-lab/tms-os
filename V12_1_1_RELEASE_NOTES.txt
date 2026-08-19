@@ -1,9 +1,0 @@
-TMS OS Platform V12.1.1 — PHP Engine Lock Hotfix
-
-- Sửa lỗi restart PHP Engine tự khóa chính nó trong quá trình cài đặt/nâng cấp.
-- Gộp stop + start vào cùng một phiên khóa duy nhất.
-- Dùng subshell để descriptor flock luôn được giải phóng sau thao tác.
-- Tăng thời gian chờ khóa lên 15 giây và cải thiện thông báo lỗi.
-- Installer tự thử lại PHP Engine tối đa 3 lần, mỗi lần cách nhau 2 giây.
-- Khi thất bại, hiển thị rõ đường dẫn php-engine.log.
-- Giữ nguyên toàn bộ tính năng Service Manager Pro của V12.1.
