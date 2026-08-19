@@ -21,10 +21,7 @@ if command -v pkg >/dev/null 2>&1; then
       *) DB_MODE="sqlite" ;;
     esac
   fi
-<<<<<<< HEAD
-=======
   mkdir -p "$HOME/.tms-os" "$HOME/logs/services"
->>>>>>> 79ddae6 (V14.0.4: hotfix database selector (mkdir before db-mode) + installer RC guard)
   printf '%s' "$DB_MODE" > "$HOME/.tms-os/db-mode"
   chmod 600 "$HOME/.tms-os/db-mode"
   if [ "$DB_MODE" = "sqlite" ]; then
