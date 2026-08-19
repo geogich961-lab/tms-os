@@ -155,86 +155,36 @@ if [ -f "$HOME/.redmi-mini-vps/config/panel-secret.php" ] && [ ! -f "$HOME/.tms-
 fi
 SECRET="$HOME/.tms-os/config/panel-secret.php"
 CREATE_ADMIN=1
-if [ -f "$SECRET" ]; then
-  if [ -z "${TMS_ADMIN_USER:-}" ]; then
-    printf 'Đã phát hiện tài khoản quản trị hiện có. Giữ nguyên tài khoản này? [Y/n]: '
-    read -r KEEP_ADMIN || KEEP_ADMIN="Y"
-    KEEP_ADMIN="${KEEP_ADMIN%$'\r'}"
-    case "${KEEP_ADMIN:-Y}" in
-      n|N|no|NO) CREATE_ADMIN=1 ;;
-      *) CREATE_ADMIN=0 ;;
-    esac
-  fi
+if [ -f "$SECRET" ] && [ -z "${TMS_ADMIN_USER:-}" ]; then
+  CREATE_ADMIN=0
 fi
 
-# V14.0.6: khi cài qua pipe (curl | bash), stdin không phải bàn phím — read sẽ nhận EOF ngay
-# và không chờ gõ. Bộ cài tự tạo tài khoản mặc định thay vì hỏi lặp vô hạn.
-TMS_PIPE_MODE=0
-[ -p /dev/stdin ] && TMS_PIPE_MODE=1
-
-if [ "$CREATE_ADMIN" -eq 1 ]; then
-  if [ -n "${TMS_ADMIN_USER:-}" ]; then
-    ADMIN_USER="$TMS_ADMIN_USER"
-  elif [ "$TMS_PIPE_MODE" -eq 1 ]; then
-    # Chế độ không tương tác: tài khoản mặc định, mật khẩu ngẫu nhiên mạnh.
-    ADMIN_USER="admin"
-    ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"
-    echo '[INFO] Đang cài qua lệnh pipe — tự động tạo tài khoản: admin (mật khẩu sẽ hiển thị khi cài xong).'
-    echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"
-    chmod 600 "$HOME/.tms-os/.generated-password"
-  else
-  _ATTEMPTS=0
-  while :; do
-    printf 'Nhập tên tài khoản quản trị (3-32 ký tự, chữ/số/._-): '
-    read -r ADMIN_USER || { ADMIN_USER=""; echo '[LỖI] Không đọc được bàn phím. Đang chuyển sang tài khoản mặc định (admin)...'; ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; }
-    ADMIN_USER="${ADMIN_USER%$'\r'}"
-    if printf '%s' "$ADMIN_USER" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; then break; fi
-    echo 'Tên tài khoản không hợp lệ. Ví dụ: admin, tms_admin, thc.gaming'
-    _ATTEMPTS=$((_ATTEMPTS+1))
-    if [ "$_ATTEMPTS" -ge 5 ]; then echo '[INFO] Đã thử nhiều lần — dùng tài khoản mặc định: admin.'; ADMIN_USER="admin"; ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; fi
-  done
-  fi
-
-  if [ -n "${ADMIN_PASS:-}" ]; then
-    : # mật khẩu đã được tạo ở trên (pipe mode hoặc fallback)
-  elif [ -n "${TMS_ADMIN_PASS:-}" ]; then
-    ADMIN_PASS="$TMS_ADMIN_PASS"
-  else
-  while :; do
-    printf 'Nhập mật khẩu quản trị (tối thiểu 8 ký tự): '
-    IFS= read -r -s ADMIN_PASS || ADMIN_PASS=""
-    ADMIN_PASS="${ADMIN_PASS%$'\r'}"
-    if [ "${#ADMIN_PASS}" -lt 8 ]; then echo 'Mật khẩu quá ngắn.'; continue; fi
-    printf 'Nhập lại mật khẩu: '
-    IFS= read -r -s ADMIN_PASS_CONFIRM || ADMIN_PASS_CONFIRM=""
-    ADMIN_PASS_CONFIRM="${ADMIN_PASS_CONFIRM%$'\r'}"
-    if [ "$ADMIN_PASS" != "$ADMIN_PASS_CONFIRM" ]; then echo 'Hai mật khẩu không khớp.'; continue; fi
-    break
-  done
-  fi
-
-  # Hash mật khẩu an toàn: truyền qua file tạm để mật khẩu chứa ký tự đặc biệt ($ ! " ') không bị hỏng.
+# V14.0.8: KHÔNG hỏi tài khoản khi cài (read qua pipe không chờ được bàn phím).
+# Tạo tài khoản tạm an toàn, người dùng tự đổi sau bằng:
+#   bash ~/tms-os/scripts/tms-setup-admin.sh
+if [ "$CREATE_ADMIN" -eq 1 ] || [ ! -f "$SECRET" ]; then
+  ADMIN_USER="admin"
+  ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"
   _PW_TMP="$(mktemp)"
   printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
   HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
   rm -f "$_PW_TMP"
   if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
-    echo '[LỖI] Không thể tạo hash mật khẩu (cần PHP >= 7.0 với sodium/bcrypt). Hãy chạy lại bộ cài.' >&2
+    echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại bộ cài.' >&2
     exit 1
   fi
-  TMS_SECRET_FILE="$SECRET" php -r '
-    $file=(string)getenv("TMS_SECRET_FILE");
-    $user=(string)$argv[1];
-    $hash=(string)$argv[2];
+  php -r '
+    $file=(string)$argv[1];
+    $user=(string)$argv[2];
+    $hash=(string)$argv[3];
     $data="<?php\nreturn [\"username\"=>".var_export($user,true).",\"password_hash\"=>".var_export($hash,true)."];\n";
     if (file_put_contents($file,$data)===false) { fwrite(STDERR,"Không thể ghi tệp tài khoản.\n"); exit(1); }
     chmod($file,0600);
-  ' "$ADMIN_USER" "$HASH"
-  unset ADMIN_PASS ADMIN_PASS_CONFIRM HASH
-  rm -f "$HOME/.tms-os/first-login.txt"
-  echo "Đã tạo tài khoản quản trị: $ADMIN_USER"
-else
-  echo 'Giữ nguyên tài khoản quản trị hiện tại.'
+  ' "$SECRET" "$ADMIN_USER" "$HASH"
+  # Lưu mật khẩu tạm để hiển thị cuối cài + cho phép đổi sau
+  echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"
+  chmod 600 "$HOME/.tms-os/.generated-password"
+  unset ADMIN_PASS HASH
 fi
 printf '[6/7] Cài source và khởi động dịch vụ...\n'
 # V13.0.1: dọn toàn bộ khóa, hàng đợi và trạng thái pending cũ trước khi thay core.
@@ -273,11 +223,14 @@ echo '============================================'; echo '[OK] TMS OS đã cài
 if [ -f "$HOME/.tms-os/.generated-password" ]; then
   GEN_USER="admin"
   GEN_PASS="$(cat "$HOME/.tms-os/.generated-password")"
-  echo "Tài khoản quản trị (tự động tạo): $GEN_USER"
-  echo "Mật khẩu: $GEN_PASS"
-  echo 'LƯU Ý QUAN TRỌNG: Hãy đổi mật khẩu ngay sau khi đăng nhập (Cài đặt > Đổi mật khẩu).'
+  echo "Tài khoản quản trị (tạm thời): $GEN_USER"
+  echo "Mật khẩu tạm: $GEN_PASS"
+  echo 'ĐĂNG NHẬP NGAY rồi đổi mật khẩu (Cài đặt > Đổi mật khẩu), HOẶC đặt tên riêng bằng lệnh:'
+  echo '  bash ~/tms-os/scripts/tms-setup-admin.sh'
   rm -f "$HOME/.tms-os/.generated-password"
 else
   echo 'Đăng nhập bằng tài khoản quản trị bạn vừa thiết lập.'
+  echo 'Đổi tên tài khoản/mật khẩu bất kỳ lúc nào:'
+  echo '  bash ~/tms-os/scripts/tms-setup-admin.sh'
 fi
 echo '============================================'
