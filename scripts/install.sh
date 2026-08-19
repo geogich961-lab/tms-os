@@ -156,41 +156,65 @@ fi
 SECRET="$HOME/.tms-os/config/panel-secret.php"
 CREATE_ADMIN=1
 if [ -f "$SECRET" ]; then
-  printf 'Đã phát hiện tài khoản quản trị hiện có. Giữ nguyên tài khoản này? [Y/n]: '
-  read -r KEEP_ADMIN
-  case "${KEEP_ADMIN:-Y}" in
-    n|N|no|NO) CREATE_ADMIN=1 ;;
-    *) CREATE_ADMIN=0 ;;
-  esac
+  if [ -z "${TMS_ADMIN_USER:-}" ]; then
+    printf 'Đã phát hiện tài khoản quản trị hiện có. Giữ nguyên tài khoản này? [Y/n]: '
+    read -r KEEP_ADMIN
+    case "${KEEP_ADMIN:-Y}" in
+      n|N|no|NO) CREATE_ADMIN=1 ;;
+      *) CREATE_ADMIN=0 ;;
+    esac
+  fi
 fi
 
 if [ "$CREATE_ADMIN" -eq 1 ]; then
+  if [ -z "${TMS_ADMIN_USER:-}" ]; then
+  _ATTEMPTS=0
   while :; do
     printf 'Nhập tên tài khoản quản trị (3-32 ký tự, chữ/số/._-): '
-    read -r ADMIN_USER
+    read -r ADMIN_USER || ADMIN_USER=""
+    ADMIN_USER="${ADMIN_USER%$'\r'}"
     if printf '%s' "$ADMIN_USER" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; then break; fi
     echo 'Tên tài khoản không hợp lệ. Ví dụ: admin, tms_admin, thc.gaming'
+    _ATTEMPTS=$((_ATTEMPTS+1))
+    if [ "$_ATTEMPTS" -ge 100 ]; then echo '[LỖI] Nhập tên quá nhiều lần. Hãy thử lại với tên đơn giản (admin).' >&2; exit 1; fi
   done
+  else
+    ADMIN_USER="$TMS_ADMIN_USER"
+  fi
 
+  if [ -z "${TMS_ADMIN_PASS:-}" ]; then
   while :; do
     printf 'Nhập mật khẩu quản trị (tối thiểu 8 ký tự): '
     IFS= read -r -s ADMIN_PASS; printf '\n'
+    ADMIN_PASS="${ADMIN_PASS%$'\r'}"
     if [ "${#ADMIN_PASS}" -lt 8 ]; then echo 'Mật khẩu quá ngắn.'; continue; fi
     printf 'Nhập lại mật khẩu: '
     IFS= read -r -s ADMIN_PASS_CONFIRM; printf '\n'
+    ADMIN_PASS_CONFIRM="${ADMIN_PASS_CONFIRM%$'\r'}"
     if [ "$ADMIN_PASS" != "$ADMIN_PASS_CONFIRM" ]; then echo 'Hai mật khẩu không khớp.'; continue; fi
     break
   done
+  else
+    ADMIN_PASS="$TMS_ADMIN_PASS"
+  fi
 
-  HASH="$(TMS_PASS="$ADMIN_PASS" php -r 'echo password_hash((string)getenv("TMS_PASS"), PASSWORD_DEFAULT);')"
-  TMS_ADMIN_USER="$ADMIN_USER" TMS_ADMIN_HASH="$HASH" TMS_SECRET_FILE="$SECRET" php -r '
+  # Hash mật khẩu an toàn: truyền qua file tạm để mật khẩu chứa ký tự đặc biệt ($ ! " ') không bị hỏng.
+  _PW_TMP="$(mktemp)"
+  printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
+  HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
+  rm -f "$_PW_TMP"
+  if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
+    echo '[LỖI] Không thể tạo hash mật khẩu (cần PHP >= 7.0 với sodium/bcrypt). Hãy chạy lại bộ cài.' >&2
+    exit 1
+  fi
+  TMS_SECRET_FILE="$SECRET" php -r '
     $file=(string)getenv("TMS_SECRET_FILE");
-    $user=(string)getenv("TMS_ADMIN_USER");
-    $hash=(string)getenv("TMS_ADMIN_HASH");
+    $user=(string)$argv[1];
+    $hash=(string)$argv[2];
     $data="<?php\nreturn [\"username\"=>".var_export($user,true).",\"password_hash\"=>".var_export($hash,true)."];\n";
     if (file_put_contents($file,$data)===false) { fwrite(STDERR,"Không thể ghi tệp tài khoản.\n"); exit(1); }
     chmod($file,0600);
-  '
+  ' "$ADMIN_USER" "$HASH"
   unset ADMIN_PASS ADMIN_PASS_CONFIRM HASH
   rm -f "$HOME/.tms-os/first-login.txt"
   echo "Đã tạo tài khoản quản trị: $ADMIN_USER"

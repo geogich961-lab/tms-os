@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.0.4",
-  "build": "2026.08.19-v14.0.3",
+  "internal_version": 140005,
+  "build": "20260819",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS Platform V14.0.3 — SQLite Support & MariaDB Deep-Clean",
-  "version": "14.0.4",
-  "notes": "Adds SQLite as a lightweight database alternative to MariaDB (no daemon, no root, cannot fail installation). The installer now asks which database mode to use (SQLite recommended by default). MariaDB mode performs a thorough deep-clean of old data/sockets/pid/config before reinstalling, with automatic data directory reinitialization and --user= fallback.",
+  "name": "TMS OS V14.0.5",
+  "version": "14.0.5",
+  "notes": "Sua loi buoc tao tai khoan quan tri: nhap tu ban phim BlueStacks/Android bi loop, mat khau ky tu dac biet lam hong hash.",
   "features": [
     "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",
     "Database mode selector during installation (press Enter for SQLite default)",
@@ -24,5 +24,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "70b92579862bdb1643132022498ee397f505169b4eb5d7430a845e7e6e6847ee"
+  "checksum_sha256": "88cf8f738192c7339b343697bd36748649386068a2ca47b2408168ee745b30cd"
 }
