@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.0.8",
-  "build": "20260819",
+  "internal_version": "14.0.9",
+  "build": "20260819-2",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS V14.0.8",
-  "version": "14.0.8",
-  "notes": "Cai dat 1 dong khong hoi gi; dung script rieng tms-setup-admin.sh de tu dat tai khoan.",
+  "name": "TMS OS V14.0.9",
+  "version": "14.0.9",
+  "notes": "Tu khoi dong server khi bat may (Termux boot); sua loi RC unbound variable cuoi cai dat; bat auto-start ngay khi hoi trong qua trinh cai.",
   "features": [
     "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",
     "Database mode selector during installation (press Enter for SQLite default)",
@@ -24,5 +24,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "a929fbbf20b672bc6af1367cae49cee5d43a40882d5fb8cafe14ebe8bc79f5ac"
+  "checksum_sha256": "bc6f34d51196e13368c71f03c3398c0ac0cbcf1a5581e3f5a4f7d932c7202d8a"
 }
