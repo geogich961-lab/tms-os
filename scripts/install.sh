@@ -3,7 +3,7 @@ set -Eeuo pipefail
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"; HOME="${HOME:-/data/data/com.termux/files/home}"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"; TARGET="$HOME/tms-os"; NGINX="$PREFIX/etc/nginx/nginx.conf"; SITES="$PREFIX/etc/nginx/sites-enabled"; PHP_CONF_DIR="$PREFIX/etc/php/conf.d"
 STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$HOME/.tms-os/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$HOME/.tms-os/quarantine/$STAMP"
-trap 'echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
+trap 'if [ -f "$HOME/.tms-os/.generated-password" ]; then echo "[INFO] Mật khẩu quản trị đã tạo (chưa đổi): $(cat "$HOME/.tms-os/.generated-password")"; fi; echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
 printf '\n============================================\n Welcome to TMS OS by THCGaming\n============================================\n'
 if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
@@ -158,7 +158,8 @@ CREATE_ADMIN=1
 if [ -f "$SECRET" ]; then
   if [ -z "${TMS_ADMIN_USER:-}" ]; then
     printf 'Đã phát hiện tài khoản quản trị hiện có. Giữ nguyên tài khoản này? [Y/n]: '
-    read -r KEEP_ADMIN
+    read -r KEEP_ADMIN || KEEP_ADMIN="Y"
+    KEEP_ADMIN="${KEEP_ADMIN%$'\r'}"
     case "${KEEP_ADMIN:-Y}" in
       n|N|no|NO) CREATE_ADMIN=1 ;;
       *) CREATE_ADMIN=0 ;;
@@ -166,36 +167,50 @@ if [ -f "$SECRET" ]; then
   fi
 fi
 
+# V14.0.6: khi cài qua pipe (curl | bash), stdin không phải bàn phím — read sẽ nhận EOF ngay
+# và không chờ gõ. Bộ cài tự tạo tài khoản mặc định thay vì hỏi lặp vô hạn.
+TMS_PIPE_MODE=0
+[ -p /dev/stdin ] && TMS_PIPE_MODE=1
+
 if [ "$CREATE_ADMIN" -eq 1 ]; then
-  if [ -z "${TMS_ADMIN_USER:-}" ]; then
+  if [ -n "${TMS_ADMIN_USER:-}" ]; then
+    ADMIN_USER="$TMS_ADMIN_USER"
+  elif [ "$TMS_PIPE_MODE" -eq 1 ]; then
+    # Chế độ không tương tác: tài khoản mặc định, mật khẩu ngẫu nhiên mạnh.
+    ADMIN_USER="admin"
+    ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"
+    echo '[INFO] Đang cài qua lệnh pipe — tự động tạo tài khoản: admin (mật khẩu sẽ hiển thị khi cài xong).'
+    echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"
+    chmod 600 "$HOME/.tms-os/.generated-password"
+  else
   _ATTEMPTS=0
   while :; do
     printf 'Nhập tên tài khoản quản trị (3-32 ký tự, chữ/số/._-): '
-    read -r ADMIN_USER || ADMIN_USER=""
+    read -r ADMIN_USER || { ADMIN_USER=""; echo '[LỖI] Không đọc được bàn phím. Đang chuyển sang tài khoản mặc định (admin)...'; ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; }
     ADMIN_USER="${ADMIN_USER%$'\r'}"
     if printf '%s' "$ADMIN_USER" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; then break; fi
     echo 'Tên tài khoản không hợp lệ. Ví dụ: admin, tms_admin, thc.gaming'
     _ATTEMPTS=$((_ATTEMPTS+1))
-    if [ "$_ATTEMPTS" -ge 100 ]; then echo '[LỖI] Nhập tên quá nhiều lần. Hãy thử lại với tên đơn giản (admin).' >&2; exit 1; fi
+    if [ "$_ATTEMPTS" -ge 5 ]; then echo '[INFO] Đã thử nhiều lần — dùng tài khoản mặc định: admin.'; ADMIN_USER="admin"; ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; fi
   done
-  else
-    ADMIN_USER="$TMS_ADMIN_USER"
   fi
 
-  if [ -z "${TMS_ADMIN_PASS:-}" ]; then
+  if [ -n "${ADMIN_PASS:-}" ]; then
+    : # mật khẩu đã được tạo ở trên (pipe mode hoặc fallback)
+  elif [ -n "${TMS_ADMIN_PASS:-}" ]; then
+    ADMIN_PASS="$TMS_ADMIN_PASS"
+  else
   while :; do
     printf 'Nhập mật khẩu quản trị (tối thiểu 8 ký tự): '
-    IFS= read -r -s ADMIN_PASS; printf '\n'
+    IFS= read -r -s ADMIN_PASS || ADMIN_PASS=""
     ADMIN_PASS="${ADMIN_PASS%$'\r'}"
     if [ "${#ADMIN_PASS}" -lt 8 ]; then echo 'Mật khẩu quá ngắn.'; continue; fi
     printf 'Nhập lại mật khẩu: '
-    IFS= read -r -s ADMIN_PASS_CONFIRM; printf '\n'
+    IFS= read -r -s ADMIN_PASS_CONFIRM || ADMIN_PASS_CONFIRM=""
     ADMIN_PASS_CONFIRM="${ADMIN_PASS_CONFIRM%$'\r'}"
     if [ "$ADMIN_PASS" != "$ADMIN_PASS_CONFIRM" ]; then echo 'Hai mật khẩu không khớp.'; continue; fi
     break
   done
-  else
-    ADMIN_PASS="$TMS_ADMIN_PASS"
   fi
 
   # Hash mật khẩu an toàn: truyền qua file tạm để mật khẩu chứa ký tự đặc biệt ($ ! " ') không bị hỏng.
@@ -254,4 +269,15 @@ pgrep -x sshd >/dev/null 2>&1 || sshd
 sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
 printf '[7/7] Hoàn tất.\n'
 MODE="$(bash "$TARGET/scripts/tms-php-engine.sh" status)"
-echo '============================================'; echo '[OK] TMS OS đã cài đặt thành công.'; echo 'Panel: http://127.0.0.1:8888'; echo 'Website: http://127.0.0.1:8080'; echo "PHP Engine: $MODE"; echo 'Đăng nhập bằng tài khoản quản trị bạn vừa thiết lập.'; echo 'Khởi động lần sau: bash ~/tms-os/scripts/start-tms.sh'; echo '============================================'
+echo '============================================'; echo '[OK] TMS OS đã cài đặt thành công.'; echo 'Panel: http://127.0.0.1:8888'; echo 'Website: http://127.0.0.1:8080'; echo "PHP Engine: $MODE"; echo 'Khởi động lần sau: bash ~/tms-os/scripts/start-tms.sh'
+if [ -f "$HOME/.tms-os/.generated-password" ]; then
+  GEN_USER="admin"
+  GEN_PASS="$(cat "$HOME/.tms-os/.generated-password")"
+  echo "Tài khoản quản trị (tự động tạo): $GEN_USER"
+  echo "Mật khẩu: $GEN_PASS"
+  echo 'LƯU Ý QUAN TRỌNG: Hãy đổi mật khẩu ngay sau khi đăng nhập (Cài đặt > Đổi mật khẩu).'
+  rm -f "$HOME/.tms-os/.generated-password"
+else
+  echo 'Đăng nhập bằng tài khoản quản trị bạn vừa thiết lập.'
+fi
+echo '============================================'

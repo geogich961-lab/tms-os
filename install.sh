@@ -34,8 +34,8 @@ fi
 
 # ---------- Cấu hình bộ cài ----------
 REPO="${TMS_REPO:-geogich961-lab/tms-os}"
-RELEASE_URL="https://github.com/${REPO}/releases/latest/download/TMS_OS_V14.0.5.zip"
-RELEASE_URL="https://github.com/${REPO}/releases/latest/download/TMS_OS_V14.0.5.zip"
+RELEASE_URL="https://github.com/${REPO}/releases/latest/download/TMS_OS_V14.0.6.zip"
+RELEASE_URL="https://github.com/${REPO}/releases/latest/download/TMS_OS_V14.0.6.zip"
 WORK="$HOME/.tms-os-installer-$$"
 mkdir -p "$WORK"
 trap 'rm -rf "$WORK"' EXIT
