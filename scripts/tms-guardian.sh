@@ -62,7 +62,8 @@ check_once(){
     event error php unhealthy "Upstream lỗi; panel=$panel website=$website." 0
     [ "$AUTO_REPAIR" = 1 ] && repair_php || true
   fi
-  if [ "${CHECK_DATABASE:-1}" = 1 ]; then
+  DBMODE_G="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
+  if [ "${CHECK_DATABASE:-1}" = 1 ] && [ "$DBMODE_G" = "mariadb" ]; then
     if ! bash "$ROOT/scripts/tms-service-core.sh" mariadb status >/dev/null 2>&1; then
       event warn mariadb unhealthy 'MariaDB không phản hồi mysqladmin ping.' 0
       if [ "$AUTO_REPAIR" = 1 ]; then
@@ -78,7 +79,7 @@ check_once(){
     "$(date -Iseconds)" "$panel" "$website" \
     "$(bash "$ROOT/scripts/tms-service-core.sh" nginx status >/dev/null 2>&1 && echo true || echo false)" \
     "$(bash "$ROOT/scripts/tms-service-core.sh" php status >/dev/null 2>&1 && echo true || echo false)" \
-    "$(bash "$ROOT/scripts/tms-service-core.sh" mariadb status >/dev/null 2>&1 && echo true || echo false)" > "$STATE/guardian-status.json"
+    "$(if [ "$DBMODE_G" = "sqlite" ]; then echo true; else bash "$ROOT/scripts/tms-service-core.sh" mariadb status >/dev/null 2>&1 && echo true || echo false; fi)" > "$STATE/guardian-status.json"
 }
 daemon(){
   if command -v flock >/dev/null 2>&1; then exec 9>"$LOCKFILE"; flock -n 9 || exit 0; fi

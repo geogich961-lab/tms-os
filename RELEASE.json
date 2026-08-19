@@ -1,15 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.0.2",
-  "build": "2026.08.19-v14.0.2",
+  "internal_version": "14.0.3",
+  "build": "2026.08.19-v14.0.3",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS Platform V14.0.2 — MariaDB Data Recovery & User Fallback",
-  "version": "14.0.2",
-  "notes": "Fixes mariadbd immediate crash on some devices: auto-reinitialize damaged data directory (mariadb-install-db), retry loop, socket auto-detection, and mariadbd-safe --user= fallback when the default mysql user cannot write pid files.",
+  "name": "TMS OS Platform V14.0.3 — SQLite Support & MariaDB Deep-Clean",
+  "version": "14.0.3",
+  "notes": "Adds SQLite as a lightweight database alternative to MariaDB (no daemon, no root, cannot fail installation). The installer now asks which database mode to use (SQLite recommended by default). MariaDB mode performs a thorough deep-clean of old data/sockets/pid/config before reinstalling, with automatic data directory reinitialization and --user= fallback.",
   "features": [
+    "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",
+    "Database mode selector during installation (press Enter for SQLite default)",
+    "MariaDB deep-clean: removes stale data directories, sockets, pid files and configs before reinstalling",
+    "Automatic MariaDB data directory reinitialization if damaged (mariadb-install-db)",
+    "mariadbd-safe --user= fallback when the default mysql user cannot write pid files",
+    "Unified service manager hides MariaDB automatically in SQLite mode",
+    "Guardian, diagnostics, repair and service scripts respect the chosen DB mode",
     "Robust Android/Termux LAN IPv4 discovery with multiple fallbacks",
     "Never publishes 127.0.0.1 as a LAN address",
     "Short direct LAN URL using Wi-Fi IP and each website port",
@@ -17,5 +24,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "e8aaa999065fd958c1d4c6d66c9488fac1ee61dcbca5e5f9da7c940a8b903090"
+  "checksum_sha256": "f1c5499416819ce26af01490093aaa278697c32f336b1fce5210e94b600d07cc"
 }

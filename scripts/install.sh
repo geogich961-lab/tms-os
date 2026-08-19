@@ -8,7 +8,24 @@ printf '\n============================================\n Welcome to TMS OS by TH
 if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
   pkg update -y
-  pkg install -y php nginx mariadb curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl
+  pkg install -y php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl
+
+  # V14.0.3: chọn engine database — SQLite (khuyến nghị: nhẹ, không daemon, không thể cài hỏng)
+  # hoặc MariaDB (đầy đủ tính năng, cần daemon chạy nền).
+  DB_MODE="mariadb"
+  if [ -z "${TMS_FORCE_DB_MODE:-}" ]; then
+    printf 'Chọn engine database: [S]QLite (khuyến nghị cho điện thoại cũ, nhẹ và ổn định) hay [M]ariaDB (đầy đủ tính năng)? [S/m]: '
+    read -r DB_CHOICE
+    case "${DB_CHOICE:-S}" in
+      m|M|MariaDB|MARIADB|maria*) DB_MODE="mariadb" ;;
+      *) DB_MODE="sqlite" ;;
+    esac
+  fi
+  printf '%s' "$DB_MODE" > "$HOME/.tms-os/db-mode"
+  chmod 600 "$HOME/.tms-os/db-mode"
+  if [ "$DB_MODE" = "sqlite" ]; then
+    echo '[OK] Đã chọn SQLite — không cần khởi động database daemon.'
+  fi
 else echo 'Bộ cài này yêu cầu Termux có lệnh pkg.'; exit 1; fi
 for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd; do command -v "$c" >/dev/null || { echo "Thiếu lệnh sau cài: $c"; exit 1; }; done
 for part in app config public routes storage scripts; do [ -d "$SOURCE_DIR/$part" ] || { echo "Thiếu thư mục: $part"; exit 1; }; done
@@ -46,101 +63,85 @@ location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param 
 location ~ /\. { deny all; } }
 NGINX
 [ -f "$HOME/websites/default/public/index.php" ] || printf '<?php echo "<h1>TMS OS hoạt động thành công</h1><p>PHP ".PHP_VERSION."</p>";\n' > "$HOME/websites/default/public/index.php"
-printf '[4/7] Khởi tạo MariaDB và cấu hình kết nối an toàn...\n'
-mkdir -p "$PREFIX/var/lib/mysql" "$HOME/logs/services"
+printf '[4/7] Khởi tạo database (%s)...\n' "$DB_MODE"
+mkdir -p "$HOME/logs/services"
 
-# Khởi động MariaDB (dùng lại tiến trình đang chạy nếu có).
-if ! pgrep -f mariadbd >/dev/null 2>&1; then
-  nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
-  disown
-fi
-
-# Chờ socket xuất hiện (tìm tự động vị trí socket của mariadbd hiện hành).
-SOCKET=""
-for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
-  if mariadb-admin ping --silent >/dev/null 2>&1; then break; fi
-  sleep 1
-done
-
-if ! mariadb-admin ping --silent >/dev/null 2>&1; then
-  pkill -f mariadbd 2>/dev/null || true
-  sleep 2
-
-  # V14.0.2: nếu mariadbd chết ngay, datadir có thể hỏng (chưa khởi tạo hoặc
-  # còn rác từ lần cài trước) — khởi tạo lại từ đầu.
-  if ! [ -d "$PREFIX/var/lib/mysql/mysql" ]; then
-    echo '[Khắc phục] Phát hiện kho dữ liệu MariaDB hỏng — khởi tạo lại...'
-    rm -rf "$PREFIX/var/lib/mysql"
-    mkdir -p "$PREFIX/var/lib/mysql"
-    if ! mariadb-install-db --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb-init.log" 2>&1; then
-      echo 'Không thể khởi tạo kho dữ liệu MariaDB. Xem nhật ký:' "$HOME/logs/services/mariadb-init.log" >&2
-      exit 1
-    fi
-    echo '[OK] Đã khởi tạo lại kho dữ liệu MariaDB.'
+if [ "$DB_MODE" = "sqlite" ]; then
+  # V14.0.3: SQLite — không daemon, không socket, không thể cài hỏng.
+  mkdir -p "$HOME/.tms-os/data/db" "$HOME/backups/database"
+  chmod 700 "$HOME/.tms-os/data" "$HOME/.tms-os/data/db"
+  if ! command -v sqlite3 >/dev/null 2>&1 || ! sqlite3 "$HOME/.tms-os/data/test.db" 'SELECT 1' >/dev/null 2>&1; then
+    echo 'Không thể xác thực SQLite.' >&2
+    exit 1
   fi
+  rm -f "$HOME/.tms-os/data/test.db"
+  echo '[OK] SQLite đã sẵn sàng.'
+else
+  # === MariaDB: clear sạch toàn bộ trạng thái cũ trước khi cài ===
+  # V14.0.3: luôn dọn sạch tiến trình + datadir cũ — đảm bảo khởi tạo từ zero.
+  echo '[Thông báo] Sẽ xóa sạch kho dữ liệu MariaDB cũ (nếu có) để cài mới hoàn toàn...'
+  pkill -9 -f mariadbd 2>/dev/null || true
+  sleep 2
+  rm -rf "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp/mysql.sock" "/tmp/mysql.sock"
+  rm -f "$HOME/.tms-os/mariadb-client.cnf" "$HOME/logs/services/mariadb.log" "$HOME/logs/services/mariadb-init.log"
+  mkdir -p "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp"
+  rm -f "$HOME/logs/services/mariadb-init.log"
+  if ! mariadb-install-db --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb-init.log" 2>&1; then
+    echo 'Không thể khởi tạo kho dữ liệu MariaDB. Xem nhật ký:' "$HOME/logs/services/mariadb-init.log" >&2
+    exit 1
+  fi
+  echo '[OK] Đã khởi tạo kho dữ liệu MariaDB mới hoàn toàn.'
 
-  nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
+  # Khởi động — lần 1: user hiện tại (--user=) để tránh lỗi quyền pid file.
+  nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" --user= >"$HOME/logs/services/mariadb.log" 2>&1 &
   disown
-  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
     if mariadb-admin ping --silent >/dev/null 2>&1; then break; fi
     sleep 1
   done
   if ! mariadb-admin ping --silent >/dev/null 2>&1; then
-    # V14.0.2: fallback — chạy mariadbd với user hiện tại thay vì user mặc định
-    # (một số môi trường chặn user mặc định ghi pid file hoặc đọc datadir).
-    echo '[Khắc phục] Thử khởi động MariaDB với user hiện tại...'
-    pkill -f mariadbd 2>/dev/null || true
-    sleep 2
-    nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" --user= >"$HOME/logs/services/mariadb.log" 2>&1 &
-    disown
-    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
-      if mariadb-admin ping --silent >/dev/null 2>&1; then break; fi
-      sleep 1
-    done
-    if ! mariadb-admin ping --silent >/dev/null 2>&1; then
-      echo 'MariaDB vẫn không khởi động được. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
-      tail -5 "$HOME/logs/services/mariadb.log" >&2
-      exit 1
-    fi
+    echo 'MariaDB vẫn không khởi động được. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
+    tail -5 "$HOME/logs/services/mariadb.log" >&2
+    exit 1
   fi
-fi
 
-# Tự phát hiện socket đang dùng (thay vì giả định vị trí mặc định).
-SOCKET="$(mariadb -e 'SELECT @@socket' -N 2>/dev/null | head -1 || true)"
-if [ -z "$SOCKET" ]; then
-  for CAND in "$PREFIX/tmp/mysql.sock" "$PREFIX/var/run/mysqld/mysqld.sock" "/tmp/mysql.sock" "$PREFIX/var/lib/mysql/mysql.sock"; do
-    [ -S "$CAND" ] && SOCKET="$CAND" && break
-  done
-fi
-if [ -z "$SOCKET" ]; then
-  echo 'MariaDB ping được nhưng không tìm thấy socket. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
-  exit 1
-fi
+  # Tự phát hiện socket đang dùng.
+  SOCKET="$(mariadb -e 'SELECT @@socket' -N 2>/dev/null | head -1 || true)"
+  if [ -z "$SOCKET" ]; then
+    for CAND in "$PREFIX/tmp/mysql.sock" "$PREFIX/var/run/mysqld/mysqld.sock" "/tmp/mysql.sock" "$PREFIX/var/lib/mysql/mysql.sock"; do
+      [ -S "$CAND" ] && SOCKET="$CAND" && break
+    done
+  fi
+  if [ -z "$SOCKET" ]; then
+    echo 'MariaDB ping được nhưng không tìm thấy socket. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
+    exit 1
+  fi
 
-DB_CLIENT="$HOME/.tms-os/mariadb-client.cnf"
-cat > "$DB_CLIENT" <<CNF
+  DB_CLIENT="$HOME/.tms-os/mariadb-client.cnf"
+  cat > "$DB_CLIENT" <<CNF
 [client]
 user=root
 host=localhost
 protocol=socket
 socket=$SOCKET
 CNF
-chmod 600 "$DB_CLIENT"
+  chmod 600 "$DB_CLIENT"
 
-# Kết nối không mật khẩu trước (data mới luôn không có mật khẩu root).
-if ! mariadb --defaults-extra-file="$DB_CLIENT" -e 'SELECT 1' >/dev/null 2>&1; then
-  # Fallback: kết nối qua TCP 127.0.0.1 nếu socket thất bại.
-  cat > "$DB_CLIENT" <<CNF
+  # Kết nối không mật khẩu trước (data mới luôn không có mật khẩu root).
+  if ! mariadb --defaults-extra-file="$DB_CLIENT" -e 'SELECT 1' >/dev/null 2>&1; then
+    # Fallback: kết nối qua TCP 127.0.0.1 nếu socket thất bại.
+    cat > "$DB_CLIENT" <<CNF
 [client]
 user=root
 host=127.0.0.1
 protocol=tcp
 CNF
-  if ! mariadb --defaults-extra-file="$DB_CLIENT" -e 'SELECT 1' >/dev/null 2>&1; then
-    echo 'Không thể xác thực tài khoản quản trị MariaDB.' >&2
-    echo 'Nhật ký:' "$HOME/logs/services/mariadb.log" >&2
-    tail -5 "$HOME/logs/services/mariadb.log" >&2
-    exit 1
+    if ! mariadb --defaults-extra-file="$DB_CLIENT" -e 'SELECT 1' >/dev/null 2>&1; then
+      echo 'Không thể xác thực tài khoản quản trị MariaDB.' >&2
+      echo 'Nhật ký:' "$HOME/logs/services/mariadb.log" >&2
+      tail -5 "$HOME/logs/services/mariadb.log" >&2
+      exit 1
+    fi
   fi
 fi
 printf '[5/7] Thiết lập tài khoản quản trị...\n'
@@ -220,7 +221,10 @@ if [ "$PHP_ENGINE_OK" -ne 1 ]; then
   exit 1
 fi
 nginx -s reload 2>/dev/null || nginx
+DBMODE="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
+if [ "$DBMODE" = "mariadb" ]; then
 pgrep -f mariadbd >/dev/null 2>&1 || mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
+fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
 sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
 printf '[7/7] Hoàn tất.\n'

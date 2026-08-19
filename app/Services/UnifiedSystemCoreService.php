@@ -20,13 +20,19 @@ final class UnifiedSystemCoreService
 
     public function definitions(): array
     {
-        return [
+        // V14.0.3: MariaDB chỉ xuất hiện trong danh sách dịch vụ khi chế độ database là mariadb.
+        $defs = [
             'nginx'=>['name'=>'Nginx','process'=>'nginx','version'=>'nginx -v','log'=>$this->home.'/logs/services/nginx.log'],
             'php'=>['name'=>'PHP Engine','process'=>'php-fpm','version'=>'php -r '.escapeshellarg('echo PHP_VERSION;'),'log'=>$this->home.'/logs/services/php-engine.log'],
-            'mariadb'=>['name'=>'MariaDB','process'=>'mariadbd','version'=>'mariadb --version','log'=>$this->home.'/logs/services/mariadb.log'],
             'ssh'=>['name'=>'OpenSSH','process'=>'sshd','version'=>'ssh -V','log'=>$this->home.'/logs/services/sshd.log'],
             'redis'=>['name'=>'Redis','process'=>'redis-server','version'=>'redis-server --version','log'=>$this->home.'/logs/services/redis.log'],
         ];
+        $modeFile = $this->home . '/.tms-os/db-mode';
+        $dbMode = is_file($modeFile) ? trim((string)@file_get_contents($modeFile)) : 'mariadb';
+        if ($dbMode === 'mariadb') {
+            $defs['mariadb'] = ['name'=>'MariaDB','process'=>'mariadbd','version'=>'mariadb --version','log'=>$this->home.'/logs/services/mariadb.log'];
+        }
+        return $defs;
     }
 
     public function all(bool $withVersion=true): array

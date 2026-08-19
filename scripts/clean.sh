@@ -8,7 +8,10 @@ printf 'Nhập CLEAN để tiếp tục: '; read -r CONFIRM
 pkill -f 'php-fpm: master process' 2>/dev/null || true
 pkill -f 'php-cgi.*127.0.0.1:9000' 2>/dev/null || true
 pkill -x nginx 2>/dev/null || true
-pkill -f mariadbd 2>/dev/null || true
+DBMODE="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
+if [ "$DBMODE" = "mariadb" ]; then
+  pkill -f mariadbd 2>/dev/null || true
+fi
 pkill -x sshd 2>/dev/null || true
 rm -rf "$HOME/tms" "$HOME/tms-os" "$HOME/.tms-os/config" "$HOME/.tms-os" "$HOME/.tms-os-staging-"* "$HOME/.redmi-mini-vps" "$HOME/websites" "$HOME/logs" "$HOME/backups"
 rm -f "$HOME/start-tms.sh" "$HOME/stop-tms.sh"

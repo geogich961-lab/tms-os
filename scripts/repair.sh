@@ -27,7 +27,10 @@ find "$TMS" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do php -
 nginx -t
 bash "$TMS/scripts/tms-php-engine.sh" restart
 nginx -s reload 2>/dev/null || nginx
-pgrep -f mariadbd >/dev/null 2>&1 || mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
+DBMODE="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
+if [ "$DBMODE" = "mariadb" ]; then
+  pgrep -f mariadbd >/dev/null 2>&1 || mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
+fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
 sleep 2
 curl -fsS http://127.0.0.1:8888/login >/dev/null

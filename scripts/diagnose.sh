@@ -13,7 +13,8 @@ check 'Source ~/tms-os' '[ -d "$TMS" ]'
 check 'Admin secret' '[ -f "$HOME/.tms-os/config/panel-secret.php" ] || [ -f "$HOME/.redmi-mini-vps/config/panel-secret.php" ]'
 check 'Nginx config' 'nginx -t'
 check 'PHP Engine port 9000' 'curl -fsS --max-time 2 http://127.0.0.1:8888/login'
-check 'MariaDB service' 'pgrep -f mariadbd'
+DBMODE="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
+[ "$DBMODE" = "mariadb" ] && check 'MariaDB service' 'pgrep -f mariadbd' || echo "[BỎ QUA] MariaDB (chế độ SQLite)"
 echo '--------------------------------------------'; echo "PASS: $PASS | FAIL: $FAIL"
 [ "$FAIL" -eq 0 ] && echo '[OK] Hệ thống hoạt động bình thường.' || echo 'Có lỗi. Chạy: bash ~/tms-os/scripts/repair.sh'
 exit "$FAIL"
