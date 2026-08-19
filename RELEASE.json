@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.0.1",
-  "build": "2026.08.19-v14.0.1",
+  "internal_version": "14.0.2",
+  "build": "2026.08.19-v14.0.2",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS Platform V14.0.1 — MariaDB Startup Robustness Fix",
-  "version": "14.0.1",
-  "notes": "Fixes MariaDB startup/verification failure on first install: socket auto-detection, restart loop when daemon is unhealthy, TCP fallback, and clear error logs.",
+  "name": "TMS OS Platform V14.0.2 — MariaDB Data Recovery & User Fallback",
+  "version": "14.0.2",
+  "notes": "Fixes mariadbd immediate crash on some devices: auto-reinitialize damaged data directory (mariadb-install-db), retry loop, socket auto-detection, and mariadbd-safe --user= fallback when the default mysql user cannot write pid files.",
   "features": [
     "Robust Android/Termux LAN IPv4 discovery with multiple fallbacks",
     "Never publishes 127.0.0.1 as a LAN address",
@@ -17,5 +17,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "f447dbc350ff99c80917e98598d19ed0d433e5d2c6d2de36d7d27ddbbd7d8909"
+  "checksum_sha256": "e8aaa999065fd958c1d4c6d66c9488fac1ee61dcbca5e5f9da7c940a8b903090"
 }

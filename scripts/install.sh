@@ -63,9 +63,22 @@ for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
 done
 
 if ! mariadb-admin ping --silent >/dev/null 2>&1; then
-  echo '[Khắc phục] MariaDB chưa sẵn sàng — dọn tiến trình cũ và khởi động lại...'
   pkill -f mariadbd 2>/dev/null || true
   sleep 2
+
+  # V14.0.2: nếu mariadbd chết ngay, datadir có thể hỏng (chưa khởi tạo hoặc
+  # còn rác từ lần cài trước) — khởi tạo lại từ đầu.
+  if ! [ -d "$PREFIX/var/lib/mysql/mysql" ]; then
+    echo '[Khắc phục] Phát hiện kho dữ liệu MariaDB hỏng — khởi tạo lại...'
+    rm -rf "$PREFIX/var/lib/mysql"
+    mkdir -p "$PREFIX/var/lib/mysql"
+    if ! mariadb-install-db --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb-init.log" 2>&1; then
+      echo 'Không thể khởi tạo kho dữ liệu MariaDB. Xem nhật ký:' "$HOME/logs/services/mariadb-init.log" >&2
+      exit 1
+    fi
+    echo '[OK] Đã khởi tạo lại kho dữ liệu MariaDB.'
+  fi
+
   nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
   disown
   for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
@@ -73,9 +86,22 @@ if ! mariadb-admin ping --silent >/dev/null 2>&1; then
     sleep 1
   done
   if ! mariadb-admin ping --silent >/dev/null 2>&1; then
-    echo 'MariaDB vẫn không khởi động được. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
-    tail -5 "$HOME/logs/services/mariadb.log" >&2
-    exit 1
+    # V14.0.2: fallback — chạy mariadbd với user hiện tại thay vì user mặc định
+    # (một số môi trường chặn user mặc định ghi pid file hoặc đọc datadir).
+    echo '[Khắc phục] Thử khởi động MariaDB với user hiện tại...'
+    pkill -f mariadbd 2>/dev/null || true
+    sleep 2
+    nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" --user= >"$HOME/logs/services/mariadb.log" 2>&1 &
+    disown
+    for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
+      if mariadb-admin ping --silent >/dev/null 2>&1; then break; fi
+      sleep 1
+    done
+    if ! mariadb-admin ping --silent >/dev/null 2>&1; then
+      echo 'MariaDB vẫn không khởi động được. Xem nhật ký:' "$HOME/logs/services/mariadb.log" >&2
+      tail -5 "$HOME/logs/services/mariadb.log" >&2
+      exit 1
+    fi
   fi
 fi
 
