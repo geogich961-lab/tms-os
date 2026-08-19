@@ -1,3 +1,10 @@
+# V14.0.9 — Auto-Start on Boot + Installer Fixes
+
+- Added `tms-boot.sh`: auto-start TMS OS when the device boots, via the Termux boot mechanism (`~/.termux/boot/`). Supports `on`/`off`/`status`.
+- Installer asks whether to enable auto-start at install time (defaults to yes in pipe mode); auto-opens F-Droid page if Termux:Boot app is missing.
+- Fixed `RC: unbound variable` error at the end of the root installer (`set -u` safety).
+- Bumped version string to Platform V14.0.9.
+
 # V13.0.1 — LAN Address Stability Update
 
 - Fixed LAN IP discovery on Android/Termux.

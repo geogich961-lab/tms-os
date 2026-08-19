@@ -81,12 +81,27 @@ echo '[OK] Bộ nguồn đã tải về và hợp lệ.'
 # ---------- Bước 4: chạy bộ cài chính của TMS OS ----------
 chmod -R 700 "$SRC/scripts"
 echo 'Bước 4/6–5/6: Thiết lập TMS OS (tài khoản quản trị + MariaDB)...'
-bash "$SRC/scripts/install.sh"
-RC=$?
-if [ $RC -ne 0 ]; then
+RC=0
+bash "$SRC/scripts/install.sh" || RC=$?
+if [ "$RC" -ne 0 ]; then
   echo "[LỖI] Bộ cài gặp lỗi (exit $RC). Hãy chạy lại cùng lệnh trên — bộ cài có sao lưu tự động."
   exit $RC
 fi
+
+# ---------- Bước 5: bật auto-start khi khởi động máy (tùy chọn) ----------
+if [ -p /dev/stdin ]; then
+  BOOT_CHOICE="y"
+else
+  printf 'Bước 5/6: Tự khởi động TMS OS khi bật máy? (cần app Termux:Boot) [Y/n]: '
+  read -r BOOT_CHOICE
+fi
+case "${BOOT_CHOICE:-y}" in
+  n|N|no|NO) echo "Bỏ qua. Khi cần, chạy: bash ~/tms-os/scripts/tms-boot.sh on" ;;
+  *)
+    bash "$SRC/scripts/tms-boot.sh" on
+    echo '[OK] Auto-start đã được thiết lập.'
+    ;;
+esac
 
 # ---------- Bước 6: báo kết quả và đường dẫn LAN ----------
 echo 'Bước 6/6: Hoàn tất — kiểm tra đường dẫn LAN...'
@@ -111,8 +126,8 @@ echo " Panel (trên máy): http://127.0.0.1:8888"
 echo " Panel (mạng LAN): http://${LAN_IP}:8888"
 echo " Website mặc định: http://${LAN_IP}:8080"
 echo '--------------------------------------------'
-echo ' Sau này muốn khởi động lại, chỉ cần chạy:'
-echo '   bash ~/tms-os/scripts/start-tms.sh'
+echo ' Khởi động lại thủ công: bash ~/tms-os/scripts/start-tms.sh'
+echo ' Quản lý auto-start: bash ~/tms-os/scripts/tms-boot.sh [on|off|status]'
 echo '============================================'
 echo ''
 echo 'Mở http://127.0.0.1:8888 trên trình duyệt để bắt đầu sử dụng.'

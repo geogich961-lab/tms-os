@@ -24,6 +24,27 @@ Mỗi khi khởi động lại điện thoại hoặc muốn bật server:
 bash ~/tms-os/scripts/start-tms.sh
 ```
 
+### Tự khởi động khi bật máy (V14.0.9)
+
+Bộ cài sẽ hỏi **"Tự khởi động TMS OS khi bật máy?"** — nếu đồng ý (mặc định khi cài qua pipe), server sẽ tự chạy mỗi khi bật nguồn.
+
+Tính năng này dựa trên cơ chế boot của Termux và cần app **Termux:Boot** (miễn phí trên F-Droid). Bộ cài tự mở trang cài nếu app chưa có — sau khi cài, hãy **mở app Termux:Boot 1 lần** để kích hoạt.
+
+Quản lý bất kỳ lúc nào:
+
+```bash
+bash ~/tms-os/scripts/tms-boot.sh on      # Bật auto-start
+bash ~/tms-os/scripts/tms-boot.sh off     # Tắt auto-start
+bash ~/tms-os/scripts/tms-boot.sh status  # Xem trạng thái
+```
+
+## Tính năng mới V14.0.9
+
+| Tính năng | Mô tả |
+|---|---|
+| Auto-start khi bật máy | Tự chạy server mỗi khi khởi động điện thoại, qua cơ chế boot của Termux (`~/.termux/boot/`) |
+| Script `tms-boot.sh` | Quản lý bật/tắt/trạng thái auto-start từ dòng lệnh |
+
 ## Tính năng mới V14.0.0
 
 | Tính năng | Mô tả |
