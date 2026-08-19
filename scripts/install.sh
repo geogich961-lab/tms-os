@@ -178,7 +178,7 @@ if [ "$CREATE_ADMIN" -eq 1 ]; then
   elif [ "$TMS_PIPE_MODE" -eq 1 ]; then
     # Chế độ không tương tác: tài khoản mặc định, mật khẩu ngẫu nhiên mạnh.
     ADMIN_USER="admin"
-    ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"
+    ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"
     echo '[INFO] Đang cài qua lệnh pipe — tự động tạo tài khoản: admin (mật khẩu sẽ hiển thị khi cài xong).'
     echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"
     chmod 600 "$HOME/.tms-os/.generated-password"
@@ -186,12 +186,12 @@ if [ "$CREATE_ADMIN" -eq 1 ]; then
   _ATTEMPTS=0
   while :; do
     printf 'Nhập tên tài khoản quản trị (3-32 ký tự, chữ/số/._-): '
-    read -r ADMIN_USER || { ADMIN_USER=""; echo '[LỖI] Không đọc được bàn phím. Đang chuyển sang tài khoản mặc định (admin)...'; ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; }
+    read -r ADMIN_USER || { ADMIN_USER=""; echo '[LỖI] Không đọc được bàn phím. Đang chuyển sang tài khoản mặc định (admin)...'; ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; }
     ADMIN_USER="${ADMIN_USER%$'\r'}"
     if printf '%s' "$ADMIN_USER" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; then break; fi
     echo 'Tên tài khoản không hợp lệ. Ví dụ: admin, tms_admin, thc.gaming'
     _ATTEMPTS=$((_ATTEMPTS+1))
-    if [ "$_ATTEMPTS" -ge 5 ]; then echo '[INFO] Đã thử nhiều lần — dùng tài khoản mặc định: admin.'; ADMIN_USER="admin"; ADMIN_PASS="$(openssl rand -base64 16 | tr -d '/+=' | head -c 16)"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; fi
+    if [ "$_ATTEMPTS" -ge 5 ]; then echo '[INFO] Đã thử nhiều lần — dùng tài khoản mặc định: admin.'; ADMIN_USER="admin"; ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"; echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"; chmod 600 "$HOME/.tms-os/.generated-password"; break; fi
   done
   fi
 

@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 140006,
+  "internal_version": 140007,
   "build": "20260819",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS V14.0.6",
-  "version": "14.0.6",
-  "notes": "Fix: khi cài qua curl | bash, read nhan EOF nen loop vo han. Tu dong tao tai khoan admin + mat khau ngau nhien.",
+  "name": "TMS OS V14.0.7",
+  "version": "14.0.7",
+  "notes": "Fix openssl missing: sinh mat khau random bang PHP random_bytes (bao dam co sau buoc 1/7).",
   "features": [
     "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",
     "Database mode selector during installation (press Enter for SQLite default)",
@@ -24,5 +24,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "f6323a335d973e428dbd14dee5ba576f7b69729211c6b33aa52d78485dc7c0c2"
+  "checksum_sha256": "390bffa068c6820b1e7878100a3669b881e8b7ba3a34b73dbaec16a90986ba13"
 }
