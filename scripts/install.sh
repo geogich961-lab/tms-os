@@ -12,8 +12,14 @@ if command -v pkg >/dev/null 2>&1; then
 
   # V14.0.3: chọn engine database — SQLite (khuyến nghị: nhẹ, không daemon, không thể cài hỏng)
   # hoặc MariaDB (đầy đủ tính năng, cần daemon chạy nền).
-  DB_MODE="mariadb"
-  if [ -z "${TMS_FORCE_DB_MODE:-}" ]; then
+  if [ -n "${TMS_FORCE_DB_MODE:-}" ]; then
+    case "$TMS_FORCE_DB_MODE" in
+      m|M|MariaDB|MARIADB|maria*) DB_MODE="mariadb" ;;
+      s|S|SQLite|SQLITE|sqlite*) DB_MODE="sqlite" ;;
+      *) DB_MODE="mariadb" ;;
+    esac
+  else
+    DB_MODE="mariadb"
     printf 'Chọn engine database: [S]QLite (khuyến nghị cho điện thoại cũ, nhẹ và ổn định) hay [M]ariaDB (đầy đủ tính năng)? [S/m]: '
     read -r DB_CHOICE
     case "${DB_CHOICE:-S}" in
