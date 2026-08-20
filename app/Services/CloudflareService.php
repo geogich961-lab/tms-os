@@ -53,7 +53,7 @@ final class CloudflareService
                 $state['status'] = 'connected';
                 $state['message'] = 'Đã kết nối qua ' . $this->providerLabel($provider) . '. URL công khai phản hồi HTTP ' . $probe['http_code'] . '.';
                 $state['health'] = 'healthy';
-            } elseif (time() - (int)($state['started_at'] ?? time()) > 35) {
+            } elseif (time() - (int)($state['started_at'] ?? time()) > 60) {
                 $state = $this->advanceFallback($state, $probe['message']);
                 $running = $this->running();
                 $provider = (string)($state['provider'] ?? '');
@@ -108,7 +108,7 @@ final class CloudflareService
             $provider = 'auto';
         }
         $queue = $provider === 'auto'
-            ? ['cloudflare','pinggy','localhostrun','ngrok','relay']
+            ? ['cloudflare','localhostrun','pinggy','ngrok','relay']
             : [$provider];
         $state = [
             'status' => 'starting', 'message' => 'Đang chọn đường hầm phù hợp...',
@@ -263,12 +263,21 @@ final class CloudflareService
 
         $tmp = $this->dir . '/probe-' . getmypid() . '.tmp';
         $headers = $this->dir . '/probe-headers-' . getmypid() . '.tmp';
-        $cmd = 'curl -L -sS --connect-timeout 6 --max-time 15 --max-redirs 4 '
-            . '-A ' . escapeshellarg('TMS-OS-Tunnel-Health/10.3.1') . ' '
-            . '-D ' . escapeshellarg($headers) . ' -o ' . escapeshellarg($tmp)
-            . ' -w ' . escapeshellarg('%{http_code}|%{url_effective}|%{content_type}') . ' ' . escapeshellarg($url);
-        $meta = trim((string)shell_exec($cmd));
-        $parts = explode('|', $meta, 3);
+        // V14.1.6: mạng công cộng (WiFi quán, doanh nghiệp) thường chặn/chậm tunnel lần đầu — retry probe đến 3 lần với backoff.
+        $meta = '';
+        $parts = [];
+        for ($i = 1; $i <= 3; $i++) {
+            $cmd = 'curl -L -sS --connect-timeout 6 --max-time 15 --max-redirs 4 '
+                . '-A ' . escapeshellarg('TMS-OS-Tunnel-Health/10.3.1') . ' '
+                . '-D ' . escapeshellarg($headers) . ' -o ' . escapeshellarg($tmp)
+                . ' -w ' . escapeshellarg('%{http_code}|%{url_effective}|%{content_type}') . ' ' . escapeshellarg($url);
+            $meta = trim((string)shell_exec($cmd));
+            $parts = explode('|', $meta, 3);
+            $code = isset($parts[0]) && ctype_digit($parts[0]) ? (int)$parts[0] : 0;
+            if ($code > 0) { break; }
+            if ($i < 3) { sleep(3); }
+        }
+        $parts = $parts ?: ['', '', ''];
         $code = isset($parts[0]) && ctype_digit($parts[0]) ? (int)$parts[0] : 0;
         $effective = trim((string)($parts[1] ?? ''));
         $contentType = strtolower(trim((string)($parts[2] ?? '')));

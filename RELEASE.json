@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.6",
+  "internal_version": "14.1.7",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V14.1.6",
-  "version": "14.1.6",
-  "notes": "Update Check khong con loi 'Khong the ket noi GitHub' tren mot so mang: retry 3 lan, du endpoint (api.github.com + www.github.com/api), timeout dai hon, thong bao loi Viet ro rang (V14.1.6).",
+  "name": "TMS OS V14.1.7",
+  "version": "14.1.7",
+  "notes": "Internet Access tang kha nang hoat dong tren mang cong cong (WiFi quan/ca): probe retry 3 lan, thoi gian cho dang ky tunnel 35s -> 60s, doi thu tu uu tien localhost.run len truoc pinggy; Update Check du endpoint github (V14.1.6).",
   "features": [
     "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
     "One-command self-update API /api/updates/run with per-install token (scripts and automation safe)",

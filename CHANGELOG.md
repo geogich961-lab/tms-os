@@ -1,3 +1,7 @@
+# V14.1.7 — Internet Access thích ứng với mạng công cộng (WiFi quán/doanh nghiệp)
+
+- Internet Access trả "Không có nhà cung cấp tunnel nào hoạt động (HTTP 0)" trên nhiều mạng WiFi công cộng: các mạng này thường chặn hoặc làm chậm kết nối tunnel lần đầu. Sửa: probe xác minh URL công khai retry 3 lần (nghỉ 3s giữa các lần) thay vì bỏ cuộc ngay khi HTTP 0; thời gian chờ đăng ký tunnel trước khi chuyển nhà cung cấp 35s → 60s; đổi thứ tự tự động chọn provider: localhost.run lên trước Pinggy (Pinggy dùng SSH port 443 dễ bị chặn hơn trên mạng doanh nghiệp).
+
 # V14.1.6 — Update Check bền vững với mạng di động
 
 - Bấm "Kiểm tra cập nhật" báo "Không thể kết nối GitHub": nhiều mạng di động chặn/làm chậm `api.github.com`. Sửa: retry 3 lần với backoff, thử thêm endpoint dự phòng `www.github.com/api/v3`, tăng timeout (15s → 20s cho API, 60s → 90s cho tải ZIP), thông báo lỗi tiếng Việt rõ ràng kèm hướng dẫn.
