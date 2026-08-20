@@ -1,19 +1,20 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.3.2",
-  "build": "20260820-6",
+  "internal_version": "15.3.3",
+  "build": "20260820-7",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.3.2",
-  "version": "15.3.2",
-  "notes": "V15.3.2: Sua loi SQL Editor khong tai duoc bang (400). Service Worker bi cach file app.js cu tu ban V13 nay che app.js moi — ban moi bump Service Worker len 15.3.2 va bo app.js khoi danh sach cache.",
+  "name": "TMS OS V15.3.3",
+  "version": "15.3.3",
+  "notes": "V15.3.3: Giao dien moi (Redesigned UI Kit). Thanh ben sidebar cot don, font Inter, mau sac tinh te, icon SVG thay emoji. Giu nguyen toan bo tinh nang (Database, SQL Editor, Cloudflare Hosting, Explorer, PWA...).",
   "features": [
-    "Service Worker ban moi tms-os-v15-3-2, bo app.js khoi cache (khong con dung JS cu)",
-    "SQL Editor sidebar render tu JSON server an toan — khong phu thuoc HTML attribute data-db",
-    "Sua loi 400 khi chon database Typecho/website khong hien bang"
+    "Giao dien Redesigned UI Kit: sidebar cot don, font Inter, design tokens mau sac moi",
+    "Icon SVG thay emoji trong menu, Explorer, Dashboard — giao dien sac net hon",
+    "Service Worker tms-os-v15-3-3: cap nhat cache CSS moi, tu dong xoa cache cu khi update",
+    "Giữ nguyen toan bo tinh nang: Database + SQL Editor, Cloudflare Hosting, Remote Access, Explorer, PWA"
   ],
-  "checksum_sha256": "938b0bb2c508b6859a2d9b38b35836947a826bcd6e50e5217147220ff31fc1a7",
+  "checksum_sha256": "",
   "build_date": "2026-08-20"
 }

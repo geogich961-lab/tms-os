@@ -1,3 +1,11 @@
+# V15.3.3 — Giao diện mới (Redesigned UI Kit)
+
+- Tích hợp bộ giao diện thiết kế lại (Redesigned UI Kit): thanh bên sidebar một cột gọn gàng, font Inter, hệ màu sắc tinh tế hơn, icon SVG thay emoji trong menu, Dashboard, TMS Explorer và các preset phân quyền.
+- Giữ nguyên toàn bộ tính năng: Database + SQL Editor (CSS nằm inline trong view nên không bị ảnh hưởng), Cloudflare Hosting, Remote Access, TMS Explorer, PWA, theme sáng/tối.
+- Service Worker bump lên `tms-os-v15-3-3`, cập nhật cache CSS version mới và tự động xóa cache cũ khi kích hoạt bản mới — người dùng đang dùng PWA sẽ tự nhận giao diện mới sau khi cập nhật + reload.
+
+---
+
 # V15.3.2 — Sửa lỗi SQL Editor không tải bảng (400) + bản Service Worker mới
 
 - SQL Editor trên máy người dùng vẫn không tải được bảng (`api/sql/tables` trả 400): nguyên nhân gốc là **Service Worker bản V13 (`tms-os-v13-0-1`) cache file `app.js` cũ**, khiến máy đã cài PWA luôn chạy JS cũ dù đã cập nhật. Bản mới bump Service Worker lên `tms-os-v15-3-2` và **bỏ `app.js` khỏi danh sách cache** của Service Worker.

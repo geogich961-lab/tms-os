@@ -34,7 +34,7 @@ $path = (string)$listing['relative'];
     <nav class="explorer-tabs" aria-label="Khu vực lưu trữ">
         <?php foreach ($roots as $key => $dir): ?>
             <a class="explorer-tab <?= $key === $root ? 'active' : '' ?>" href="<?= tms_url('/files', ['root' => $key]) ?>">
-                <span class="explorer-tab-icon"><?= $key === 'websites' ? '🌐' : ($key === 'backups' ? '💾' : '📜') ?></span>
+                <span class="explorer-tab-icon"><?= $key === 'websites' ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>' : ($key === 'backups' ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>') ?></span>
                 <span><?= tms_h(ucfirst($key)) ?></span>
             </a>
         <?php endforeach; ?>
@@ -46,7 +46,7 @@ $path = (string)$listing['relative'];
                 <?php foreach ($listing['breadcrumbs'] as $i => $crumb): ?>
                     <?php if ($i > 0): ?><span class="breadcrumb-separator">›</span><?php endif; ?>
                     <a href="<?= tms_url('/files', ['root' => $root, 'path' => $crumb['path']]) ?>">
-                        <?= $i === 0 ? '⌂ ' : '' ?><?= tms_h($crumb['label']) ?>
+                        <?= $i === 0 ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg> ' : '' ?><?= tms_h($crumb['label']) ?>
                     </a>
                 <?php endforeach; ?>
             </div>
@@ -87,7 +87,7 @@ $path = (string)$listing['relative'];
                 ?>
                 <div class="explorer-item">
                     <a class="explorer-item-open" href="<?= $primaryUrl ?>">
-                        <span class="explorer-item-icon <?= $item['is_dir'] ? 'folder' : 'file' ?>"><?= $item['is_dir'] ? '📁' : ($isZip ? '🗜️' : '📄') ?></span>
+                        <span class="explorer-item-icon <?= $item['is_dir'] ? 'folder' : 'file' ?>"><?= $item['is_dir'] ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' : ($isZip ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/><line x1="4" y1="12" x2="20" y2="12"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>') ?></span>
                         <span class="explorer-item-main">
                             <strong><?= tms_h($item['name']) ?></strong>
                             <small>
@@ -131,7 +131,7 @@ $path = (string)$listing['relative'];
     <section class="action-sheet-panel" role="dialog" aria-modal="true" aria-labelledby="action-sheet-title">
         <div class="action-sheet-handle"></div>
         <div class="action-sheet-header">
-            <div class="action-sheet-file-icon" id="action-sheet-icon">📄</div>
+            <div class="action-sheet-file-icon" id="action-sheet-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
             <div>
                 <small>Thao tác với</small>
                 <h2 id="action-sheet-title">Tệp</h2>
@@ -151,7 +151,7 @@ $path = (string)$listing['relative'];
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
                 <input type="hidden" name="path" value="<?= tms_h($path) ?>">
                 <input type="hidden" name="relative" value="">
-                <button class="sheet-action" type="submit"><span>🗜️</span><b>Tạo ZIP</b></button>
+                <button class="sheet-action" type="submit"><span><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/><line x1="4" y1="12" x2="20" y2="12"/></svg></span><b>Tạo ZIP</b></button>
             </form>
             <form method="post" action="/files/extract" id="sheet-extract-form">
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
@@ -209,10 +209,10 @@ $path = (string)$listing['relative'];
             <input type="hidden" name="relative" value="" data-chmod-relative>
             <label><span>Mã quyền (bát phân)</span><input name="mode" value="600" data-chmod-input required pattern="[0-7]{3,4}" maxlength="4"></label>
             <div class="chmod-presets">
-                <button type="button" class="chmod-preset" data-chmod-preset="600">📄 600</button>
-                <button type="button" class="chmod-preset" data-chmod-preset="644">📄 644</button>
-                <button type="button" class="chmod-preset" data-chmod-preset="700">📁 700</button>
-                <button type="button" class="chmod-preset" data-chmod-preset="755">📁 755</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="600"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 600</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="644"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg> 644</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="700"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> 700</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="755"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg> 755</button>
             </div>
             <label class="checkbox-label"><input type="checkbox" name="recursive" value="1" data-chmod-recursive-cb> <span>Áp dụng cho tất cả nội dung bên trong (thư mục)</span></label>
             <p class="explorer-hint" data-chmod-target-name></p>
