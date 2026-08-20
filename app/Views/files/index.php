@@ -124,6 +124,7 @@ $path = (string)$listing['relative'];
 </section>
 
 <button type="button" class="explorer-fab" data-modal-open="create-modal" aria-label="Tạo mới">＋</button>
+<button type="button" class="explorer-use-here" id="explorer-use-here" data-use-here>📥 Dùng thư mục này</button>
 
 <div class="action-sheet" id="file-action-sheet" aria-hidden="true">
     <button type="button" class="action-sheet-backdrop" data-action-sheet-close aria-label="Đóng"></button>
@@ -160,11 +161,28 @@ $path = (string)$listing['relative'];
                 <button class="sheet-action" type="submit"><span>📦</span><b>Giải nén tại đây</b></button>
             </form>
 
+            <form method="post" action="/files/copy" id="sheet-copy-form">
+                <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+                <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+                <input type="hidden" name="path" value="<?= tms_h($path) ?>">
+                <input type="hidden" name="relative" value="">
+                <input type="hidden" name="target_path" value="" data-copy-target>
+                <button class="sheet-action" type="button" data-copy-open><span>📋</span><b>Sao chép</b></button>
+            </form>
+            <form method="post" action="/files/move" id="sheet-move-form">
+                <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+                <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+                <input type="hidden" name="path" value="<?= tms_h($path) ?>">
+                <input type="hidden" name="relative" value="">
+                <input type="hidden" name="target_path" value="" data-move-target>
+                <button class="sheet-action" type="button" data-move-open><span>➡️</span><b>Di chuyển</b></button>
+            </form>
             <form method="post" action="/files/chmod" id="sheet-chmod-form">
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
                 <input type="hidden" name="path" value="<?= tms_h($path) ?>">
                 <input type="hidden" name="relative" value="">
+                <input type="hidden" name="recursive" value="0" data-chmod-recursive>
                 <input type="hidden" name="mode" value="600" data-chmod-mode>
                 <button class="sheet-action" type="button" data-chmod-open><span>🔐</span><b>Phân quyền</b></button>
             </form>
@@ -178,6 +196,61 @@ $path = (string)$listing['relative'];
             </form>
         </div>
         <button type="button" class="sheet-cancel" data-action-sheet-close>Hủy</button>
+    </section>
+</div>
+
+<div class="modal" id="chmod-modal">
+    <div class="modal-card">
+        <button class="modal-close" type="button" data-modal-close>×</button>
+        <h2>Phân quyền</h2>
+        <form method="post" action="/files/perms/apply" id="chmod-apply-form" class="stack">
+            <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+            <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+            <input type="hidden" name="relative" value="" data-chmod-relative>
+            <label><span>Mã quyền (bát phân)</span><input name="mode" value="600" data-chmod-input required pattern="[0-7]{3,4}" maxlength="4"></label>
+            <div class="chmod-presets">
+                <button type="button" class="chmod-preset" data-chmod-preset="600">📄 600</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="644">📄 644</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="700">📁 700</button>
+                <button type="button" class="chmod-preset" data-chmod-preset="755">📁 755</button>
+            </div>
+            <label class="checkbox-label"><input type="checkbox" name="recursive" value="1" data-chmod-recursive-cb> <span>Áp dụng cho tất cả nội dung bên trong (thư mục)</span></label>
+            <p class="explorer-hint" data-chmod-target-name></p>
+            <button class="btn btn-primary">Cập nhật quyền</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="copy-modal">
+    <div class="modal-card">
+        <button class="modal-close" type="button" data-modal-close>×</button>
+        <h2>Sao chép</h2>
+        <form method="post" action="/files/copy" id="copy-apply-form" class="stack">
+            <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+            <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+            <input type="hidden" name="relative" value="" data-copy-relative>
+            <p class="explorer-hint">Đang xem thư mục đích: <b data-copy-target-display>—</b></p>
+            <label><span>Sao chép vào thư mục</span><input name="target_path" value="" data-copy-target-input placeholder="ví dụ: thu-muc-dest"></label>
+            <label class="checkbox-label"><input type="checkbox" name="overwrite" value="1"> <span>Cho phép ghi đè nếu trùng tên (đổi tên tự động nếu bỏ chọn)</span></label>
+            <button class="btn btn-primary">Sao chép tại đây</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="move-modal">
+    <div class="modal-card">
+        <button class="modal-close" type="button" data-modal-close>×</button>
+        <h2>Di chuyển</h2>
+        <form method="post" action="/files/move" id="move-apply-form" class="stack">
+            <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+            <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+            <input type="hidden" name="relative" value="" data-move-relative>
+            <p class="explorer-hint">Đang xem thư mục đích: <b data-move-target-display>—</b></p>
+            <label><span>Di chuyển vào thư mục</span><input name="target_path" value="" data-move-target-input placeholder="ví dụ: thu-muc-dest"></label>
+            <button class="btn btn-primary">Di chuyển tại đây</button>
+        </form>
+    </div>
+</div>
     </section>
 </div>
 

@@ -100,3 +100,14 @@ html,body{overflow-x:hidden}.os-main,.panel-card,.website-card,.diagnostic-item,
 
 /* TMS OS V13.0.1 LAN URL Stability */
 .smart-url-details{margin-top:.25rem}.smart-url-details summary{cursor:pointer;color:var(--muted,#778197);font-weight:700}.smart-url-details a{display:block;margin-top:.4rem;overflow-wrap:anywhere}.local-domain-box strong{overflow-wrap:anywhere}
+
+/* TMS Explorer 14.1.2: copy/move/permissions UI */
+.explorer-use-here{display:none;width:100%;margin-top:10px;padding:12px 14px;border:1px dashed var(--border);border-radius:12px;background:var(--surface2);color:var(--text);font-weight:750;cursor:pointer}
+.chmod-presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.chmod-preset{border:1px solid var(--border);border-radius:10px;background:var(--surface2);color:var(--text);padding:9px 4px;font-weight:850;cursor:pointer;font-size:.85rem}
+.chmod-preset:active,.chmod-preset:hover{background:var(--primary);color:#fff;border-color:var(--primary)}
+.explorer-hint{margin:0;color:var(--muted);font-size:.82rem}
+.checkbox-label{display:flex !important;flex-direction:row !important;align-items:center;gap:9px;cursor:pointer}
+.checkbox-label input{width:18px;height:18px;margin:0;cursor:pointer}
+.checkbox-label span{font-size:.88rem;color:var(--text);font-weight:600}
+@media(max-width:760px){.explorer-use-here{display:block}}

@@ -1,3 +1,9 @@
+# V14.1.2 — TMS Explorer nâng cấp
+- File Manager: thêm Sao chép tệp/thư mục (tự đổi tên khi trùng, có cho phép ghi đè).
+- File Manager: thêm Di chuyển tệp/thư mục sang thư mục khác (nút "Dùng thư mục này" để chọn đích nhanh).
+- File Manager: phân quyền (chmod) qua giao diện — preset 600/644/700/755, hỗ trợ recursive cho thư mục.
+
+
 # V14.1.1 — Mirror 404 recovery (pkg install auto-retry with --fix-missing + mirror switch)
 
 - Tự động retry khi tải gói Termux lỗi 404 (mirror chưa cập nhật): cập nhật lại kho → apt-get install --fix-missing → đổi sang mirror dự phòng nếu vẫn lỗi.

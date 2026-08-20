@@ -84,6 +84,7 @@
     setRelative(extractForm,relative);
     setRelative(deleteForm,relative);
     setRelative(chmodForm,relative);
+    setRelativeAll(relative);
 
     if(renameButton){
       renameButton.dataset.relative=relative;
@@ -103,13 +104,67 @@
 
   document.querySelectorAll('[data-file-actions]').forEach(button=>button.addEventListener('click',()=>openSheet(button)));
   document.querySelectorAll('[data-action-sheet-close]').forEach(button=>button.addEventListener('click',closeSheet));
+  const chmodApplyForm=document.getElementById('chmod-apply-form');
+  const chmodInput=chmodApplyForm?.querySelector('[data-chmod-input]');
+  const chmodRecursiveCb=chmodApplyForm?.querySelector('[data-chmod-recursive-cb]');
+  const chmodRecursiveInput=chmodApplyForm?.querySelector('[data-chmod-recursive]');
+  const chmodTargetName=chmodApplyForm?.querySelector('[data-chmod-target-name]');
+  const copyForm=document.getElementById('copy-apply-form');
+  const moveForm=document.getElementById('move-apply-form');
+  const sheetCopyForm=document.getElementById('sheet-copy-form');
+  const sheetMoveForm=document.getElementById('sheet-move-form');
+
+  const setRelative=(form,value)=>{const input=form?.querySelector('input[name="relative"]');if(input)input.value=value;};
+  const setRelativeAll=(relative)=>{setRelative(sheetCopyForm,relative);setRelative(sheetMoveForm,relative);};
+
   document.querySelector('[data-chmod-open]')?.addEventListener('click',()=>{
-    const mode=prompt('Nhập quyền chmod (ví dụ 600, 644, 700 hoặc 755):','600');
-    if(!mode) return;
-    if(!/^[0-7]{3,4}$/.test(mode)){alert('Quyền chmod không hợp lệ.');return;}
-    const input=chmodForm?.querySelector('[data-chmod-mode]');if(input)input.value=mode;
-    chmodForm?.submit();
+    const name=document.querySelector('[data-file-actions].sheet-active')?.dataset.name||sheetTitle?.textContent||'Tệp';
+    if(chmodApplyForm){
+      setRelative(chmodApplyForm,chmodApplyForm.querySelector('[data-chmod-relative]').value);
+      if(chmodTargetName) chmodTargetName.textContent='Mục: '+name;
+    }
+    closeSheet();
+    openModal('chmod-modal');
   });
+  chmodApplyForm?.querySelectorAll('[data-chmod-preset]').forEach(button=>button.addEventListener('click',()=>{
+    if(chmodInput) chmodInput.value=button.dataset.chmodPreset;
+  }));
+  chmodRecursiveCb?.addEventListener('change',()=>{if(chmodRecursiveInput)chmodRecursiveInput.value=chmodRecursiveCb.checked?'1':'0';});
+
+  const openCopyMove=(mode)=>{
+    const button=document.querySelector('[data-file-actions].sheet-active');
+    const relative=button?.dataset.relative||'';
+    const targetInput=document.getElementById(mode==='copy'?'copy-apply-form':'move-apply-form')?.querySelector(`[data-${mode}-target-input]`);
+    const targetDisplay=document.getElementById(mode==='copy'?'copy-apply-form':'move-apply-form')?.querySelector(`[data-${mode}-target-display]`);
+    const applyForm=document.getElementById(mode+'-apply-form');
+    const relativeInput=applyForm?.querySelector(`[data-${mode}-relative]`);
+    if(relativeInput) relativeInput.value=relative;
+    const currentPath=new URL(location).searchParams.get('path')||'';
+    if(targetInput) targetInput.value=currentPath;
+    if(targetDisplay) targetDisplay.textContent=currentPath==='⌂'?'thư mục gốc':(currentPath||'thư mục gốc');
+    closeSheet();
+    openModal(mode+'-modal');
+  };
+  document.querySelector('[data-copy-open]')?.addEventListener('click',()=>openCopyMove('copy'));
+  document.querySelector('[data-move-open]')?.addEventListener('click',()=>openCopyMove('move'));
+
+  document.querySelector('[data-use-here]')?.addEventListener('click',()=>{
+    const targetPath=new URL(location).searchParams.get('path')||'';
+    if(copyForm){const inp=copyForm.querySelector('[data-copy-target-input]');if(inp)inp.value=targetPath;const disp=copyForm.querySelector('[data-copy-target-display]');if(disp)disp.textContent=targetPath==='⌂'?'thư mục gốc':(targetPath||'thư mục gốc');openModal('copy-modal');}
+    if(moveForm){const inp=moveForm.querySelector('[data-move-target-input]');if(inp)inp.value=targetPath;const disp=moveForm.querySelector('[data-move-target-display]');if(disp)disp.textContent=targetPath==='⌂'?'thư mục gốc':(targetPath||'thư mục gốc');openModal('move-modal');}
+  });
+
+  document.querySelectorAll('[data-copy-open],[data-move-open],[data-chmod-open]').forEach(button=>button.addEventListener('click',()=>{
+    document.querySelectorAll('[data-file-actions]').forEach(b=>b.classList.remove('sheet-active'));
+    button.closest('.explorer-item')?.querySelector('[data-file-actions]')?.classList.add('sheet-active');
+  }));
+
+  document.querySelectorAll('[data-file-actions]').forEach(button=>button.addEventListener('click',()=>{
+    const rel=button.dataset.relative||'';
+    const applyC=copyForm?.querySelector('[data-copy-relative]');if(applyC)applyC.value=rel;
+    const applyM=moveForm?.querySelector('[data-move-relative]');if(applyM)applyM.value=rel;
+  }));
+
   renameButton?.addEventListener('click',()=>{
     const relative=document.getElementById('rename-relative');
     const name=document.getElementById('rename-name');

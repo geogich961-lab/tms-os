@@ -89,17 +89,87 @@ final class FileManagerService
         }
         return $results;
     }
-    public function chmod(string $rootKey,string $relative,string $mode): void
+    public function chmod(string $rootKey,string $relative,string $mode,bool $recursive=false): void
     {
         [$path]=$this->resolveExisting($rootKey,$relative);
         if(!preg_match('/^[0-7]{3,4}$/',$mode))throw new RuntimeException('Quyền không hợp lệ.');
         $oct=octdec($mode); if(!@chmod($path,$oct))throw new RuntimeException('Không thể thay đổi quyền.');
+        if($recursive&&is_dir($path)){
+            $dirMode=(int)substr($mode,-3,3)|0700;
+            $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path,FilesystemIterator::SKIP_DOTS),RecursiveIteratorIterator::SELF_FIRST);
+            foreach($it as $f){ if(!$f->isLink()) @chmod($f->getPathname(),$f->isDir()?$dirMode:$oct); }
+        }
+    }
+
+    public function copy(string $rootKey,string $relative,string $targetRelative,bool $overwrite=false): string
+    {
+        [$path,$base]=$this->resolveExisting($rootKey,$relative);
+        $destDir=$this->resolveDirectory($base,$targetRelative);
+        if($path===$base)throw new RuntimeException('Không được sao chép thư mục gốc.');
+        if(str_starts_with($destDir.'/',$path.'/')||$destDir===$path)throw new RuntimeException('Không thể sao chép vào chính thư mục con của mục đó.');
+        $name=basename($path); $target=$destDir.'/'.$name;
+        if(file_exists($target)){
+            if(!$overwrite) throw new RuntimeException('Đã có mục cùng tên ở thư mục đích.');
+        } else { $target=$this->uniqueName($destDir,$name); }
+        if(is_dir($path)){ $this->copyRecursive($path,$target); } else { if(!@copy($path,$target))throw new RuntimeException('Không thể sao chép tệp.'); @chmod($target,0600); }
+        return basename($target);
+    }
+
+    public function move(string $rootKey,string $relative,string $targetRelative): string
+    {
+        [$path,$base]=$this->resolveExisting($rootKey,$relative);
+        $destDir=$this->resolveDirectory($base,$targetRelative);
+        if($path===$base)throw new RuntimeException('Không được di chuyển thư mục gốc.');
+        if(str_starts_with($destDir.'/',$path.'/')||$destDir===$path)throw new RuntimeException('Không thể di chuyển vào chính thư mục con của mục đó.');
+        $name=basename($path); $target=$destDir.'/'.$name;
+        if(file_exists($target))throw new RuntimeException('Đã có mục cùng tên ở thư mục đích.');
+        if(!@rename($path,$target))throw new RuntimeException('Không thể di chuyển mục.');
+        return basename($target);
+    }
+
+    public function moveBetweenRoots(string $srcRootKey,string $relative,string $dstRootKey,string $targetRelative): string
+    {
+        [$srcBase,$dstBase]=[$this->basePath($srcRootKey),$this->basePath($dstRootKey)];
+        [$path,$srcBase]=$this->resolveExisting($srcRootKey,$relative);
+        $destDir=$this->resolveDirectory($dstBase,$targetRelative);
+        if($path===$srcBase)throw new RuntimeException('Không được di chuyển thư mục gốc.');
+        $name=basename($path); $target=$destDir.'/'.$name;
+        if(file_exists($target))throw new RuntimeException('Đã có mục cùng tên ở thư mục đích.');
+        if(@rename($path,$target))return basename($target);
+        if(is_dir($path)){ $this->copyRecursive($path,$target); $this->removeRecursive($path); return basename($target); }
+        if(!@copy($path,$target))throw new RuntimeException('Không thể di chuyển tệp.'); @unlink($path); @chmod($target,0600);
+        return basename($target);
+    }
+
+    private function uniqueName(string $dir,string $name): string
+    {
+        $ext=pathinfo($name,PATHINFO_EXTENSION); $base=$ext!==''?substr($name,0,-strlen($ext)-1):$name;
+        $i=1; $candidate=$dir.'/'.($base?'Bản sao '.$base:$name).($ext?'.'.$ext:'');
+        while(file_exists($candidate)){ $i++; $candidate=$dir.'/'.($base?'Bản sao '.$base.' '.$i:$name.' '.$i).($ext?'.'.$ext:''); }
+        return $candidate;
+    }
+
+    private function copyRecursive(string $src,string $dest): void
+    {
+        if(!@mkdir($dest,0700))throw new RuntimeException('Không thể tạo thư mục đích.');
+        foreach(scandir($src)?:[] as $n){ if($n==='.'||$n==='..')continue;
+            $s=$src.'/'.$n; if(is_link($s))continue;
+            if(is_dir($s)){ $this->copyRecursive($s,$dest.'/'.$n); } else { if(!@copy($s,$dest.'/'.$n))throw new RuntimeException('Không thể sao chép tệp '.$n.'.'); @chmod($dest.'/'.$n,0600); }
+        }
     }
 
     public function download(string $rootKey,string $relative): array
     {
         [$path]=$this->resolveExisting($rootKey,$relative); if(!is_file($path)||!is_readable($path))throw new RuntimeException('Tệp không thể tải.');
         return ['path'=>$path,'name'=>basename($path),'size'=>@filesize($path)?:0,'mime'=>function_exists('mime_content_type')?(mime_content_type($path)?:'application/octet-stream'):'application/octet-stream'];
+    }
+
+    public function permissions(string $rootKey,string $relative): array
+    {
+        [$path]=$this->resolveExisting($rootKey,$relative);
+        $mode=fileperms($path); if($mode===false)throw new RuntimeException('Không đọc được quyền.');
+        $m=sprintf('%o',substr(sprintf('%o',$mode),-4));
+        return ['octal'=>$m,'readable'=>is_readable($path),'writable'=>is_writable($path)];
     }
     private function basePath(string $key): string { if(!isset($this->roots[$key]))throw new RuntimeException('Khu vực không hợp lệ.'); $r=realpath($this->roots[$key]); if($r===false)throw new RuntimeException('Thiếu thư mục gốc.'); return $r; }
     private function resolveDirectory(string $base,string $rel): string { $c=trim(str_replace('\\','/',$rel),'/'); $r=realpath($c===''?$base:$base.'/'.$c); if($r===false||!$this->inside($r,$base)||!is_dir($r)||is_link($r))throw new RuntimeException('Đường dẫn không hợp lệ.'); return $r; }
