@@ -16,6 +16,6 @@
     "Chi chap nhan file SQLite that (kiem tra header SQLite format 3), loai tru thu muc nang (node_modules, vendor, .git)",
     "Remote Access: truy cap panel tu xa qua Cloudflare Tunnel (panel.<domain>) khong phu thuoc WiFi/LAN (V15.2.0)"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "bdc1e89cb4bc51529bd93891bb0a87c37f2d5f74d9281af5695e7fa61bfcae8f",
   "build_date": "2026-08-20"
 }
