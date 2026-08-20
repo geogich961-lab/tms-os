@@ -103,12 +103,25 @@ final class CloudflareDomainService
                 // bỏ qua
             }
         }
-        // Fallback 2: giữ account_id đã lưu trong cấu hình trước đó
+        // Fallback 2: lấy account.id từ /zones (token Zone DNS:Edit luôn có quyền đọc zone)
+        if ($accountId === '') {
+            try {
+                $zones = $this->api('GET', '/zones');
+                foreach ((array)$zones as $z) {
+                    $acc = $z['account'] ?? [];
+                    $accountId = (string)($acc['id'] ?? '');
+                    if ($accountId !== '') { break; }
+                }
+            } catch (Throwable $e) {
+                // bỏ qua
+            }
+        }
+        // Fallback 3: giữ account_id đã lưu trong cấu hình trước đó
         if ($accountId === '') {
             $accountId = (string)($info['account_id'] ?? '');
         }
         if ($accountId === '') {
-            throw new RuntimeException('Không thể đọc thông tin tài khoản. Token cần quyền "Account: Read" (hoặc tạo lại token tại dash.cloudflare.com/profile/api-tokens).');
+            throw new RuntimeException('Không thể đọc thông tin tài khoản. Hãy tạo lại token tại dash.cloudflare.com/profile/api-tokens với quyền: Cloudflare Tunnel (Edit) + Zone DNS (Edit) + Zone Zone (Read), phạm vi Account: All accounts, Zone: All zones.');
         }
         if ($accountId !== '' && $accountId !== $info['account_id']) {
             $cfg = $info['cfg'];

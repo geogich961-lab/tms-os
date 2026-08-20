@@ -14,7 +14,7 @@ $csrf=tms_csrf_token();
 <!-- ========== TAB 1: CLOUDFLARE HOSTING ========== -->
 <section class="panel-card" data-panel="hosting">
 <div class="section-title-row"><div><p class="eyebrow">BƯỚC 1 · TÀI KHOẢN</p><h2>Cấu hình tài khoản Cloudflare</h2></div></div>
-<p class="muted">Tạo API Token tại <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">dash.cloudflare.com/profile/api-tokens</a> với quyền: <strong>Cloudflare Tunnel (Edit)</strong>, <strong>Zone → DNS (Edit)</strong>, <strong>Zone Settings (Read)</strong>. Chọn phạm vi tài khoản "Specific account" → tài khoản chứa tên miền của bạn.</p>
+<p class="muted">Tạo API Token tại <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">dash.cloudflare.com/profile/api-tokens</a> với quyền: <strong>Cloudflare Tunnel (Edit)</strong>, <strong>Zone → DNS (Edit)</strong>, <strong>Zone → Zone (Read)</strong>. Phạm vi: Account <strong>All accounts</strong> · Zone <strong>All zones</strong>.</p>
 <form class="form-stack" id="cfd-token-form">
 <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
 <label>API Token<input type="password" id="cfd-api-token" name="api_token" placeholder="Dán API Token của bạn vào đây" autocomplete="off"></label>

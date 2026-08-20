@@ -1,3 +1,4 @@
+# V15.0.4 — Thêm fallback lấy account_id từ /zones, hướng dẫn token Cloudflare đầy đủ (Tunnel:Edit + Zone DNS:Edit + Zone Zone:Read)
 # V15.0.3 — Token Cloudflare không còn bắt buộc quyền "Account Settings: Read"
 
 - Sửa lỗi xác thực API Token báo "Không thể đọc thông tin tài khoản. Hãy kiểm tra quyền Account Settings: Read" dù token đã đúng quyền Cloudflare Tunnel (Edit) + Zone DNS (Edit). `accountInfo()` giờ thử theo thứ tự: (1) `/accounts` — đọc account ID trực tiếp, (2) fallback `/user/memberships` — lấy tài khoản từ danh sách membership, (3) fallback giữ `account_id` đã lưu trong cấu hình trước đó. Chỉ báo lỗi khi cả ba cách đều không có dữ liệu.
