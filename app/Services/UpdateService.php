@@ -211,7 +211,13 @@ final class UpdateService
     /** Tải bản mới nhất từ GitHub rồi áp dụng ngay (update 1 chạm qua API). */
     public function applyFromGitHub(): array
     {
-        $staged = $this->stageFromGitHub();
+        $release = $this->latestRelease();
+        $current = $this->currentVersion();
+        $available = $this->normalizeVersion($release['version'] ?? '');
+        if ($available === '' || !$this->isNewer($available, $current)) {
+            return ['ok' => true, 'skipped' => true, 'message' => 'Đã là phiên bản mới nhất (' . $current . '). Không cần cập nhật.', 'version' => $current];
+        }
+        $staged = $this->stageFromGitHub($release['zip_url'] ?? null);
         return $this->doApply($this->dir . '/' . $staged['name']);
     }
 
