@@ -1,21 +1,26 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.2.1",
-  "build": "20260820-3",
+  "internal_version": "15.3.0",
+  "build": "20260820-4",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.2.1",
-  "version": "15.2.1",
-  "notes": "V15.2.1: Trang Database tu dong phat hien file SQLite trong website (Typecho, ung dung nguoi dung), xuat SQL va mang ve quan ly duoc tu panel.",
+  "name": "TMS OS V15.3.0",
+  "version": "15.3.0",
+  "notes": "V15.3.0: SQL Editor — trinh duyet/chinh sua database kieu Navicat ngay trong panel (SQLite + MariaDB): duyet du lieu, sua o truc tiep, them/xoa dong, chay SQL tuy y, xem cau truc bang, timeout 15s chong central.",
   "features": [
     "Database Manager tu dong quet file SQLite (*.sqlite3, *.sqlite, *.db) trong cac website (~/websites), bao gom file Typecho mac dinh trong usr/",
     "Hien thi 2 nhom: Database TMS OS (tao/xuat/nhap/xoa) va Database trong website (xuat SQL + Mang ve quan ly)",
     "Mang database tu website ve thu muc quan ly cua TMS OS (copy an toan, co kiem tra path traversal)",
     "Chi chap nhan file SQLite that (kiem tra header SQLite format 3), loai tru thu muc nang (node_modules, vendor, .git)",
-    "Remote Access: truy cap panel tu xa qua Cloudflare Tunnel (panel.<domain>) khong phu thuoc WiFi/LAN (V15.2.0)"
+    "Remote Access: truy cap panel tu xa qua Cloudflare Tunnel (panel.<domain>) khong phu thuoc WiFi/LAN (V15.2.0)",
+    "SQL Editor (Navicat-style): duyet bang va du lieu truc quan, sua o (cell) truc tiep bang cach bam vao",
+    "Them dong moi qua form tu dong theo cau truc bang, xoa dong an toan theo khoa chinh",
+    "Tab Chay SQL: editor monospace (Ctrl+Enter), ket qua bang + thoi gian chay + che do chi doc",
+    "Tab Cau truc: xem cot, kieu, gia tri mac dinh, khoa chinh cua tung bang",
+    "Ho tro ca SQLite (moi file database cua TMS OS va website) va MariaDB; timeout 15s chong central"
   ],
-  "checksum_sha256": "bdc1e89cb4bc51529bd93891bb0a87c37f2d5f74d9281af5695e7fa61bfcae8f",
+  "checksum_sha256": "",
   "build_date": "2026-08-20"
 }

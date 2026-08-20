@@ -4,6 +4,14 @@
 - Giao diện chia 2 nhóm: **Database TMS OS** (đầy đủ Tạo/Xuất/Nhập/Xóa) và **Database trong website** (badge tên website + đường dẫn + kích thước; nút **Xuất SQL** và **Mang về quản lý**).
 - "Mang về quản lý" copy file về `~/.tms-os/data/db/` để quản lý như database thông thường — file gốc trong website vẫn giữ nguyên (an toàn với dữ liệu đang chạy). Kèm kiểm tra path traversal — chỉ chấp nhận file trong HOME người dùng.
 
+# V15.3.0 — SQL Editor: đọc và chỉnh sửa database trực tiếp trong panel (kiểu Navicat)
+
+- Trang **SQL Editor** mới (menu bên trái, cạnh Database): trình duyệt/chỉnh sửa dữ liệu ngay trong trình duyệt, hỗ trợ cả SQLite và MariaDB.
+- **Tab Dữ liệu**: chọn database → chọn bảng → xem dữ liệu dạng bảng (LIMIT 500); **bấm vào ô bất kỳ để sửa trực tiếp** (Enter lưu, Esc hủy); thêm dòng mới qua form tự sinh theo cấu trúc bảng; xóa dòng an toàn theo khóa chính (bảng không có khóa chính không cho xóa).
+- **Tab Chạy SQL**: editor monospace chạy câu lệnh tùy ý (Ctrl+Enter), kết quả hiển thị dạng bảng kèm thời gian chạy; có chế độ "Chỉ đọc" bảo vệ không ghi dữ liệu.
+- **Tab Cấu trúc**: xem cột, kiểu dữ liệu, giá trị mặc định, khóa chính của từng bảng.
+- Bảo mật: mọi câu lệnh chạy qua tiến trình có **timeout 15 giây** (chống treo panel); chặn ATTACH/DETACH (SQLite) và CREATE/DROP/ALTER DATABASE (MariaDB); đọc ghi đều yêu cầu đăng nhập + CSRF.
+
 # V15.2.0 — Remote Access: truy cập panel quản trị từ xa qua Cloudflare Tunnel
 
 - Tính năng mới "Truy cập panel từ xa" trong Cloudflare Hosting: bật bằng một cú bấm, tự chọn subdomain (mặc định `panel.<domain>` của bạn) và tự tạo ingress rule + record DNS CNAME trên cùng tunnel đang có — không tạo tunnel mới, không phá kết nối website hiện tại.

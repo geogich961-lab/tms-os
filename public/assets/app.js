@@ -678,3 +678,193 @@ if(document.querySelector('[data-service-alert]')){
   renderPerf();
   setInterval(renderStatus,15000);
 })();
+
+// ===== V15.3.0 SQL Editor =====
+(()=>{
+  const path=(window.location.pathname||'').replace(/\/$/,'');
+  if(path!=='/sql')return;
+  const esc=(v)=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const $=id=>document.getElementById(id);
+  const csrfInput=document.querySelector('form[action="/logout"] input[name=csrf]')||document.querySelector('[data-pwa-install]')||null;
+  const csrf=()=>csrfInput?.value||'';
+  const post=async(url,body)=>{
+    const fd=new URLSearchParams();Object.entries(body).forEach(([k,v])=>{
+      if(Array.isArray(v)){v.forEach(x=>fd.append(k,String(x)));}
+      else{fd.append(k,String(v));}
+    });
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:fd.toString(),cache:'no-store'});
+    const d=await r.json();
+    if(!r.ok)throw new Error(d.error||'Lỗi máy chủ.');
+    return d;
+  };
+  const get=async url=>{const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});return await r.json();};
+
+  // Trạng thái
+  let dbKey='';let tables=[];let currentTable='';let dataColumns=[];let dataRows=[];let primaryKey=[];
+
+  const noDb=$('sql-no-db');const panel=$('sql-panel');
+  const tabs=document.querySelectorAll('.sql-tab');
+  const tabData=$('tab-data');const tabSql=$('tab-sql');const tabStruct=$('tab-structure');
+  const tableSelect=$('sql-tables');const structSelect=$('sql-struct-tables');
+  const dataWrap=$('sql-data-wrap');const countEl=$('sql-count');const tableEmpty=$('sql-table-empty');
+  const input=$('sql-input');const resultWrap=$('sql-result-wrap');const resultMeta=$('sql-result-meta');
+  const structWrap=$('sql-struct-wrap');const structEmpty=$('sql-struct-empty');
+  const insertModal=$('sql-insert-modal');const insertForm=$('sql-insert-form');
+
+  // Chọn database
+  document.querySelectorAll('.sql-db-item').forEach(btn=>btn.addEventListener('click',async()=>{
+    document.querySelectorAll('.sql-db-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    dbKey=btn.dataset.db;noDb.hidden=true;panel.hidden=false;
+    tableSelect.innerHTML='<option value="">— chọn bảng —</option>';
+    structSelect.innerHTML='<option value="">— chọn bảng —</option>';
+    currentTable='';dataRows=[];dataColumns=[];primaryKey=[];
+    dataWrap.innerHTML='';countEl.textContent='';tableEmpty.hidden=false;
+    structWrap.innerHTML='';structEmpty.hidden=true;
+    try{
+      const d=await get('/api/sql/tables?db_key='+encodeURIComponent(dbKey));
+      tables=Array.isArray(d?.tables)?d.tables:[];
+      tableSelect.innerHTML='<option value="">— chọn bảng —</option>'+(tables.map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join(''));
+      structSelect.innerHTML=tableSelect.innerHTML;
+    }catch(e){resultMeta.innerHTML=`<div class="sql-result-error">${esc(String(e.message))}</div>`;}
+  }));
+
+  // Tab switch
+  tabs.forEach(t=>t.addEventListener('click',()=>{
+    tabs.forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    tabData.hidden=t.dataset.tab!=='data';
+    tabSql.hidden=t.dataset.tab!=='sql';
+    tabStruct.hidden=t.dataset.tab!=='structure';
+  }));
+
+  // Chọn bảng → tải dữ liệu
+  const readonlyOn=()=>$('sql-readonly')?.checked||false;
+  const loadTableData=async()=>{
+    if(!currentTable)return;
+    tableEmpty.hidden=true;
+    try{
+      const d=await post('/api/sql/query',{csrf:csrf(),db_key:dbKey,readonly:readonlyOn()?1:0,sql:`SELECT * FROM "${currentTable}" LIMIT 500`});
+      dataColumns=Array.isArray(d?.columns)?d.columns:[];
+      dataRows=Array.isArray(d?.rows)?d.rows:[];
+      const s=await get('/api/sql/structure?db_key='+encodeURIComponent(dbKey)+'&table='+encodeURIComponent(currentTable));
+      primaryKey=Array.isArray(s?.primary_key)?s.primary_key:[];
+      renderDataGrid();
+      countEl.textContent=`${dataRows.length} dòng hiển thị (tối đa 500) · ${d.time??0}s`;
+    }catch(e){dataWrap.innerHTML=`<div class="sql-result-error">${esc(String(e.message))}</div>`;tableEmpty.hidden=false;}
+  };
+  tableSelect.addEventListener('change',()=>{currentTable=tableSelect.value;loadTableData();});
+  $('sql-refresh-btn').addEventListener('click',loadTableData);
+
+  // Render grid dữ liệu
+  const renderDataGrid=()=>{
+    if(dataColumns.length===0){dataWrap.innerHTML='<div class="sql-empty">Bảng trống hoặc không đọc được.</div>';return;}
+    const canEdit=!readonlyOn()&&primaryKey.length>0;
+    const ths=dataColumns.map(c=>`<th>${esc(c)}</th>`).join('')+(canEdit?'<th style="width:70px"></th>':'');
+    const rows=dataRows.map((row,ri)=>{
+      const cells=dataColumns.map(col=>{
+        const val=row[col];const display=val===null?'<span class="sql-null">NULL</span>':esc(String(val));
+        if(!canEdit)return `<td title="${esc(String(val??''))}">${display}</td>`;
+        return `<td class="cell-edit" data-ri="${ri}" data-col="${esc(col)}" title="Bấm để sửa" tabindex="0">${display}</td>`;
+      }).join('');
+      const pkVals=primaryKey.map(k=>row[k]===null?'NULL':String(row[k]));
+      const act=canEdit?`<td class="sql-action"><button type="button" class="del" data-del="${ri}" title="Xóa dòng">✕</button></td>`:'';
+      return `<tr>${cells}${act}</tr>`;
+    }).join('');
+    dataWrap.innerHTML=`<table class="sql-grid"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+    // Inline edit: click cell → input; blur/Enter → lưu
+    dataWrap.querySelectorAll('.cell-edit').forEach(td=>{
+      const startEdit=()=>{
+        const col=td.dataset.col;const ri=Number(td.dataset.ri);const row=dataRows[ri];
+        if(td.querySelector('.sql-cell-input'))return;
+        const val=row[col]===null?'':String(row[col]??'');
+        td.innerHTML=`<input class="sql-cell-input" value="${esc(val)}" spellcheck="false" autocomplete="off">`;
+        const inp=td.querySelector('.sql-cell-input');inp.focus();
+        const finish=async(newVal)=>{
+          if(newVal===String(val)){td.innerHTML=esc(val);return;}
+          td.innerHTML='<span class="sql-null" style="opacity:.6">⏳</span>';
+          try{
+            await post('/api/sql/save-cell',{csrf:csrf(),db_key:dbKey,table:currentTable,pk_columns:primaryKey,pk_values:primaryKey.map(k=>row[k]===null?'':String(row[k]??'')),column:col,value:newVal});
+            dataRows[ri][col]=newVal;renderDataGrid();
+          }catch(e){td.innerHTML=esc(val);alert(String(e.message));}
+        };
+        inp.addEventListener('blur',()=>finish(inp.value));
+        inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();inp.blur();}if(ev.key==='Escape'){inp.value=val;inp.blur();}});
+      };
+      td.addEventListener('click',startEdit);
+      td.addEventListener('keydown',ev=>{if(ev.key==='Enter')startEdit();});
+    });
+    dataWrap.querySelectorAll('[data-del]').forEach(btn=>btn.addEventListener('click',async()=>{
+      const ri=Number(btn.dataset.del);const row=dataRows[ri];
+      if(!confirm(`Xóa dòng này của bảng ${currentTable}?`))return;
+      try{
+        await post('/api/sql/delete-row',{csrf:csrf(),db_key:dbKey,table:currentTable,pk_columns:primaryKey,pk_values:primaryKey.map(k=>row[k]===null?'':String(row[k]??''))});
+        dataRows.splice(ri,1);renderDataGrid();countEl.textContent=`${dataRows.length} dòng · đã xóa 1 dòng`;
+      }catch(e){alert(String(e.message));}
+    }));
+  };
+
+  // Thêm dòng
+  $('sql-insert-btn').addEventListener('click',async()=>{
+    if(!currentTable)return;
+    $('sql-insert-table').textContent=currentTable;
+    try{
+      const s=await get('/api/sql/structure?db_key='+encodeURIComponent(dbKey)+'&table='+encodeURIComponent(currentTable));
+      const cols=Array.isArray(s?.columns)?s.columns:[];
+      insertForm.innerHTML=cols.map(c=>`<label><span>${esc(c.name)}</span><input name="col__${esc(c.name)}" placeholder="${esc(c.dflt_value??'')}"${c.notnull?' required':''}></label>`).join('')
+        +'<div style="display:flex;gap:8px"><button class="btn btn-primary" type="submit">Chèn dòng</button><button class="btn btn-ghost" type="button" data-modal-close>Hủy</button></div>';
+      insertForm.onsubmit=async ev=>{
+        ev.preventDefault();
+        const values={};
+        insertForm.querySelectorAll('input[name^="col__"]').forEach(i=>{values[i.name.replace('col__','')]=i.value;});
+        try{
+          await post('/api/sql/insert-row',{csrf:csrf(),db_key:dbKey,table:currentTable,values});
+          insertModal.classList.remove('show');
+          await loadTableData();
+        }catch(e){alert(String(e.message));}
+      };
+      insertModal.classList.add('show');
+    }catch(e){alert(String(e.message));}
+  });
+
+  // Chạy SQL
+  const runSql=async()=>{
+    const sql=(input?.value||'').trim();if(!sql)return;
+    const readOnly=$('sql-readonly2')?.checked||readonlyOn();
+    resultWrap.innerHTML='';resultMeta.textContent='Đang thực thi...';
+    try{
+      const d=await post('/api/sql/query',{csrf:csrf(),db_key:dbKey,sql,readonly:readOnly?1:0});
+      if(d.error){resultMeta.innerHTML=`<div class="sql-result-error">${esc(d.error)}</div>`;return;}
+      if(d.message){resultMeta.innerHTML=`<div class="sql-result-ok">${esc(d.message)} (${d.time??0}s)</div>`;return;}
+      if(Array.isArray(d.columns)&&d.columns.length>0){
+        const ths=d.columns.map(c=>`<th>${esc(c)}</th>`).join('');
+        const rows=(d.rows||[]).map(r=>`<tr>${d.columns.map(c=>{const v=r[c];return `<td title="${esc(String(v??''))}">${v===null?'<span class="sql-null">NULL</span>':esc(String(v))}</td>`;}).join('')}</tr>`).join('');
+        resultWrap.innerHTML=`<table class="sql-grid"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+        resultMeta.textContent=`${d.rowCount??0} dòng · ${d.time??0}s`;
+      }else{
+        resultMeta.innerHTML=`<div class="sql-result-ok">Thành công · ${d.time??0}s</div>`;
+      }
+    }catch(e){resultMeta.innerHTML=`<div class="sql-result-error">${esc(String(e.message))}</div>`;}
+  };
+  $('sql-run-btn').addEventListener('click',runSql);
+  input?.addEventListener('keydown',ev=>{if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ev.preventDefault();runSql();}});
+
+  // Cấu trúc
+  structSelect.addEventListener('change',async()=>{
+    const t=structSelect.value;structEmpty.hidden=!!t;structWrap.innerHTML='';
+    if(!t)return;
+    try{
+      const s=await get('/api/sql/structure?db_key='+encodeURIComponent(dbKey)+'&table='+encodeURIComponent(t));
+      const cols=Array.isArray(s?.columns)?s.columns:[];
+      const pk=Array.isArray(s?.primary_key)?s.primary_key:[];
+      if(cols.length===0){structWrap.innerHTML='<div class="sql-empty">Không đọc được cấu trúc bảng.</div>';return;}
+      const hasType=cols[0].type!==undefined||cols[0].Type!==undefined;
+      const ths=hasType?'<th>Tên cột</th><th>Kiểu</th><th>Mặc định</th><th>Khóa</th>':'<th>Cột</th><th>Thông tin</th>';
+      const rows=cols.map(c=>{
+        if(hasType){const isPk=pk.includes(String(c.name??c.Field));return `<tr><td>${esc(String(c.name??c.Field))}</td><td>${esc(String(c.type??c.Type))}</td><td class="sql-null">${esc(String(c.dflt_value??c.Default??''))}</td><td>${isPk?'🔑 PRIMARY':'—'}</td></tr>`;}
+        return `<tr><td>${esc(String(c[Object.keys(c)[0]]))}</td><td>${esc(JSON.stringify(c))}</td></tr>`;
+      }).join('');
+      structWrap.innerHTML=`<table class="sql-grid"><thead><tr>${ths}</tr></thead><tbody>${rows}</tbody></table>`;
+    }catch(e){structWrap.innerHTML=`<div class="sql-result-error">${esc(String(e.message))}</div>`;}
+  });
+})();

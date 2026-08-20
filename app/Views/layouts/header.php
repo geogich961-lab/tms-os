@@ -9,7 +9,7 @@ if(!function_exists('nav_active')){function nav_active(string $prefix,string $cu
 <a class="nav-item <?=nav_active('/',$current)?>" href="/"><span>⌂</span>Dashboard</a>
 <a class="nav-item <?=nav_active('/files',$current)?>" href="/files"><span>▤</span>TMS Explorer</a>
 <a class="nav-item <?=nav_active('/websites',$current)?>" href="/websites"><span>◎</span>Website</a>
-<a class="nav-item <?=nav_active('/databases',$current)?>" href="/databases"><span>▦</span>Database</a>
+<a class="nav-item <?=nav_active('/databases',$current)?>" href="/databases"><span>▦</span>Database</a><a class="nav-item <?=nav_active('/sql',$current)?>" href="/sql"><span>⚡</span>SQL Editor</a>
 <a class="nav-item <?=nav_active('/network',$current)?>" href="/network"><span>⌁</span>Network Center</a>
 <a class="nav-item <?=nav_active('/terminal',$current)?>" href="/terminal"><span>›_</span>Terminal</a>
 <a class="nav-item <?=nav_active('/services',$current)?>" href="/services"><span>◉</span>Service Manager</a>
