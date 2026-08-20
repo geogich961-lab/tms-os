@@ -80,6 +80,25 @@ final class CloudflareDomainController
         }
     }
 
+    /** GET /api/cloudflare-domain/internal-sites (danh sách website nội bộ cho dropdown Bước 3) */
+    public function internalSites(): void
+    {
+        $this->guard();
+        $out = [];
+        foreach (($this->websites->all() ?: []) as $site) {
+            if (empty($site['enabled']) || empty($site['port']) || $site['port'] <= 0) {
+                continue;
+            }
+            $out[] = [
+                'name' => (string)$site['name'],
+                'port' => (int)$site['port'],
+                'root' => (string)($site['root'] ?? ''),
+                'status' => (string)($site['status'] ?? 'unknown'),
+            ];
+        }
+        $this->json(['success' => true, 'sites' => $out]);
+    }
+
     /** GET /api/cloudflare-domain/dns-records?zone_id=... */
     public function dnsRecords(): void
     {

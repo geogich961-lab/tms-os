@@ -1,3 +1,4 @@
+# V15.0.5 — Sửa dropdown "Website nội bộ" trống + hostname mặc định = domain gốc (Cloudflare Hosting)
 # V15.0.4 — Thêm fallback lấy account_id từ /zones, hướng dẫn token Cloudflare đầy đủ (Tunnel:Edit + Zone DNS:Edit + Zone Zone:Read)
 # V15.0.3 — Token Cloudflare không còn bắt buộc quyền "Account Settings: Read"
 

@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.4",
+  "internal_version": "15.0.5",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.0.4",
-  "version": "15.0.4",
-  "notes": "V15.0.4: them fallback lay account_id tu /zones (token Zone:Read luon co quyen), cap nhat huong dan quyen token: Cloudflare Tunnel (Edit) + Zone DNS (Edit) + Zone Zone (Read), pham vi All accounts/All zones.",
+  "name": "TMS OS V15.0.5",
+  "version": "15.0.5",
+  "notes": "V15.0.5: sua dropdown Website noi bo trong Cloudflare Hosting (them endpoint /internal-sites + nap danh sach bang JS), hostname mac dinh = domain goc da chon (ho tro gan chinh domain goc, khong bat buoc subdomain).",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
     "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",

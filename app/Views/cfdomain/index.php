@@ -37,11 +37,11 @@ $csrf=tms_csrf_token();
 
 <section class="panel-card" data-panel="hosting">
 <div class="section-title-row"><div><p class="eyebrow">BƯỚC 3 · TÊN MIỀN</p><h2>Gắn tên miền &amp; kích hoạt</h2></div></div>
-<p class="muted">Chọn domain của bạn, nhập tên host muốn public (ví dụ <strong>shop.example.com</strong>), chọn website nội bộ trên máy. Hệ thống tự tạo record DNS CNAME trỏ về tunnel.</p>
+<p class="muted">Chọn domain của bạn, nhập tên host muốn public. Bạn có thể dùng <strong>chính domain gốc</strong> (ví dụ <strong>example.com</strong>) hoặc subdomain (ví dụ <strong>shop.example.com</strong>). Tên host công khai mặc định chính là domain bạn vừa chọn. Chọn website nội bộ trên máy. Hệ thống tự tạo record DNS CNAME trỏ về tunnel.</p>
 <form class="form-stack" id="cfd-attach-form">
 <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
 <label>Domain<select id="cfd-zone" name="zone_id" required><option value="">— chọn domain —</option></select></label>
-<label>Tên host công khai<input type="text" id="cfd-hostname" name="hostname" placeholder="ví dụ: shop.example.com" autocomplete="off" required></label>
+<label>Tên host công khai<input type="text" id="cfd-hostname" name="hostname" placeholder="mặc định = domain bạn chọn, ví dụ: thc.io.vn hoặc shop.thc.io.vn" autocomplete="off" required></label>
 <label>Website nội bộ<select id="cfd-target" name="target" required></select></label>
 <button type="submit" class="btn btn-primary">Gắn tên miền &amp; tạo record DNS</button>
 </form>

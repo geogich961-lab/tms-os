@@ -489,6 +489,26 @@ if(document.querySelector('[data-service-alert]')){
   const zoneInputs=document.querySelectorAll('[data-cf-zone-id]');
 
   const labels={unconfigured:'Chưa cấu hình',healthy:'Đang hoạt động',degraded:'Suy giảm',inactive:'Chưa kích hoạt',unknown:'Không xác định'};
+
+  // ===== Nạp danh sách website nội bộ vào dropdown Bước 3 =====
+  let internalSites=[];
+  const loadInternalSites=async()=>{
+    try{
+      const r=await fetch('/api/cloudflare-domain/internal-sites',{cache:'no-store',headers:{Accept:'application/json'}});
+      const d=await r.json();
+      internalSites=Array.isArray(d?.sites)?d.sites:[];
+    }catch(e){internalSites=[];}
+    const render=()=>{
+      if(!targetSelect) return;
+      targetSelect.innerHTML='<option value="">— chọn website nội bộ —</option>'+internalSites.map(s=>`<option value="http://127.0.0.1:${Number(s.port)}">${esc(s.name)} · cổng ${Number(s.port)}${s.status==='running'?'':` (${s.status})`}</option>`).join('');
+    };
+    render();
+    // Refresh lại danh sách mỗi khi mở lại tab Cloudflare Hosting
+    const observer=new MutationObserver(()=>setTimeout(render,50));
+    document.querySelectorAll('.panel-card[data-panel=hosting]').forEach(p=>observer.observe(p,{attributes:true,attributeFilter:['hidden']}));
+  };
+  loadInternalSites();
+
   const renderStatus=async()=>{
     try{
       const r=await fetch(endpoint,{cache:'no-store',headers:{Accept:'application/json'}});
@@ -529,8 +549,26 @@ if(document.querySelector('[data-service-alert]')){
       if(accountIdEl) accountIdEl.textContent=accData.account_id||'—';
       if(accountBox) accountBox.hidden=!accData.account_id;
       if(zonesCountEl) zonesCountEl.textContent=`${(accData.zones||[]).length} domain`;
+      const zones=accData.zones||[];
       if(zoneSelect){
-        zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+(accData.zones||[]).map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
+        zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+zones.map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
+      }
+      // Tên host công khai mặc định = chính domain gốc đã chọn
+      const hostnameInput=attachForm?.querySelector('#cfd-hostname');
+      if(hostnameInput&&zones.length){
+        const picked=zones[0].name;
+        if(!hostnameInput.value.trim()) hostnameInput.value=picked;
+        if(!hostnameInput.dataset.bound){
+          hostnameInput.dataset.bound='1';
+          zoneSelect?.addEventListener('change',()=>{
+            const opt=zoneSelect.selectedOptions?.[0];
+            if(opt&&opt.value&&hostnameInput.value.trim()==='') hostnameInput.value=opt.textContent.trim();
+          });
+          hostnameInput.addEventListener('focus',()=>{
+            // Khi người dùng bấm vào trường hostname, gợi ý domain gốc nếu đang trống
+            if(!hostnameInput.value.trim()){const opt=zoneSelect?.selectedOptions?.[0];if(opt?.value) hostnameInput.value=opt.textContent.trim();}
+          });
+        }
       }
       showAlert('');
       renderStatus();
@@ -557,9 +595,9 @@ if(document.querySelector('[data-service-alert]')){
   attachForm?.addEventListener('submit',async ev=>{
     ev.preventDefault();showAlert('');
     const hostname=attachForm.querySelector('#cfd-hostname').value.trim().toLowerCase();
-    const zoneId=attachForm.querySelector('#cfd-zone').value;
+      const zoneId=attachForm.querySelector('#cfd-zone').value;
     const target=attachForm.querySelector('#cfd-target').value;
-    if(!hostname||!/^[a-z0-9._-]+\.[a-z]{2,}$/.test(hostname)){showAlert('Tên host không hợp lệ. Ví dụ: shop.example.com');return;}
+    if(!hostname||!/^[a-z0-9._-]+\.[a-z]{2,}$/.test(hostname)||hostname.length>253){showAlert('Tên host không hợp lệ. Ví dụ: example.com hoặc shop.example.com');return;}
     if(!zoneId){showAlert('Hãy chọn domain.');return;}
     if(!target){showAlert('Hãy chọn website nội bộ.');return;}
     const btn=attachForm.querySelector('button');btn.disabled=true;btn.textContent='Đang gắn tên miền...';
