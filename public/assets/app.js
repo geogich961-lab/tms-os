@@ -69,6 +69,10 @@
     if(brandApply) brandApply.disabled=true;
     if(brandInput) brandInput.value='';
   }));
+  document.querySelectorAll('[data-clear-cache]').forEach(button=>button.addEventListener('click',()=>{
+    if(!confirm('Xóa cache ngay? Các session cũ và tệp tạm sẽ bị xóa, giao diện sẽ tải lại dữ liệu mới. Phiên đăng nhập hiện tại vẫn được giữ.')) return;
+    button.closest('form')?.submit();
+  }));
   document.querySelectorAll('[data-file-picker]').forEach(input=>input.addEventListener('change',()=>{
     const text=input.closest('label')?.querySelector('[data-file-picker-text]');
     if(text && input.files?.[0]) text.textContent=input.files[0].name;

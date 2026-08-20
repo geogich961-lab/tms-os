@@ -128,4 +128,14 @@ final class SettingsController
         tms_flash('success','Đã cập nhật logo. Hãy xóa biểu tượng cũ khỏi màn hình chính rồi bấm Cài TMS OS để biểu tượng mới có hiệu lực hoàn toàn.');
         tms_redirect('/settings');
     }
+
+    public function cache(): void
+    {
+        $this->guard();
+        if(!tms_verify_csrf($_POST['csrf']??null)) tms_redirect('/settings');
+        $result=tms_clear_cache();
+        $removed=(int)$result['removed'];
+        tms_flash('success',sprintf('Đã xóa cache thành công (%d tệp tạm/session cũ). Giao diện sẽ tải lại dữ liệu mới — nếu PWA vẫn hiển thị cũ, hãy tắt hẳn và mở lại ứng dụng.', $removed));
+        tms_redirect('/settings');
+    }
 }

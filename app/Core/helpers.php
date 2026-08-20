@@ -188,3 +188,84 @@ function tms_validate_logo_upload(array $file, int $maxBytes = 2097152): array
     }
     return ['ok' => true, 'width' => $w, 'height' => $h, 'type' => (int)$info[2]];
 }
+
+/**
+ * Phiên bản cache của tài nguyên (CSS/JS/manifest/icon).
+ * Đọc từ platform build "Platform V14.x.y" trong config/app.php, kết hợp
+ * với số bust thủ công lưu trong ~/.tms-os/asset-version.json (khi người dùng
+ * bấm "Xóa cache" — tự tăng thêm 1 để trình duyệt bỏ cache ngay lập tức).
+ */
+function tms_asset_version(): string
+{
+    static $version = null;
+    if ($version !== null) {
+        return $version;
+    }
+    $version = '1';
+    $conf = @include dirname(__DIR__, 2) . '/config/app.php';
+    if (is_array($conf) && isset($conf['build']) && preg_match('/V(\d+\.\d+\.\d+)$/', (string)$conf['build'], $m)) {
+        $version = $m[1];
+    }
+    $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+    $bust = @json_decode((string)@file_get_contents($home . '/.tms-os/asset-version.json'), true);
+    if (is_array($bust) && isset($bust['bust'])) {
+        $version .= '.' . (int)$bust['bust'];
+    }
+    return $version;
+}
+
+/**
+ * Xóa cache máy chủ: session cũ (giữ session đang đăng nhập), storage/cache,
+ * flash file cũ, và opcache (nếu có). Sau đó tăng số bust thủ công để trình
+ * duyệt/PWA tải lại toàn bộ CSS/JS/icon ở phiên bản mới.
+ */
+function tms_clear_cache(): array
+{
+    $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+    $appRoot = dirname(__DIR__, 2);
+    $removed = ['sessions' => 0, 'cache' => 0, 'files' => 0];
+
+    // 1. Session cũ: xóa mọi session ngoại trừ session đang đăng nhập
+    $current = session_id();
+    $sessionDir = $appRoot . '/storage/sessions';
+    if (is_dir($sessionDir)) {
+        foreach (glob($sessionDir . '/sess_*') ?: [] as $f) {
+            if ($current === '' || basename($f) !== 'sess_' . $current) {
+                @unlink($f);
+                $removed['sessions']++;
+            }
+        }
+    }
+    // 2. Cache tạm
+    $cacheDir = $appRoot . '/storage/cache';
+    if (is_dir($cacheDir)) {
+        foreach (glob($cacheDir . '/*') ?: [] as $f) {
+            if (is_file($f)) {
+                @unlink($f);
+                $removed['cache']++;
+            }
+        }
+    }
+    // 3. Flash file cũ
+    @unlink($home . '/.tms-os/flash.json');
+
+    // 4. OPcache (nếu có)
+    if (function_exists('opcache_reset')) {
+        opcache_reset();
+    }
+
+    // 5. Tăng số bust thủ công để trình duyệt tải lại CSS/JS/icon mới
+    $bustFile = $home . '/.tms-os/asset-version.json';
+    $bust = @json_decode((string)@file_get_contents($bustFile), true);
+    $next = (is_array($bust) && isset($bust['bust']) ? (int)$bust['bust'] : 0) + 1;
+    @mkdir(dirname($bustFile), 0700, true);
+    file_put_contents($bustFile, json_encode(['bust' => $next]), LOCK_EX);
+    @chmod($bustFile, 0600);
+
+    $total = $removed['sessions'] + $removed['cache'] + $removed['files'];
+    return [
+        'ok' => true,
+        'removed' => $total,
+        'asset_version' => tms_asset_version(),
+    ];
+}

@@ -1,3 +1,6 @@
+# V14.2.1 — Tính năng Xóa cache trong Cài đặt
+- Cài đặt → Xóa cache: xóa các session cũ (giữ phiên đăng nhập hiện tại), tệp tạm trong storage/cache, flash file cũ và bộ nhớ đệm PHP (nếu có opcache). Sau khi xóa, tự động tăng phiên bản cache để trình duyệt và PWA tải lại toàn bộ giao diện mới (CSS, JS, biểu tượng, manifest) — hữu ích sau khi cập nhật phiên bản mới để đảm bảo thấy đúng giao diện mới nhất.
+
 # V14.2.0 — Nâng cấp giao diện: menu cố định dạng lưới, Cài đặt ứng dụng (PWA), đổi logo tùy chỉnh
 
 - Menu trái trên mobile: cố định không cuộn theo trang — thanh header chứa nút menu luôn hiển thị ở đầu màn hình khi cuộn trang; menu mở rộng chuyển sang dạng lưới 2 cột (icon + tên) giúp thao tác nhanh hơn.
