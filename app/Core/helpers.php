@@ -136,3 +136,49 @@ function tms_hex_rgb(string $hex): string
     $hex = ltrim($hex, '#');
     return hexdec(substr($hex, 0, 2)) . ', ' . hexdec(substr($hex, 2, 2)) . ', ' . hexdec(substr($hex, 4, 2));
 }
+
+/**
+ * Trả về đường dẫn icon thương hiệu (logo tùy chỉnh nếu người dùng đã thay).
+ */
+function tms_brand_icon(string $size): string
+{
+    $sizes = ['192' => 'icon-192.png', '512' => 'icon-512.png', 'maskable-512' => 'icon-maskable-512.png', 'splash' => 'logo-splash.png', 'logo' => 'logo-tms-os.png'];
+    $file = $sizes[$size] ?? $sizes['192'];
+    $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+    if (is_file($home . '/.tms-os/brand/' . $file) && is_file('/assets/icons/' . $file)) {
+        $ts = (int)filemtime($home . '/.tms-os/brand/' . $file);
+        return '/assets/icons/' . $file . '?v=' . $ts;
+    }
+    return '/assets/icons/' . $file . '?v=1';
+}
+
+/**
+ * Validate kích thước logo upload: min/max dimensions, loại file, dung lượng.
+ */
+function tms_validate_logo_upload(array $file, int $maxBytes = 2097152): array
+{
+    if (!is_array($file) || !empty($file['error'])) {
+        return ['ok' => false, 'message' => 'Vui lòng chọn một tệp hình ảnh.'];
+    }
+    if ($file['size'] > $maxBytes) {
+        return ['ok' => false, 'message' => 'Tệp quá lớn: giới hạn 2 MB.'];
+    }
+    $info = getimagesize($file['tmp_name']);
+    if ($info === false) {
+        return ['ok' => false, 'message' => 'Tệp không phải hình ảnh hợp lệ.'];
+    }
+    if (!in_array((int)$info[2], [IMAGETYPE_PNG, IMAGETYPE_JPEG, IMAGETYPE_WEBP], true)) {
+        return ['ok' => false, 'message' => 'Chỉ chấp nhận PNG, JPG hoặc WebP.'];
+    }
+    $w = (int)$info[0];
+    $h = (int)$info[1];
+    $min = 128;
+    $max = 2048;
+    if ($w < $min || $h < $min) {
+        return ['ok' => false, 'message' => "Hình quá nhỏ: kích thước tối thiểu {$min}x{$min}px (hiện tại {$w}x{$h}px). Khuyến nghị 512x512px."];
+    }
+    if ($w > $max || $h > $max) {
+        return ['ok' => false, 'message' => "Hình quá lớn: kích thước tối đa {$max}x{$max}px (hiện tại {$w}x{$h}px)."];
+    }
+    return ['ok' => true, 'width' => $w, 'height' => $h, 'type' => (int)$info[2]];
+}

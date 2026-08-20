@@ -22,6 +22,7 @@ final class DashboardController
             'network' => $this->network->details($sites),
             'flash' => tms_pull_flash(),
             'csrf' => tms_csrf_token(),
+            'pwaStatus' => 'new',
         ]);
     }
 

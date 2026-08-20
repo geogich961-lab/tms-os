@@ -46,6 +46,23 @@ body.sheet-open{overflow:hidden}.tms-explorer{background:var(--surface);border:1
 @media(max-width:820px){.color-presets{grid-template-columns:repeat(3,1fr)}.color-fields{grid-template-columns:1fr}.appearance-preview{width:104px;height:66px}}@media(max-width:460px){.color-presets{grid-template-columns:repeat(2,1fr)}.appearance-card .section-title-row{align-items:flex-start}.appearance-preview{width:88px;height:60px}}
 .wp-auto-box{padding:14px;border:1px solid var(--border);border-radius:15px;background:var(--surface2);display:grid;gap:12px}.wp-auto-box [data-wp-fields]{display:grid;gap:11px}.wp-auto-box [data-wp-fields][hidden]{display:none}
 
+/* ===== TMS OS V14.2 · Fixed header + Grid nav + App install card ===== */
+.os-nav.os-nav-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.os-nav.os-nav-grid .nav-item{flex-direction:column;align-items:center;text-align:center;gap:4px;padding:12px 8px;font-size:.72rem}
+.os-nav.os-nav-grid .nav-item span{font-size:1.25rem;line-height:1}
+.os-nav.os-nav-grid .nav-divider{grid-column:1/-1;margin:2px 0}
+.mobile-header{position:sticky;top:0;z-index:25;flex-shrink:0}
+.os-main{display:flex;flex-direction:column}
+.install-app-card .install-actions{display:flex;gap:10px;flex-wrap:wrap}
+.install-app-card .install-actions .btn{flex:1;min-width:150px}
+.install-badge{font-size:.7rem;font-weight:850;padding:5px 11px;border-radius:99px}
+.install-badge-done{background:#14532d;color:#86efac}
+.install-badge-new{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.ios-steps{margin-top:14px;display:grid;gap:10px}
+.ios-steps>div{display:flex;gap:11px;align-items:flex-start;font-size:.85rem;line-height:1.5;color:var(--muted)}
+.ios-steps>div>span{flex:0 0 24px;height:24px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);display:grid;place-items:center;font-size:.75rem;font-weight:850;color:var(--text)}
+.brand-preview-img{width:64px;height:64px;border-radius:16px;object-fit:cover;position:relative;z-index:1}
+@media(max-width:420px){.os-nav.os-nav-grid .nav-item{padding:10px 6px;font-size:.66rem}.install-app-card .install-actions .btn{min-width:0;width:100%}}
 /* ===== TMS OS Platform Stable V10.1 · Mobile sidebar access fix ===== */
 .os-sidebar{overflow:hidden}
 .os-nav{display:flex;flex-direction:column;gap:7px;min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain;padding-right:4px;padding-bottom:10px;scrollbar-width:thin}

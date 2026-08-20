@@ -12,6 +12,11 @@
     overlay.classList.remove('show');
   });
 
+  document.querySelectorAll('[data-ios-instructions]').forEach(button=>button.addEventListener('click',()=>{
+    const steps=document.getElementById('ios-instructions');
+    if(steps)steps.hidden=!steps.hidden;
+  }));
+
   document.querySelectorAll('[data-theme-toggle]').forEach(button=>button.addEventListener('click',()=>{
     const next=root.dataset.theme==='dark'?'light':'dark';
     root.dataset.theme=next;
@@ -46,6 +51,24 @@
     openModal('rename-modal');
   }));
 
+  const brandInput=document.querySelector('#brand-form input[name=logo]');
+  const brandApply=document.getElementById('brand-apply');
+  const brandPreview=document.getElementById('brand-preview-img');
+  brandInput?.addEventListener('change',()=>{
+    const file=brandInput.files?.[0];
+    if(brandApply) brandApply.disabled=!file;
+    if(!file||!brandPreview) return;
+    if(file.size>2097152){brandApply.disabled=true;return;}
+    const url=URL.createObjectURL(file);
+    brandPreview.src=url;
+  });
+  document.querySelectorAll('[data-reset-brand]').forEach(button=>button.addEventListener('click',()=>{
+    if(!confirm('Khôi phục logo TMS mặc định?')) return;
+    const img=document.getElementById('brand-preview-img');
+    if(img) img.src='/assets/icons/icon-192.png?v=1';
+    if(brandApply) brandApply.disabled=true;
+    if(brandInput) brandInput.value='';
+  }));
   document.querySelectorAll('[data-file-picker]').forEach(input=>input.addEventListener('change',()=>{
     const text=input.closest('label')?.querySelector('[data-file-picker-text]');
     if(text && input.files?.[0]) text.textContent=input.files[0].name;

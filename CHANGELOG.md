@@ -1,4 +1,11 @@
-# V14.1.7 — Internet Access thích ứng với mạng công cộng (WiFi quán/doanh nghiệp)
+# V14.2.0 — Nâng cấp giao diện: menu cố định dạng lưới, Cài đặt ứng dụng (PWA), đổi logo tùy chỉnh
+
+- Menu trái trên mobile: cố định không cuộn theo trang — thanh header chứa nút menu luôn hiển thị ở đầu màn hình khi cuộn trang; menu mở rộng chuyển sang dạng lưới 2 cột (icon + tên) giúp thao tác nhanh hơn.
+- Nút "Cài TMS OS lên màn hình chính" xuất hiện ở cuối menu và trên Dashboard (card Cài đặt ứng dụng) — bấm 1 lần để cài PWA lên màn hình chính Android; iPhone/iPad có nút "Chỉ dẫn cho iPhone/iPad" kèm 3 bước thêm vào màn hình chính.
+- Trang đăng nhập gọn hơn: bỏ dòng chữ "TMS OS by THCGaming" (chỉ giữ logo) và bỏ giá trị mặc định trong ô tài khoản — giờ dùng placeholder chuẩn, nhập ngay không cần xóa.
+- Cài đặt → Logo & Thương hiệu: upload logo mới (PNG/JPG/WebP, tối thiểu 128x128, tối đa 2048x2048, dưới 2 MB, khuyến nghị 512x512 vuông). Logo được tự động crop vuông, tạo đủ icon 192/512/maskable 512 và áp dụng ngay cho menu, trang đăng nhập, biểu tượng PWA trên Android và iPhone/iPad. Có nút khôi phục logo mặc định.
+
+# V14.1.7 — Internet Access thân thiện với mạng công cộng (WiFi quán/doanh nghiệp)
 
 - Internet Access trả "Không có nhà cung cấp tunnel nào hoạt động (HTTP 0)" trên nhiều mạng WiFi công cộng: các mạng này thường chặn hoặc làm chậm kết nối tunnel lần đầu. Sửa: probe xác minh URL công khai retry 3 lần (nghỉ 3s giữa các lần) thay vì bỏ cuộc ngay khi HTTP 0; thời gian chờ đăng ký tunnel trước khi chuyển nhà cung cấp 35s → 60s; đổi thứ tự tự động chọn provider: localhost.run lên trước Pinggy (Pinggy dùng SSH port 443 dễ bị chặn hơn trên mạng doanh nghiệp).
 
