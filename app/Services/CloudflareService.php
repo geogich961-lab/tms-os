@@ -359,7 +359,7 @@ final class CloudflareService
         return $hits >= min(3, count($localTokens));
     }
 
-    private function capabilities(): array
+    public function capabilities(): array
     {
         $s = $this->settings();
         return [
@@ -381,7 +381,7 @@ final class CloudflareService
         return trim((string)($s['relay_host'] ?? '')) !== '' && trim((string)($s['relay_user'] ?? '')) !== '' && trim((string)($s['relay_public_url'] ?? '')) !== '';
     }
 
-    private function settings(): array
+    public function settings(): array
     {
         return array_merge([
             'ngrok_token'=>'','relay_host'=>'','relay_user'=>'','relay_ssh_port'=>22,

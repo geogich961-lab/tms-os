@@ -1,3 +1,11 @@
+# V15.0.0 — Cloudflare Hosting: website qua tên miền riêng chính chủ
+
+- Thay thế chế độ tunnel tạm thời bằng **Cloudflare Hosting** chính chủ: người dùng cung cấp API Token Cloudflare, hệ thống lấy tài khoản và danh sách domain tự động qua API, tạo **Cloudflare Tunnel** trực tiếp trên tài khoản, gán hostname (ví dụ `shop.example.com`), tự tạo record DNS **CNAME** trỏ `cfargotunnel.com` (có bật Proxy — website đi qua hạ tầng Cloudflare, HTTPS miễn phí) và chạy `cloudflared` bằng tunnel token.
+- Luồng 3 bước rõ ràng: **Bước 1** kiểm tra & lưu API Token → **Bước 2** tạo Tunnel → **Bước 3** gắn tên miền & kích hoạt. Điều khiển đầy đủ: khởi động/dừng tunnel, tách tên miền (giữ tunnel), xóa tunnel khỏi Cloudflare, xóa toàn bộ cấu hình.
+- Trạng thái real-time: trạng thái tunnel từ API Cloudflare (healthy/degraded/inactive), số kết nối, tiến trình local, nhật ký và URL công khai kèm nút sao chép/mở.
+- Tính năng tunnel cũ (Smart Fallback: Cloudflare → Pinggy → localhost.run → Ngrok → TMS Relay) vẫn giữ nguyên trong tab riêng để ai cần dùng nhanh không cần tên miền.
+- Dọn nhãn phiên bản cũ trong giao diện (V10.3.1, V11.1, V13, V13.0.1) — tất cả giờ thống nhất "TMS OS V14 · <TÊN CHỨC NĂNG>".
+
 # V14.2.3 — Thanh menu trên điện thoại luôn cố định khi cuộn trang
 - Sửa thanh header chứa menu trên điện thoại vẫn bị cuộn theo trang: thanh menu giờ dùng `position:fixed` (thay `sticky` bị phá vỡ), luôn bám trên cùng màn hình khi cuộn dù đang mở trang nào.
 - Header giờ hiển thị đè nhẹ lên nội dung theo kiểu hiện đại, an toàn với safe-area trên iPhone (có notch/khung đen), nội dung chính tự đẩy xuống tránh bị che.

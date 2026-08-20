@@ -8,7 +8,12 @@ final class CloudflareController
     public function index(): void
     {
         $this->guard();
-        tms_view('cloudflare.index', ['status'=>$this->cloudflare->status(),'sites'=>$this->websites->all(),'flash'=>tms_pull_flash(),'csrf'=>tms_csrf_token()]);
+        tms_view('cfdomain.index', ['status'=>$this->cloudflare->status(),'sites'=>$this->websites->all(),'flash'=>tms_pull_flash(),'csrf'=>tms_csrf_token()]);
+    }
+    public function hostIndex(): void
+    {
+        $this->guard();
+        $this->index();
     }
     public function start(): void
     {

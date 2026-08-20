@@ -444,3 +444,174 @@ if(document.querySelector('[data-service-alert]')){
   logLines?.addEventListener('change',loadLog);
   dialog?.addEventListener('close',()=>{clearInterval(logTimer);currentLog=''});
 })();
+
+// ===== TMS OS V15 · Cloudflare Hosting (tên miền riêng chính chủ) =====
+(()=>{
+  const endpoint=window.TMS_CF_DOMAIN_STATUS_URL;
+  if(!endpoint) return;
+  const esc=(v)=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $=id=>document.getElementById(id);
+  const alertBox=$('cfd-alert');
+  const showAlert=msg=>{if(!alertBox)return;alertBox.textContent=msg||'';alertBox.hidden=!msg;};
+  const form=(id)=>document.getElementById(id);
+  const csrf=()=>document.querySelector('#cfd-token-form input[name=csrf],#cfd-attach-form input[name=csrf],form[data-action-form] input[name=csrf]')?.value||'';
+
+  const post=async(path,body)=>{
+    const fd=new URLSearchParams();Object.entries(body).forEach(([k,v])=>fd.append(k,String(v)));
+    const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:fd.toString(),cache:'no-store'});
+    return await r.json();
+  };
+
+  // ===== Tab switch =====
+  document.querySelectorAll('.cfh-tab').forEach(tab=>tab.addEventListener('click',()=>{
+    document.querySelectorAll('.cfh-tab').forEach(t=>t.classList.toggle('active',t===tab));
+    document.querySelectorAll('.panel-card[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==tab.dataset.tab);
+    if(tab.dataset.tab==='hosting') renderStatus();
+  }));
+
+  // ===== Trạng thái tab =====
+  const pill=$('cfd-status-pill');
+  const tunnelName=$('cfd-tunnel-name');
+  const tunnelStatus=$('cfd-tunnel-status');
+  const tunnelConns=$('cfd-tunnel-conns');
+  const tunnelRunning=$('cfd-tunnel-running');
+  const urlCard=$('cfd-url-card');
+  const publicUrl=$('cfd-public-url');
+  const openUrl=$('cfd-open-url');
+  const copyUrl=$('cfd-copy-url');
+  const logEl=$('cfd-log');
+  const accountIdEl=$('cfd-account-id');
+  const zonesCountEl=$('cfd-zones-count');
+  const accountBox=$('cfd-account-box');
+  const zoneSelect=$('cfd-zone');
+  const targetSelect=$('cfd-target');
+  const runningDot=document.querySelector('#cfd-running-dot');
+  const zoneInputs=document.querySelectorAll('[data-cf-zone-id]');
+
+  const labels={unconfigured:'Chưa cấu hình',healthy:'Đang hoạt động',degraded:'Suy giảm',inactive:'Chưa kích hoạt',unknown:'Không xác định'};
+  const renderStatus=async()=>{
+    try{
+      const r=await fetch(endpoint,{cache:'no-store',headers:{Accept:'application/json'}});
+      if(!r.ok) return;
+      const d=await r.json();
+      const healthy=!!d.running&&d.health?.status==='healthy';
+      const anyConfig=!!d.configured||!!d.tunnel_id;
+      if(pill){pill.textContent=healthy?'Đang hoạt động':(d.configured?'Đã cấu hình':'Chưa cấu hình');pill.classList.toggle('running',healthy);pill.classList.toggle('stopped',!healthy);}
+      if(tunnelName) tunnelName.textContent=d.tunnel_name||'Chưa tạo';
+      if(tunnelStatus) tunnelStatus.textContent=labels[d.health?.status]||d.health?.status||'—';
+      if(tunnelConns) tunnelConns.textContent=String(d.health?.connections??'—');
+      if(tunnelRunning) tunnelRunning.textContent=d.running?'Đang chạy':'Đã dừng';
+      if(runningDot) runningDot.classList.toggle('active',!!d.running);
+      if(accountIdEl){accountIdEl.textContent=d.account_id||'—';if(accountBox)accountBox.hidden=!d.account_id;}
+      if(zonesCountEl) zonesCountEl.textContent=d.zones||'—';
+      const url=d.url||'';
+      if(urlCard) urlCard.hidden=!url;
+      if(publicUrl){publicUrl.textContent=url;publicUrl.href=url||'#';}
+      if(openUrl) openUrl.href=url||'#';
+      if(copyUrl){copyUrl.dataset.copy=url||'';copyUrl.onclick=async()=>{try{await navigator.clipboard.writeText(url);}catch(e){}const old=copyUrl.textContent;copyUrl.textContent='Đã sao chép';setTimeout(()=>copyUrl.textContent=old,1200);};}
+      if(logEl){logEl.textContent=d.log||'Chưa có nhật ký.';logEl.scrollTop=logEl.scrollHeight;}
+    }catch(e){}
+  };
+
+  // ===== Bước 1: Token =====
+  const tokenForm=form('cfd-token-form');
+  tokenForm?.addEventListener('submit',async ev=>{
+    ev.preventDefault();showAlert('');
+    const token=tokenForm.querySelector('#cfd-api-token').value.trim();
+    if(token.length<20){showAlert('API Token không hợp lệ.');return;}
+    const btn=tokenForm.querySelector('button');btn.disabled=true;btn.textContent='Đang kiểm tra...';
+    try{
+      const save=await post('/api/cloudflare-domain/token',{csrf:csrf(),api_token:token});
+      if(!save.success) throw new Error(save.error||'Không lưu được token.');
+      const acc=await fetch('/api/cloudflare-domain/account-info',{cache:'no-store',headers:{Accept:'application/json'}});
+      const accData=await acc.json();
+      if(!accData.success) throw new Error(accData.error||'Token không có quyền đọc tài khoản.');
+      if(accountIdEl) accountIdEl.textContent=accData.account_id||'—';
+      if(accountBox) accountBox.hidden=!accData.account_id;
+      if(zonesCountEl) zonesCountEl.textContent=`${(accData.zones||[]).length} domain`;
+      if(zoneSelect){
+        zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+(accData.zones||[]).map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
+      }
+      showAlert('');
+      renderStatus();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Kiểm tra & lưu token';
+  });
+
+  // ===== Bước 2: Tạo tunnel =====
+  const tunnelForm=form('cfd-tunnel-form');
+  tunnelForm?.addEventListener('submit',async ev=>{
+    ev.preventDefault();showAlert('');
+    const btn=tunnelForm.querySelector('button');btn.disabled=true;btn.textContent='Đang tạo tunnel...';
+    try{
+      const d=await post('/api/cloudflare-domain/create-tunnel',{csrf:csrf()});
+      if(!d.success) throw new Error(d.error||'Tạo tunnel thất bại.');
+      showAlert(`Đã tạo tunnel "${d.tunnel_name||''}". Tiếp theo: gắn tên miền ở Bước 3.`);
+      renderStatus();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Tạo Cloudflare Tunnel mới';
+  });
+
+  // ===== Bước 3: Gắn tên miền =====
+  const attachForm=form('cfd-attach-form');
+  attachForm?.addEventListener('submit',async ev=>{
+    ev.preventDefault();showAlert('');
+    const hostname=attachForm.querySelector('#cfd-hostname').value.trim().toLowerCase();
+    const zoneId=attachForm.querySelector('#cfd-zone').value;
+    const target=attachForm.querySelector('#cfd-target').value;
+    if(!hostname||!/^[a-z0-9._-]+\.[a-z]{2,}$/.test(hostname)){showAlert('Tên host không hợp lệ. Ví dụ: shop.example.com');return;}
+    if(!zoneId){showAlert('Hãy chọn domain.');return;}
+    if(!target){showAlert('Hãy chọn website nội bộ.');return;}
+    const btn=attachForm.querySelector('button');btn.disabled=true;btn.textContent='Đang gắn tên miền...';
+    try{
+      const d=await post('/api/cloudflare-domain/attach',{csrf:csrf(),hostname,zone_id:zoneId,target});
+      if(!d.success) throw new Error(d.error||'Gắn tên miền thất bại.');
+      showAlert('Đã tạo record DNS CNAME. Website sẽ online ngay khi tunnel chạy ở Bước Điều khiển.');
+      renderStatus();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Gắn tên miền & tạo record DNS';
+  });
+
+  // ===== Điều khiển =====
+  $('cfd-start')?.addEventListener('click',async()=>{
+    showAlert('');
+    const btn=$('cfd-start');btn.disabled=true;btn.textContent='Đang khởi động...';
+    try{
+      const d=await post('/api/cloudflare-domain/start',{csrf:csrf()});
+      if(!d.success) throw new Error(d.error);
+      renderStatus();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='▶ Khởi động Tunnel';
+  });
+  $('cfd-stop')?.addEventListener('click',async()=>{
+    showAlert('');
+    const btn=$('cfd-stop');btn.disabled=true;btn.textContent='Đang dừng...';
+    try{await post('/api/cloudflare-domain/stop',{csrf:csrf()});renderStatus();}catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='■ Dừng Tunnel';
+  });
+  $('cfd-refresh')?.addEventListener('click',renderStatus);
+  $('cfd-detach')?.addEventListener('click',async()=>{
+    if(!confirm('Tách tên miền khỏi tunnel? Record DNS sẽ bị xóa nhưng tunnel vẫn giữ nguyên.')) return;
+    showAlert('');
+    const btn=$('cfd-detach');btn.disabled=true;btn.textContent='Đang tách...';
+    try{const d=await post('/api/cloudflare-domain/detach',{csrf:csrf()});showAlert(d.message||'Đã tách tên miền.');renderStatus();}catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Tách tên miền (giữ tunnel)';
+  });
+  $('cfd-delete-tunnel')?.addEventListener('click',async()=>{
+    if(!confirm('Xóa tunnel khỏi tài khoản Cloudflare? Tunnel hiện tại sẽ ngừng ngay.')) return;
+    showAlert('');
+    const btn=$('cfd-delete-tunnel');btn.disabled=true;btn.textContent='Đang xóa...';
+    try{const d=await post('/api/cloudflare-domain/delete-tunnel',{csrf:csrf()});showAlert(d.message||'Đã xóa tunnel.');renderStatus();}catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Xóa Tunnel khỏi Cloudflare';
+  });
+  $('cfd-uninstall')?.addEventListener('click',async()=>{
+    if(!confirm('Xóa TOÀN BỘ cấu hình Cloudflare Hosting? Tunnel sẽ bị xóa khỏi tài khoản và mọi thiết lập sẽ mất.')) return;
+    showAlert('');
+    const btn=$('cfd-uninstall');btn.disabled=true;btn.textContent='Đang xóa...';
+    try{const d=await post('/api/cloudflare-domain/uninstall',{csrf:csrf()});showAlert(d.message||'Đã xóa toàn bộ cấu hình.');renderStatus();}catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Xóa toàn bộ cấu hình Cloudflare';
+  });
+
+  renderStatus();
+  setInterval(renderStatus,15000);
+})();

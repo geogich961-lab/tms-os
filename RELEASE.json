@@ -1,19 +1,18 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.7",
+  "internal_version": "15.0.0",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V14.2.2",
-  "version": "14.2.5",
-  "notes": "Sua 3 loi giao dien V14.2.0: app.js co loi SyntaxError (khai bao setRelative trung) lam menu va nut cai app khong bam duoc; logo header mat (path icon sai) da sua; PWA icon co vien trang da thay bang icon solid day nen (icon-192/512-solid.png) trong manifest va khi doi logo.",
+  "name": "TMS OS V15.0.0",
+  "version": "15.0.0",
+  "notes": "Cloudflare Hosting chinh chu: public website qua ten mien rieng bang Cloudflare Tunnel + API (luu token, danh sach domain, tao tunnel, gan hostname/DNS CNAME tu dong, start/stop/detach/delete/uninstall). Tab Smart Fallback (tunnel) van giu nguyen. Sua header mobile fixed (position:fixed), xoa nhan version cu V10/V11/V13 trong giao dien.",
   "features": [
-    "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
-    "One-command self-update API /api/updates/run with per-install token (scripts and automation safe)",
-    "Safe rollback: only uses backups containing app+public+config; flash messages survive target swap via flash.json",
-    "Installer hardened: RAM/disk pre-check before MariaDB (suggests SQLite on weak devices), php-zip check, repair skips account setup, stronger pkg retry"
+    "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
+    "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",
+    "Header mobile co dinh hoan toan (position:fixed), khong bi cuon theo trang"
   ],
-  "checksum_sha256": "f9f56255e3ab546b5560960580f066488d10daff93eec8c737128cc5d71c299f"
+  "checksum_sha256": "PENDING"
 }
