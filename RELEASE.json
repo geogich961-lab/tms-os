@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.1",
+  "internal_version": "15.0.2",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.0.1",
-  "version": "15.0.1",
-  "notes": "Sua loi 500 cai dat: index.php thieu require CloudflareDomainService/CloudflareDomainController (khai bao final class khong duoc autoloader tim thay o Termux). Da them vao danh sach require truc tiep.",
+  "name": "TMS OS V15.0.2",
+  "version": "15.0.2",
+  "notes": "Sua race condition checksum: GitHub cache gop LATEST.zip moi voi RELEASE.json cu lam installer loi SHA-256. Installer gio tu tai lai toi da 4 lan truoc khi dung.",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
     "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",

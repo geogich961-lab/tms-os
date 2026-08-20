@@ -112,18 +112,37 @@ echo '[OK] Đã cài đủ các thành phần.'
 # ---------- Bước 4: tải và kiểm tra bộ nguồn TMS OS ----------
 echo 'Bước 4/7: Tải bộ nguồn TMS OS mới nhất...'
 ZIP="$WORK/TMS_OS.zip"
-if ! curl -fsSL --retry 3 --retry-delay 2 -m 120 -o "$ZIP" "$RELEASE_URL"; then
-  echo "[LỖI] Không tải được bộ nguồn từ $RELEASE_URL"
-  echo '        Kiểm tra kết nối mạng, hoặc đặt biến môi trường TMS_REPO=owner/repo rồi chạy lại.'
-  exit 1
-fi
-EXPECTED="$(curl -fsSL -m 30 "https://raw.githubusercontent.com/${REPO}/main/RELEASE.json" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/p')"
-if [ -n "$EXPECTED" ]; then
-  ACTUAL="$(sha256sum "$ZIP" | awk '{print $1}')"
-  if [ "$ACTUAL" != "$EXPECTED" ]; then
-    echo "[LỖI] File tải về không khớp chữ ký SHA-256. Dừng cài đặt vì lý do an toàn."
+# Cơ chế xác minh checksum chống race condition: GitHub có thể trả file ZIP của release mới
+# nhưng RELEASE.json cũ (hoặc ngược lại) do cache CDN. Installer tự thử tải lại (tối đa 4 lần)
+# trước khi dừng, giúp update ngay sau khi phát hành không bị lỗi chữ ký.
+VERIFY_OK=0
+for VERIFY_ATTEMPT in 1 2 3 4; do
+  if ! curl -fsSL --retry 3 --retry-delay 2 -m 120 -o "$ZIP" "$RELEASE_URL"; then
+    echo "[LỖI] Không tải được bộ nguồn từ $RELEASE_URL"
+    echo '        Kiểm tra kết nối mạng, hoặc đặt biến môi trường TMS_REPO=owner/repo rồi chạy lại.'
     exit 1
   fi
+  EXPECTED="$(curl -fsSL -m 30 "https://raw.githubusercontent.com/${REPO}/main/RELEASE.json?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/p')"
+  if [ -z "$EXPECTED" ]; then
+    echo "[CẢNH BÁO] Không đọc được chữ ký từ RELEASE.json — bỏ qua xác minh."
+    break
+  fi
+  ACTUAL="$(sha256sum "$ZIP" | awk '{print $1}')"
+  if [ "$ACTUAL" = "$EXPECTED" ]; then
+    VERIFY_OK=1
+    break
+  fi
+  echo "[THỬ LẠI] File tải về (try $VERIFY_ATTEMPT) chưa khớp chữ ký SHA-256 — có thể GitHub đang cập nhật release. Tải lại sau 5 giây..."
+  sleep 5
+done
+if [ "$VERIFY_OK" -ne 1 ] && [ -n "$EXPECTED" ]; then
+  echo "[LỖI] File tải về không khớp chữ ký SHA-256 sau 4 lần thử. Dừng cài đặt vì lý do an toàn."
+  echo "        EXPECTED: $EXPECTED"
+  echo "        ACTUAL  : $ACTUAL"
+  echo '        Nếu lỗi tiếp diễn, hãy chạy lại cùng lệnh sau 5 phút hoặc báo lỗi tại GitHub issues.'
+  exit 1
+fi
+if [ "$VERIFY_OK" -eq 1 ]; then
   echo "[OK] Đã xác minh chữ ký SHA-256."
 fi
 rm -rf "$WORK/extract"

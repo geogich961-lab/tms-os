@@ -1,3 +1,8 @@
+# V15.0.2 — Sửa race condition chữ ký SHA-256 khi cài đặt
+
+- Sửa lỗi "File tải về không khớp chữ ký SHA-256" khi chạy lại installer ngay sau khi phát hành bản mới: GitHub CDN có thể trả file ZIP của release mới nhưng `RELEASE.json` cũ (checksum chưa cập nhật trên branch main), khiến xác minh thất bại. Installer giờ tự tải lại tối đa 4 lần (cách nhau 5 giây) trước khi dừng an toàn, kèm in rõ EXPECTED/ACTUAL để dễ chẩn đoán.
+
+
 # V15.0.1 — Sửa lỗi cài đặt 500 (thiếu require class CloudflareDomain)
 
 - Sửa lỗi installer dừng ở bước 6/7 với `curl (22) error 500` khi khởi động PHP Engine: `public/index.php` thiếu khai báo `require` hai class mới `CloudflareDomainService` và `CloudflareDomainController` (V15.0.0), gây PHP Fatal "Class not found" trên Termux. Đã thêm vào danh sách require trực tiếp như các service khác.
