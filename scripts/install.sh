@@ -23,6 +23,26 @@ if [ -p /dev/stdin ]; then
 fi
 
 if command -v pkg >/dev/null 2>&1; then
+  # ========== V14.1.3: Pre-check thiết bị thật — RAM + dung lượng + quyền bộ nhớ ==========
+  # Điện thoại đời cũ (RAM < 2GB hoặc disk < 1.5GB) chạy MariaDB rất dễ treo → đề xuất SQLite.
+  if [ "$INSTALL_MODE" != "repair" ] 2>/dev/null || [ "${TMS_DB_MODE_AUTO:-}" != "1" ]; then
+    TMS_RAM_KB="$(free 2>/dev/null | awk '/Mem:/{print $2}')"
+    TMS_DISK_KB="$(df "$HOME" 2>/dev/null | awk 'NR==2{print $4}')"
+    if [ -n "$TMS_RAM_KB" ] && [ "$TMS_RAM_KB" -lt 1500000 ] 2>/dev/null; then
+      echo '[Gợi ý] RAM máy khá thấp (<1.5 GB) — khuyến nghị dùng SQLite thay cho MariaDB.'
+      echo '         SQLite nhẹ hơn, không cần daemon, phù hợp với VPS mini.'
+    fi
+    if [ -n "$TMS_DISK_KB" ] && [ "$TMS_DISK_KB" -lt 1572864 ] 2>/dev/null; then
+      echo '[Gợi ý] Dung lượng trống thấp (<1.5 GB) — khuyến nghị dùng SQLite.'
+      echo '         MariaDB cần khoảng 500 MB–1 GB cho datadir và gói cài.'
+    fi
+  fi
+  # Quyền bộ nhớ Termux: nếu chưa có ~/storage (termux-setup-storage chưa chạy) vẫn cài được
+  # nhưng nhắc người dùng nếu họ định dùng thư mục ngoài (Downloads/shared) sau này.
+  if [ ! -d "$HOME/storage/shared" ]; then
+    echo '[Thông báo] Quyền bộ nhớ Termux chưa được cấp — lệnh termux-setup-storage sẽ chạy nếu cần sau này.'
+    termux-setup-storage >/dev/null 2>&1 || true
+  fi
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
   # V14.1.1: mirror Termux thỉnh thoảng lỗi 404 (index chưa cập nhật).
   # Tự retry: apt-get update → apt-get install --fix-missing → đổi mirror nếu vẫn lỗi.
@@ -32,12 +52,14 @@ if command -v pkg >/dev/null 2>&1; then
     if pkg install -y $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
     echo "[Khắc phục] Tải gói bị lỗi — cập nhật lại kho gói và thử với --fix-missing (lần $TMS_ATTEMPT/3)..."
     apt-get update >/dev/null 2>&1 || pkg update -y >/dev/null 2>&1 || true
+    sleep 2
     if apt-get install -y --fix-missing $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
     # Lần cuối thử đổi mirror mặc định (khỏi 3san.dev sang mirrors termux chính thức)
     if [ "$TMS_ATTEMPT" -eq 2 ]; then
       echo "[Khắc phục] Vẫn lỗi — chuyển sang mirror dự phòng..."
       termux-change-repo --choice-all --repository "Mirrors by Grimler" >/dev/null 2>&1 || termux-change-repo --choice-all >/dev/null 2>&1 || true
       apt-get update >/dev/null 2>&1 || pkg update -y >/dev/null 2>&1 || true
+      sleep 2
     fi
   done
   if [ "$tms_pkg_ok" -ne 1 ]; then
@@ -45,6 +67,20 @@ if command -v pkg >/dev/null 2>&1; then
     echo '        Thử lại sau vài phút, hoặc chạy thủ công:'
     echo '          pkg install php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl'
     exit 1
+  fi
+  # V14.1.3: kiểm tra từng binary thiết yếu — điện thoại thật đôi khi pkg báo OK nhưng thiếu file
+  TMS_MISSING=""
+  for c in php nginx curl mariadb mariadb-dump zip unzip sshd; do command -v "$c" >/dev/null || TMS_MISSING="$TMS_MISSING $c"; done
+  if [ -n "$TMS_MISSING" ]; then
+    echo "[Khắc phục] Thiếu: $TMS_MISSING — thử cài lại riêng từng gói..."
+    for c in $TMS_MISSING; do
+      pkg install -y "$c" >/dev/null 2>&1 || apt-get install -y --fix-missing "$c" >/dev/null 2>&1 || true
+    done
+    for c in $TMS_MISSING; do command -v "$c" >/dev/null || { echo "[LỖI] Vẫn thiếu: $c — thoát."; exit 1; }; done
+  fi
+  # PHP ext zip: ZIP handler yêu cầu ext zip — bắt buộc cài php-zip nếu thiếu
+  if ! php -m 2>/dev/null | grep -q '^zip$'; then
+    pkg install -y php-zip >/dev/null 2>&1 || apt-get install -y --fix-missing php-zip >/dev/null 2>&1 || true
   fi
 
   # ========== Phát hiện cài đặt cũ — hỏi cài mới hay sửa chữa ==========
@@ -279,7 +315,12 @@ if [ -f "$HOME/.redmi-mini-vps/config/panel-secret.php" ] && [ ! -f "$HOME/.tms-
   echo '[OK] Đã chuyển tài khoản quản trị sang thư mục cấu hình mới (.tms-os).'
 fi
 SECRET="$HOME/.tms-os/config/panel-secret.php"
-
+# ========== V14.1.3: Chế độ sửa chữa — giữ nguyên tài khoản hiện tại ==========
+if [ "$INSTALL_MODE" = "repair" ] && [ -f "$SECRET" ]; then
+  echo '[OK] Chế độ sửa chữa — giữ nguyên tài khoản quản trị hiện tại.'
+  ADMIN_USER="$(php -r '$d=require $argv[1];echo $d["username"]??"";' "$SECRET" 2>/dev/null)" || ADMIN_USER=""
+  printf '[6/7] Cài source và khởi động dịch vụ...\n'
+else
 # ========== V14.1.0: BẮT BUỘC tự nhập tài khoản + mật khẩu ==========
 # Hàm kiểm tra tên tài khoản hợp lệ (3-32 ký tự chữ/số/._-)
 _valid_user() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; }
@@ -327,6 +368,7 @@ php -r '
 ' "$SECRET" "$ADMIN_USER" "$HASH"
 unset ADMIN_PASS HASH
 echo '[OK] Đã lưu tài khoản quản trị panel.'
+fi
 
 printf '[6/7] Cài source và khởi động dịch vụ...\n'
 # V13.0.1: dọn toàn bộ khóa, hàng đợi và trạng thái pending cũ trước khi thay core.

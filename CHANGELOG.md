@@ -1,3 +1,9 @@
+# V14.1.3 — Update Center hoàn chỉnh + Tối ưu bộ cài
+- Update Center: Cập nhật 1 chạm trong panel — tải bản mới nhất từ GitHub, sao lưu, swap, kiểm tra sức khỏe, rollback tự động khi lỗi.
+- API tự cập nhật 1 lệnh: POST /api/updates/run với token riêng (~/.tms-os/update-token) — dùng được cho script/tự động hóa.
+- Rollback an toàn: chỉ dùng backup có đủ các phần thiết yếu (app/public/config), bỏ qua backup rỗng/không đủ.
+- Flash messages bền vững qua swap (lưu ~/.tms-os/flash.json) — thông báo không mất khi target bị thay thế.
+- Bộ cài tối ưu cho điện thoại thật: pre-check RAM/disk trước khi cài MariaDB (đề xuất SQLite cho máy yếu), kiểm tra php-zip trước khi cài, repair mode bỏ qua bước tạo tài khoản, retry pkg mạnh hơn.
 # V14.1.2 — TMS Explorer nâng cấp
 - File Manager: thêm Sao chép tệp/thư mục (tự đổi tên khi trùng, có cho phép ghi đè).
 - File Manager: thêm Di chuyển tệp/thư mục sang thư mục khác (nút "Dùng thư mục này" để chọn đích nhanh).

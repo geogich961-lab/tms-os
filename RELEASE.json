@@ -1,28 +1,19 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.2",
+  "internal_version": "14.1.3",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-19",
-  "name": "TMS OS V14.1.1",
-  "version": "14.1.2",
-  "notes": "Phat hien cai dat cu -> hoi cai moi (xoa sach du lieu) hoac sua chua (giu du lieu); nguoi dung tu nhap tai khoan + mat khau database va tai khoan admin panel (bat buoc); tuong thich Android 7.0+. Bo cai phai chay tuong tac (khong qua pipe).",
+  "released_at": "2026-08-20",
+  "name": "TMS OS V14.1.3",
+  "version": "14.1.3",
+  "notes": "Update Center hoan chinh: cap nhat 1 cham trong panel (tai tu GitHub, backup, swap, health check, rollback tu dong); API tu cap nhat mot lenh (/api/updates/run voi token); rollback an toan (bo qua backup khong du phan, flash ben vung qua swap); bo cai toi uu dien thoai that (pre-check RAM/disk, php-zip check, repair skip admin).",
   "features": [
-    "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",
-    "Database mode selector during installation (press Enter for SQLite default)",
-    "MariaDB deep-clean: removes stale data directories, sockets, pid files and configs before reinstalling",
-    "Automatic MariaDB data directory reinitialization if damaged (mariadb-install-db)",
-    "mariadbd-safe --user= fallback when the default mysql user cannot write pid files",
-    "Unified service manager hides MariaDB automatically in SQLite mode",
-    "Guardian, diagnostics, repair and service scripts respect the chosen DB mode",
-    "Robust Android/Termux LAN IPv4 discovery with multiple fallbacks",
-    "Never publishes 127.0.0.1 as a LAN address",
-    "Short direct LAN URL using Wi-Fi IP and each website port",
-    "Optional short .lan name through downloadable hosts file",
-    "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
-    "Unified Core V13.0 service and queue architecture retained"
+    "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
+    "One-command self-update API /api/updates/run with per-install token (scripts and automation safe)",
+    "Safe rollback: only uses backups containing app+public+config; flash messages survive target swap via flash.json",
+    "Installer hardened: RAM/disk pre-check before MariaDB (suggests SQLite on weak devices), php-zip check, repair skips account setup, stronger pkg retry"
   ],
-  "checksum_sha256": "c02f910097bafdbcf9cf61a10be690d850d5456875838b49bd25ef916d821400"
+  "checksum_sha256": "68238111839c449f778c0866a74d6da6275286d0447c0e2c5ef5c275a54c2d52"
 }

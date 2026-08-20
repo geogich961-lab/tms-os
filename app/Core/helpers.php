@@ -62,12 +62,29 @@ function tms_verify_csrf(?string $token): bool
 function tms_flash(string $type, string $message): void
 {
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
+    // Lưu bền vững ra file ngoài target để không mất khi target bị swap (rollback/update)
+    $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+    $file = rtrim($home, '/') . '/.tms-os/flash.json';
+    @file_put_contents($file, json_encode(['type' => $type, 'message' => $message], JSON_UNESCAPED_UNICODE));
+    @chmod($file, 0600);
 }
 
 function tms_pull_flash(): ?array
 {
     $flash = $_SESSION['flash'] ?? null;
     unset($_SESSION['flash']);
+    if (!is_array($flash)) {
+        // Đọc lại từ file dự phòng (bền vững qua swap target)
+        $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+        $file = rtrim($home, '/') . '/.tms-os/flash.json';
+        if (is_file($file)) {
+            $data = @json_decode((string)@file_get_contents($file), true);
+            @unlink($file);
+            if (is_array($data) && isset($data['type'])) {
+                $flash = $data;
+            }
+        }
+    }
     return is_array($flash) ? $flash : null;
 }
 

@@ -1,7 +1,39 @@
 <?php $title='Update Center · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
-<div class="page-head"><div><p class="eyebrow">SAFE UPDATE</p><h1>Update Center</h1><p>Kiểm tra cấu trúc và lưu gói cập nhật trước khi áp dụng.</p></div><span class="status-pill running">Hệ thống ổn định</span></div>
+<div class="page-head"><div><p class="eyebrow">SAFE UPDATE</p><h1>Update Center</h1><p>Kiểm tra, tải và áp dụng cập nhật an toàn — tự sao lưu và khôi phục nếu lỗi.</p></div></div>
 <?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
-<section class="panel-card"><h2>Tải gói cập nhật</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="form-stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="file" name="package" accept=".zip,application/zip" required><button class="btn btn-primary">Kiểm tra và lưu</button></form>
-<p class="muted">TMS OS không tự ghi đè lõi đang chạy từ trình duyệt. Cách này tránh panel bị hỏng giữa quá trình cập nhật. Sau khi staging, chạy <code>scripts/install.sh</code> của gói mới trong Termux.</p></section>
-<section class="panel-card"><h2>Gói đã staging</h2><?php if(empty($items)):?><p>Chưa có gói nào.</p><?php else:?><div class="table-wrap"><table><thead><tr><th>File</th><th>Dung lượng</th><th>SHA-256</th><th></th></tr></thead><tbody><?php foreach($items as $i):?><tr><td><?=tms_h($i['name'])?></td><td><?=number_format($i['size']/1048576,2)?> MB</td><td><code><?=tms_h(substr($i['sha256'],0,16))?>…</code></td><td><form method="post" action="/updates/delete"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-danger-soft btn-small">Xóa</button></form></td></tr><?php endforeach;?></tbody></table></div><?php endif;?></section>
+
+<section class="panel-card"><h2>Phiên bản hiện tại</h2>
+<p>Bản đang chạy: <strong><?=tms_h($status['current']??'unknown')?></strong>
+<?php if(!empty($status['previous_exists'])):?><span class="status-pill running">Có bản sao lưu gần đây</span><?php endif;?>
+</p>
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn" id="check-update-btn">Kiểm tra cập nhật</button>
+<?php if(!empty($status['previous_exists'])):?><form method="post" action="/updates/rollback" style="display:inline" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-danger-soft">Khôi phục bản trước</button></form><?php endif;?>
+</div>
+<p class="muted" id="check-result"></p></section>
+
+<section class="panel-card" id="online-update-card"><h2>Cập nhật từ GitHub (1 chạm)</h2>
+<p>TMS OS sẽ tải bản mới nhất từ kho chính thức, kiểm tra checksum SHA-256, sao lưu source hiện tại, rồi áp dụng. Nếu panel không hoạt động sau khi áp dụng, hệ thống tự động khôi phục bản trước.</p>
+<form method="post" action="/updates/apply" onsubmit="return confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ reload sau khi hoàn tất.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
+<p class="muted">Hoặc qua lệnh (từ thiết bị khác trên mạng LAN): <code>curl -sS -X POST http://127.0.0.1:8888/api/updates/run -d "token=TOKEN_CỦA_BẠN"</code></p></section>
+
+<section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="form-stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="file" name="package" accept=".zip,application/zip" required><button class="btn btn-primary">Kiểm tra và lưu</button></form>
+<p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
+
+<section class="panel-card"><h2>Gói đã lưu trữ</h2><?php if(empty($items)):?><p>Chưa có gói nào.</p><?php else:?><div class="table-wrap"><table><thead><tr><th>File</th><th>Dung lượng</th><th>SHA-256</th><th></th><th></th></tr></thead><tbody><?php foreach($items as $i):?><tr><td><?=tms_h($i['name'])?></td><td><?=number_format($i['size']/1048576,2)?> MB</td><td><code><?=tms_h(substr($i['sha256'],0,16))?>…</code></td><td><form method="post" action="/updates/staged/apply" style="display:inline" onsubmit="return confirm('Áp dụng gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-primary-soft btn-small">Áp dụng</button></form></td><td><form method="post" action="/updates/delete" style="display:inline"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-danger-soft btn-small">Xóa</button></form></td></tr><?php endforeach;?></tbody></table></div><?php endif;?></section>
+
+<script>
+document.getElementById('check-update-btn')?.addEventListener('click',function(){
+  var btn=this;btn.disabled=true;btn.textContent='Đang kiểm tra…';
+  var out=document.getElementById('check-result');out.textContent='Đang kết nối GitHub…';
+  fetch('/api/updates/check',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
+    btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
+    if(d.error){out.textContent='Lỗi: '+d.error;return;}
+    if(d.available){
+      var notes=(d.available.notes||'').split('\n').filter(function(l){return l.trim().startsWith('-');}).slice(0,6).join('<br>');
+      out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><a href="#apply-github-btn" class="btn btn-primary btn-small" style="margin-top:8px;display:inline-block" onclick="document.querySelector(\'#online-update-card form\').submit()">Cập nhật ngay</a>';
+    }else{out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';}
+  }).catch(function(){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent='Không thể kiểm tra — hãy thử lại.';});
+});
+</script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>
