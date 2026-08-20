@@ -15,6 +15,6 @@
     "Service Worker tms-os-v15-3-3: cap nhat cache CSS moi, tu dong xoa cache cu khi update",
     "Giữ nguyen toan bo tinh nang: Database + SQL Editor, Cloudflare Hosting, Remote Access, Explorer, PWA"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "217e962fdacb429d2a2099e88bd7999cb7b82710b251f91b661b6bbd0774fc05",
   "build_date": "2026-08-20"
 }
