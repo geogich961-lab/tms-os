@@ -1,3 +1,8 @@
+# V14.2.3 — Thanh menu trên điện thoại luôn cố định khi cuộn trang
+- Sửa thanh header chứa menu trên điện thoại vẫn bị cuộn theo trang: thanh menu giờ dùng `position:fixed` (thay `sticky` bị phá vỡ), luôn bám trên cùng màn hình khi cuộn dù đang mở trang nào.
+- Header giờ hiển thị đè nhẹ lên nội dung theo kiểu hiện đại, an toàn với safe-area trên iPhone (có notch/khung đen), nội dung chính tự đẩy xuống tránh bị che.
+- Khi menu ngang đang mở, nút ☰ vẫn luôn bấm được để đóng menu mà không cần cuộn lại lên đầu trang.
+
 # V14.2.2 — Sửa 3 lỗi giao diện V14.2.0
 - Sửa SyntaxError trong app.js: khai báo `setRelative` trùng (2 lần) làm toàn bộ menu toggle, nút "Cài TMS OS lên màn hình chính" và theme toggle không hoạt động.
 - Sửa logo header/trang đăng nhập bị mất: helper `tms_brand_icon('logo')` trả đường dẫn vào thư mục `icons/` không chứa file logo — giờ trả đúng `/assets/logo-tms-os.png`.

@@ -7,7 +7,7 @@
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
   "name": "TMS OS V14.2.2",
-  "version": "14.2.2",
+  "version": "14.2.3",
   "notes": "Sua 3 loi giao dien V14.2.0: app.js co loi SyntaxError (khai bao setRelative trung) lam menu va nut cai app khong bam duoc; logo header mat (path icon sai) da sua; PWA icon co vien trang da thay bang icon solid day nen (icon-192/512-solid.png) trong manifest va khi doi logo.",
   "features": [
     "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
