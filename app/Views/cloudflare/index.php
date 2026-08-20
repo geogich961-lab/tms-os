@@ -4,7 +4,7 @@ $state=(string)($status['status']??'stopped');
 $labels=['stopped'=>'Đã dừng','starting'=>'Đang khởi động','connecting'=>'Đang kết nối','verifying'=>'Đang xác minh','connected'=>'Đã kết nối','error'=>'Có lỗi'];
 $stateLabel=$labels[$state]??'Không xác định';$caps=$status['capabilities']??[];$settings=$status['settings']??[];
 ?>
-<div class="page-head"><div><p class="eyebrow">TMS OS V10.3.1</p><h1>Internet Access Center</h1><p class="muted">Tự động chọn tunnel hoạt động tốt nhất trên Wi‑Fi công cộng, 4G/5G hoặc mạng gia đình.</p></div><span id="cf-status-pill" class="status-pill <?=in_array($state,['starting','connecting','verifying','connected'],true)?'running':'stopped'?>"><?=tms_h($stateLabel)?></span></div>
+<div class="page-head"><div><p class="eyebrow">TMS OS V14 · INTERNET ACCESS</p><h1>Internet Access Center</h1><p class="muted">Tự động chọn tunnel hoạt động tốt nhất trên Wi‑Fi công cộng, 4G/5G hoặc mạng gia đình.</p></div><span id="cf-status-pill" class="status-pill <?=in_array($state,['starting','connecting','verifying','connected'],true)?'running':'stopped'?>"><?=tms_h($stateLabel)?></span></div>
 <?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
 <section class="panel-card cf-card" data-cloudflare-panel>
 <div class="section-title-row"><div><p class="eyebrow">SMART FALLBACK ENGINE</p><h2>Tạo URL công khai</h2></div><span class="cf-live-dot" id="cf-live-dot"></span></div>

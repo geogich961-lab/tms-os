@@ -223,3 +223,6 @@
 
 # V14.2.4 — Sửa header menu biến mất trên điện thoại
 - V14.2.3 bị lỗi: rule CSS `.mobile-header{display:none}` toàn cục (không có media query) đứng sau rule hiển thị header → trên mọi kích thước màn hình điện thoại, thanh menu bị ẩn hoàn toàn. Đã xóa rule toàn cục này; header giờ luôn hiện với vị trí cố định (position:fixed) khi truy cập bằng điện thoại.
+
+# V14.2.5 — Dọn nhãn phiên bản cũ trong giao diện
+- Thay các nhãn phiên bản nội bộ cũ hiển thị ở đầu các trang (V10.3.1, V11.1, V11 CORE, V13, V13.0.1) bằng nhãn đồng bộ hiện đại `TMS OS V14 · [TÊN PHÂN HỆ]` — giao diện chuyên nghiệp, nhất quán trên mọi trang.
