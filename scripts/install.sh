@@ -1,23 +1,113 @@
 #!/data/data/com.termux/files/usr/bin/bash
+# TMS OS V14.1.0 — Bộ cài chính (chạy trực tiếp, không qua pipe khi cần hỏi)
+# Luồng:
+#   1. Phát hiện cài cũ → hỏi Sửa chữa (giữ dữ liệu) / Cài mới (xóa sạch)
+#   2. Chọn engine database (SQLite/MariaDB)
+#   3. BẮT BUỘC tự nhập tài khoản + mật khẩu database (SQLite)
+#   4. BẮT BUỘC tự nhập tài khoản + mật khẩu quản trị panel
+#   5. Cấu hình PHP/Nginx, khởi tạo DB, khởi động dịch vụ
 set -Eeuo pipefail
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"; HOME="${HOME:-/data/data/com.termux/files/home}"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"; TARGET="$HOME/tms-os"; NGINX="$PREFIX/etc/nginx/nginx.conf"; SITES="$PREFIX/etc/nginx/sites-enabled"; PHP_CONF_DIR="$PREFIX/etc/php/conf.d"
 STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$HOME/.tms-os/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$HOME/.tms-os/quarantine/$STAMP"
-trap 'if [ -f "$HOME/.tms-os/.generated-password" ]; then echo "[INFO] Mật khẩu quản trị đã tạo (chưa đổi): $(cat "$HOME/.tms-os/.generated-password")"; fi; echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
+trap 'echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
 printf '\n============================================\n Welcome to TMS OS by THCGaming\n============================================\n'
+
+if [ -p /dev/stdin ]; then
+  echo '[LỖI] Bộ cài này cần tương tác bàn phím — không chạy được qua pipe (curl | bash).'
+  echo '        Hãy tải và chạy trực tiếp:'
+  echo "          bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh)"
+  echo '        hoặc tải ZIP từ GitHub Releases rồi chạy:'
+  echo '          bash ~/tms-os/scripts/install.sh'
+  exit 2
+fi
+
 if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
   pkg update -y
   pkg install -y php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl
 
-  # V14.0.3: chọn engine database — SQLite (khuyến nghị: nhẹ, không daemon, không thể cài hỏng)
+  # ========== Phát hiện cài đặt cũ — hỏi cài mới hay sửa chữa ==========
+  # TMS_INSTALL_MODE được bộ cài root (install.sh) truyền; nếu không có
+  # (chạy trực tiếp scripts/install.sh), tự phát hiện.
+  HAS_OLD=0
+  [ -d "$TARGET" ] && HAS_OLD=1
+  [ -f "$HOME/.tms-os/db-mode" ] && HAS_OLD=1
+  [ -d "$HOME/.redmi-mini-vps" ] && HAS_OLD=1
+  if [ "${TMS_INSTALL_MODE:-}" = "repair" ]; then
+    INSTALL_MODE="repair"
+  elif [ "${TMS_INSTALL_MODE:-}" = "clean" ]; then
+    INSTALL_MODE="clean"
+  elif [ "$HAS_OLD" -eq 1 ]; then
+    echo ''
+    echo '============================================'
+    echo ' [PHÁT HIỆN] Máy này đã có TMS OS (hoặc bản cũ .redmi-mini-vps).'
+    echo '   [1] Sửa chữa — giữ nguyên dữ liệu (website, database, tài khoản), cài đè bản mới'
+    echo '   [2] Cài mới — XÓA SẠCH mọi dữ liệu cũ, làm lại từ đầu'
+    echo '============================================'
+    while true; do
+      printf 'Chọn [1/2]: '
+      read -r REPAIR_CHOICE
+      case "$REPAIR_CHOICE" in
+        1) INSTALL_MODE="repair"; break ;;
+        2) INSTALL_MODE="clean"; break ;;
+        *) echo 'Vui lòng gõ 1 hoặc 2.' ;;
+      esac
+    done
+  else
+    INSTALL_MODE="clean"
+    echo 'Chưa có TMS OS trên máy — cài mới từ đầu. [OK]'
+  fi
+
+  # ========== Chế độ cài mới: xóa sạch dữ liệu cũ ==========
+  if [ "$INSTALL_MODE" = "clean" ]; then
+    echo ''
+    echo '[CẢNH BÁO] Chế độ CÀI MỚI: sẽ XÓA SẠCH toàn bộ dữ liệu TMS OS cũ'
+    echo '  (website, database, tài khoản panel, cấu hình nginx/PHP).'
+    printf '  Gõ YES (in hoa) để xác nhận xóa sạch: '
+    read -r CONFIRM_CLEAN
+    if [ "$CONFIRM_CLEAN" != "YES" ]; then
+      echo 'Đã hủy — không xóa gì cả.'
+      exit 0
+    fi
+    # Dừng dịch vụ đang chạy trước khi xóa
+    bash "$TARGET/scripts/stop-tms.sh" 2>/dev/null || true
+    pkill -9 -f mariadbd 2>/dev/null || true
+    pkill -9 -f "tms-php-engine" 2>/dev/null || true
+    sleep 2
+    echo '[OK] Đã dừng các dịch vụ cũ. Xóa dữ liệu...'
+    rm -rf "$TARGET" "$TARGET.previous"
+    rm -rf "$HOME/.tms-os/data" "$HOME/.tms-os/service-core" "$HOME/.tms-os/service-manager.json"
+    rm -rf "$HOME/.tms-os/backups" "$HOME/backups/database"
+    rm -rf "$HOME/websites"
+    # MariaDB: xóa datadir cũ + cấu hình cũ (đảm bảo khởi tạo từ zero)
+    rm -rf "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp/mysql.sock" "/tmp/mysql.sock"
+    rm -f "$HOME/.tms-os/mariadb-client.cnf" "$HOME/logs/services/mariadb.log"
+    # Cấu hình nginx/PHP cũ
+    rm -f "$NGINX" "$SITES/default.conf"
+    rm -f "$PHP_CONF_DIR/99-tms-os.ini"
+    echo '[OK] Đã xóa sạch dữ liệu cũ.'
+  fi
+
+  # ========== Chế độ sửa chữa: sao lưu dữ liệu hiện tại ==========
+  if [ "$INSTALL_MODE" = "repair" ]; then
+    echo 'Sửa chữa — sao lưu dữ liệu hiện tại trước khi cài đè...'
+    printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
+    mkdir -p "$HOME/.tms-os" "$HOME/.tms-os/backups" "$HOME/logs/services"
+    if [ -d "$TARGET" ]; then
+      cp -a "$TARGET" "$BACKUP/tms-os" || true
+    fi
+    [ -f "$HOME/.tms-os/data/db/tms.db" ] && cp "$HOME/.tms-os/data/db/tms.db" "$BACKUP/tms.db.bak" || true
+    [ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
+    echo "[OK] Đã sao lưu dữ liệu hiện tại vào $BACKUP"
+  fi
+
+  # ========== Chọn engine database ==========
+  # V14.0.3: SQLite (khuyến nghị: nhẹ, không daemon, không thể cài hỏng)
   # hoặc MariaDB (đầy đủ tính năng, cần daemon chạy nền).
-  if [ -n "${TMS_FORCE_DB_MODE:-}" ]; then
-    case "$TMS_FORCE_DB_MODE" in
-      m|M|MariaDB|MARIADB|maria*) DB_MODE="mariadb" ;;
-      s|S|SQLite|SQLITE|sqlite*) DB_MODE="sqlite" ;;
-      *) DB_MODE="mariadb" ;;
-    esac
+  if [ "$INSTALL_MODE" = "repair" ] && [ -f "$HOME/.tms-os/db-mode" ]; then
+    DB_MODE="$(cat "$HOME/.tms-os/db-mode")"
+    echo "Giữ nguyên engine database hiện tại: $DB_MODE (chế độ sửa chữa)."
   else
     DB_MODE="mariadb"
     printf 'Chọn engine database: [S]QLite (khuyến nghị cho điện thoại cũ, nhẹ và ổn định) hay [M]ariaDB (đầy đủ tính năng)? [S/m]: '
@@ -38,7 +128,9 @@ for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd; do command 
 for part in app config public routes storage scripts; do [ -d "$SOURCE_DIR/$part" ] || { echo "Thiếu thư mục: $part"; exit 1; }; done
 printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
 mkdir -p "$HOME/.tms-os" "$BACKUP" "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache" "$SITES" "$PHP_CONF_DIR" "$HOME/logs/nginx" "$HOME/logs/services" "$HOME/backups" "$QUARANTINE" "$HOME/websites/default/public"
-date +%s > "$HOME/.tms-os/runtime_started_at"; [ -d "$TARGET" ] && cp -a "$TARGET" "$BACKUP/tms-os" || true; [ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
+date +%s > "$HOME/.tms-os/runtime_started_at"
+[ -d "$TARGET" ] && cp -a "$TARGET" "$BACKUP/tms-os" || true
+[ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
 cp -a "$SOURCE_DIR"/{app,config,public,routes,scripts} "$STAGING/"; cp -a "$SOURCE_DIR/storage/." "$STAGING/storage/"; chmod -R 700 "$STAGING/storage"
 find "$STAGING" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do php -l "$f" >/dev/null; done
 printf '[3/7] Cấu hình PHP Engine tương thích tự động...\n'
@@ -74,7 +166,7 @@ printf '[4/7] Khởi tạo database (%s)...\n' "$DB_MODE"
 mkdir -p "$HOME/logs/services"
 
 if [ "$DB_MODE" = "sqlite" ]; then
-  # V14.0.3: SQLite — không daemon, không socket, không thể cài hỏng.
+  # V14.1.0: SQLite với tài khoản database BẮT BUỘC tự nhập.
   mkdir -p "$HOME/.tms-os/data/db" "$HOME/backups/database"
   chmod 700 "$HOME/.tms-os/data" "$HOME/.tms-os/data/db"
   if ! command -v sqlite3 >/dev/null 2>&1 || ! sqlite3 "$HOME/.tms-os/data/test.db" 'SELECT 1' >/dev/null 2>&1; then
@@ -84,20 +176,21 @@ if [ "$DB_MODE" = "sqlite" ]; then
   rm -f "$HOME/.tms-os/data/test.db"
   echo '[OK] SQLite đã sẵn sàng.'
 else
-  # === MariaDB: clear sạch toàn bộ trạng thái cũ trước khi cài ===
-  # V14.0.3: luôn dọn sạch tiến trình + datadir cũ — đảm bảo khởi tạo từ zero.
-  echo '[Thông báo] Sẽ xóa sạch kho dữ liệu MariaDB cũ (nếu có) để cài mới hoàn toàn...'
-  pkill -9 -f mariadbd 2>/dev/null || true
-  sleep 2
-  rm -rf "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp/mysql.sock" "/tmp/mysql.sock"
-  rm -f "$HOME/.tms-os/mariadb-client.cnf" "$HOME/logs/services/mariadb.log" "$HOME/logs/services/mariadb-init.log"
-  mkdir -p "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp"
-  rm -f "$HOME/logs/services/mariadb-init.log"
-  if ! mariadb-install-db --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb-init.log" 2>&1; then
-    echo 'Không thể khởi tạo kho dữ liệu MariaDB. Xem nhật ký:' "$HOME/logs/services/mariadb-init.log" >&2
-    exit 1
+  # === MariaDB: chỉ khởi tạo lại khi cài mới; sửa chữa giữ datadir ===
+  if [ "$INSTALL_MODE" = "clean" ]; then
+    echo '[Thông báo] Sẽ xóa sạch kho dữ liệu MariaDB cũ (nếu có) để cài mới hoàn toàn...'
+    pkill -9 -f mariadbd 2>/dev/null || true
+    sleep 2
+    rm -rf "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp/mysql.sock" "/tmp/mysql.sock"
+    rm -f "$HOME/.tms-os/mariadb-client.cnf" "$HOME/logs/services/mariadb.log" "$HOME/logs/services/mariadb-init.log"
+    mkdir -p "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp"
+    rm -f "$HOME/logs/services/mariadb-init.log"
+    if ! mariadb-install-db --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb-init.log" 2>&1; then
+      echo 'Không thể khởi tạo kho dữ liệu MariaDB. Xem nhật ký:' "$HOME/logs/services/mariadb-init.log" >&2
+      exit 1
+    fi
+    echo '[OK] Đã khởi tạo kho dữ liệu MariaDB mới hoàn toàn.'
   fi
-  echo '[OK] Đã khởi tạo kho dữ liệu MariaDB mới hoàn toàn.'
 
   # Khởi động — lần 1: user hiện tại (--user=) để tránh lỗi quyền pid file.
   nohup mariadbd-safe --datadir="$PREFIX/var/lib/mysql" --user= >"$HOME/logs/services/mariadb.log" 2>&1 &
@@ -160,38 +253,55 @@ if [ -f "$HOME/.redmi-mini-vps/config/panel-secret.php" ] && [ ! -f "$HOME/.tms-
   echo '[OK] Đã chuyển tài khoản quản trị sang thư mục cấu hình mới (.tms-os).'
 fi
 SECRET="$HOME/.tms-os/config/panel-secret.php"
-CREATE_ADMIN=1
-if [ -f "$SECRET" ] && [ -z "${TMS_ADMIN_USER:-}" ]; then
-  CREATE_ADMIN=0
-fi
 
-# V14.0.8: KHÔNG hỏi tài khoản khi cài (read qua pipe không chờ được bàn phím).
-# Tạo tài khoản tạm an toàn, người dùng tự đổi sau bằng:
-#   bash ~/tms-os/scripts/tms-setup-admin.sh
-if [ "$CREATE_ADMIN" -eq 1 ] || [ ! -f "$SECRET" ]; then
-  ADMIN_USER="admin"
-  ADMIN_PASS="$(php -r 'echo substr(str_replace(array(chr(43),chr(47),chr(61)),array(1,1,1),base64_encode(random_bytes(12))),0,12);')"
-  _PW_TMP="$(mktemp)"
-  printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
-  HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
-  rm -f "$_PW_TMP"
-  if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
-    echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại bộ cài.' >&2
-    exit 1
-  fi
-  php -r '
-    $file=(string)$argv[1];
-    $user=(string)$argv[2];
-    $hash=(string)$argv[3];
-    $data="<?php\nreturn [\"username\"=>".var_export($user,true).",\"password_hash\"=>".var_export($hash,true)."];\n";
-    if (file_put_contents($file,$data)===false) { fwrite(STDERR,"Không thể ghi tệp tài khoản.\n"); exit(1); }
-    chmod($file,0600);
-  ' "$SECRET" "$ADMIN_USER" "$HASH"
-  # Lưu mật khẩu tạm để hiển thị cuối cài + cho phép đổi sau
-  echo "$ADMIN_PASS" > "$HOME/.tms-os/.generated-password"
-  chmod 600 "$HOME/.tms-os/.generated-password"
-  unset ADMIN_PASS HASH
+# ========== V14.1.0: BẮT BUỘC tự nhập tài khoản + mật khẩu ==========
+# Hàm kiểm tra tên tài khoản hợp lệ (3-32 ký tự chữ/số/._-)
+_valid_user() { printf '%s' "$1" | grep -Eq '^[A-Za-z0-9._-]{3,32}$'; }
+
+# --- Tài khoản quản trị panel: tự nhập ---
+_ATTEMPTS=0
+while :; do
+  printf 'Nhập tên đăng nhập quản trị (3-32 ký tự, chữ/số/._-): '
+  read -r ADMIN_USER || ADMIN_USER=""
+  ADMIN_USER="${ADMIN_USER%$'\r'}"
+  if _valid_user "$ADMIN_USER"; then break; fi
+  echo 'Tên đăng nhập không hợp lệ. Ví dụ: admin, tms_admin, thc.gaming'
+  _ATTEMPTS=$((_ATTEMPTS+1))
+  if [ "$_ATTEMPTS" -ge 5 ]; then echo '[LỖI] Đã thử nhiều lần — thoát.'; exit 1; fi
+done
+
+while :; do
+  printf 'Nhập mật khẩu quản trị (tối thiểu 8 ký tự): '
+  IFS= read -r -s ADMIN_PASS || ADMIN_PASS=""
+  ADMIN_PASS="${ADMIN_PASS%$'\r'}"
+  echo
+  if [ "${#ADMIN_PASS}" -lt 8 ]; then echo 'Mật khẩu quá ngắn (cần ít nhất 8 ký tự).'; continue; fi
+  printf 'Nhập lại mật khẩu: '
+  IFS= read -r -s ADMIN_PASS_CONFIRM || ADMIN_PASS_CONFIRM=""
+  ADMIN_PASS_CONFIRM="${ADMIN_PASS_CONFIRM%$'\r'}"
+  echo
+  if [ "$ADMIN_PASS" != "$ADMIN_PASS_CONFIRM" ]; then echo 'Hai mật khẩu không khớp. Vui lòng nhập lại.'; continue; fi
+  break
+done
+_PW_TMP="$(mktemp)"
+printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
+HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
+rm -f "$_PW_TMP"
+if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
+  echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại bộ cài.' >&2
+  exit 1
 fi
+php -r '
+  $file=(string)$argv[1];
+  $user=(string)$argv[2];
+  $hash=(string)$argv[3];
+  $data="<?php\nreturn [\"username\"=>".var_export($user,true).",\"password_hash\"=>".var_export($hash,true)."];\n";
+  if (file_put_contents($file,$data)===false) { fwrite(STDERR,"Không thể ghi tệp tài khoản.\n"); exit(1); }
+  chmod($file,0600);
+' "$SECRET" "$ADMIN_USER" "$HASH"
+unset ADMIN_PASS HASH
+echo '[OK] Đã lưu tài khoản quản trị panel.'
+
 printf '[6/7] Cài source và khởi động dịch vụ...\n'
 # V13.0.1: dọn toàn bộ khóa, hàng đợi và trạng thái pending cũ trước khi thay core.
 rm -f "$HOME/.tms-os/php-engine.lock" "$HOME/.tms-os/service-worker.lock" 2>/dev/null || true
@@ -225,18 +335,12 @@ pgrep -x sshd >/dev/null 2>&1 || sshd
 sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
 printf '[7/7] Hoàn tất.\n'
 MODE="$(bash "$TARGET/scripts/tms-php-engine.sh" status)"
-echo '============================================'; echo '[OK] TMS OS đã cài đặt thành công.'; echo 'Panel: http://127.0.0.1:8888'; echo 'Website: http://127.0.0.1:8080'; echo "PHP Engine: $MODE"; echo 'Khởi động lần sau: bash ~/tms-os/scripts/start-tms.sh'
-if [ -f "$HOME/.tms-os/.generated-password" ]; then
-  GEN_USER="admin"
-  GEN_PASS="$(cat "$HOME/.tms-os/.generated-password")"
-  echo "Tài khoản quản trị (tạm thời): $GEN_USER"
-  echo "Mật khẩu tạm: $GEN_PASS"
-  echo 'ĐĂNG NHẬP NGAY rồi đổi mật khẩu (Cài đặt > Đổi mật khẩu), HOẶC đặt tên riêng bằng lệnh:'
-  echo '  bash ~/tms-os/scripts/tms-setup-admin.sh'
-  rm -f "$HOME/.tms-os/.generated-password"
-else
-  echo 'Đăng nhập bằng tài khoản quản trị bạn vừa thiết lập.'
-  echo 'Đổi tên tài khoản/mật khẩu bất kỳ lúc nào:'
-  echo '  bash ~/tms-os/scripts/tms-setup-admin.sh'
-fi
+echo '============================================'
+echo '[OK] TMS OS đã cài đặt thành công.'
+echo "Panel: http://127.0.0.1:8888 (đăng nhập: $ADMIN_USER)"
+echo 'Website: http://127.0.0.1:8080'
+echo "PHP Engine: $MODE"
+echo 'Khởi động lần sau: bash ~/tms-os/scripts/start-tms.sh'
+echo 'Đổi tên tài khoản/mật khẩu bất kỳ lúc nào:'
+echo '  bash ~/tms-os/scripts/tms-setup-admin.sh'
 echo '============================================'

@@ -1,3 +1,11 @@
+# V14.1.0 — Smart Installer (Clean/Repair) + Mandatory Accounts + Android 7.0+
+
+- Installer detects an existing TMS OS installation and asks the user to choose: [1] Repair (keeps all websites, databases, accounts; reinstalls the core) or [2] Clean install (wipes all old data after typing YES to confirm).
+- Repair mode preserves the existing database engine, datadir and nginx/php config; clean mode stops services and removes everything before provisioning.
+- Panel admin credentials are now ALWAYS entered by the user at install time (username + password with retype confirmation, minimum 8 characters) — no more auto-generated temporary passwords.
+- Installer no longer runs non-interactively via pipe when a previous install is detected; users are directed to run it interactively.
+- Added Android 7.0 (API 24) compatibility checks with clear error messages for unsupported devices.
+
 # V14.0.9 — Auto-Start on Boot + Installer Fixes
 
 - Added `tms-boot.sh`: auto-start TMS OS when the device boots, via the Termux boot mechanism (`~/.termux/boot/`). Supports `on`/`off`/`status`.
