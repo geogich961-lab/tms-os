@@ -1,3 +1,9 @@
+# V15.2.1 — Database Manager tự động phát hiện SQLite trong website (Typecho, ứng dụng người dùng)
+
+- Trang Database (chế độ SQLite) trước đây chỉ liệt kê database do TMS OS tạo (`~/.tms-os/data/db/`) — các ứng dụng tự cài như Typecho tạo file SQLite trong thư mục website (`usr/<uniqid>.db`) nên không hiển thị. Giờ tự động quét file `*.sqlite3`, `*.sqlite`, `*.db` trong `~/websites/<site>/public` (đệ quy 3 cấp, bỏ qua `node_modules`/`vendor`/`.git`) và chỉ nhận file SQLite thật (kiểm tra header "SQLite format 3").
+- Giao diện chia 2 nhóm: **Database TMS OS** (đầy đủ Tạo/Xuất/Nhập/Xóa) và **Database trong website** (badge tên website + đường dẫn + kích thước; nút **Xuất SQL** và **Mang về quản lý**).
+- "Mang về quản lý" copy file về `~/.tms-os/data/db/` để quản lý như database thông thường — file gốc trong website vẫn giữ nguyên (an toàn với dữ liệu đang chạy). Kèm kiểm tra path traversal — chỉ chấp nhận file trong HOME người dùng.
+
 # V15.2.0 — Remote Access: truy cập panel quản trị từ xa qua Cloudflare Tunnel
 
 - Tính năng mới "Truy cập panel từ xa" trong Cloudflare Hosting: bật bằng một cú bấm, tự chọn subdomain (mặc định `panel.<domain>` của bạn) và tự tạo ingress rule + record DNS CNAME trên cùng tunnel đang có — không tạo tunnel mới, không phá kết nối website hiện tại.

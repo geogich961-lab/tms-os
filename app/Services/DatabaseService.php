@@ -38,14 +38,7 @@ final class DatabaseService
     public function all(): array
     {
         if ($this->driver === 'sqlite') {
-            $dir = $this->home . '/.tms-os/data/db';
-            if (!is_dir($dir)) {
-                return [];
-            }
-            return array_values(array_filter(
-                array_map(static fn(string $f): string => pathinfo($f, PATHINFO_FILENAME), scandir($dir)),
-                static fn(string $name): bool => $name !== '' && $name !== '.' && $name !== '..'
-            ));
+            return $this->allSqlite();
         }
         $output = $this->queryLines('SHOW DATABASES');
         $skip = ['information_schema', 'performance_schema', 'mysql', 'sys'];
@@ -54,6 +47,141 @@ final class DatabaseService
             array_map('trim', $output),
             static fn(string $name): bool => $name !== '' && !in_array($name, $skip, true)
         ));
+    }
+
+    /**
+     * V15.2.1: quét SQLite quản lý (.tms-os/data/db) + file SQLite trong website
+     * (Typecho, ứng dụng người dùng tự tạo).
+     */
+    public function allSqlite(): array
+    {
+        $items = [];
+        $dir = $this->home . '/.tms-os/data/db';
+        if (is_dir($dir)) {
+            foreach (scandir($dir) ?: [] as $f) {
+                if ($f === '.' || $f === '..' || !is_file($dir . '/' . $f)) {
+                    continue;
+                }
+                $ext = strtolower((string)pathinfo($f, PATHINFO_EXTENSION));
+                if (!in_array($ext, ['sqlite3', 'sqlite', 'db'], true)) {
+                    continue;
+                }
+                $items[] = [
+                    'name' => pathinfo($f, PATHINFO_FILENAME),
+                    'source' => 'managed',
+                    'path' => $dir . '/' . $f,
+                    'site' => '',
+                    'size' => is_file($dir . '/' . $f) ? (int)@filesize($dir . '/' . $f) : 0,
+                ];
+            }
+        }
+        // Quét website: ~/websites/<site>/... — hợp lệ: usr/*.db, *.sqlite3, *.sqlite (không đệ quy quá 3 cấp)
+        $sitesDir = $this->home . '/websites';
+        $skipDirs = ['node_modules', 'vendor', '.git', 'cache', 'tmp', 'storage'];
+        if (is_dir($sitesDir)) {
+            foreach (scandir($sitesDir) ?: [] as $site) {
+                if ($site === '.' || $site === '..' || !is_dir($sitesDir . '/' . $site)) {
+                    continue;
+                }
+                $publicRoot = $sitesDir . '/' . $site . '/public';
+                if (!is_dir($publicRoot)) {
+                    continue;
+                }
+                $files = $this->findSqliteFiles($publicRoot, 3, $skipDirs);
+                foreach ($files as $f) {
+                    $items[] = [
+                        'name' => pathinfo($f, PATHINFO_FILENAME),
+                        'source' => 'website',
+                        'path' => $f,
+                        'site' => $site,
+                        'size' => (int)@filesize($f),
+                    ];
+                }
+            }
+        }
+        usort($items, static fn(array $a, array $b): int => strnatcasecmp($a['name'], $b['name']));
+        return $items;
+    }
+
+    /**
+     * Tìm file SQLite trong thư mục, giới hạn độ sâu — tránh thư mục nặng.
+     */
+    private function findSqliteFiles(string $dir, int $maxDepth, array $skipDirs): array
+    {
+        $found = [];
+        if (!is_dir($dir) || $maxDepth < 0) {
+            return $found;
+        }
+        foreach (scandir($dir) ?: [] as $f) {
+            if ($f === '.' || $f === '..') {
+                continue;
+            }
+            $p = $dir . '/' . $f;
+            if (is_dir($p)) {
+                if (in_array($f, $skipDirs, true)) {
+                    continue;
+                }
+                foreach ($this->findSqliteFiles($p, $maxDepth - 1, $skipDirs) as $foundFile) {
+                    $found[] = $foundFile;
+                }
+                continue;
+            }
+            $ext = strtolower((string)pathinfo($f, PATHINFO_EXTENSION));
+            if (!in_array($ext, ['sqlite3', 'sqlite', 'db'], true)) {
+                continue;
+            }
+            // Chỉ nhận file hợp lệ: file SQLite thật có header "SQLite format 3" hoặc mới tạo (0 byte)
+            $size = (int)@filesize($p);
+            if ($size === 0) {
+                $found[] = $p;
+                continue;
+            }
+            $head = (string)@file_get_contents($p, false, null, 0, 15);
+            if ($head !== '' && str_starts_with($head, 'SQLite format 3')) {
+                $found[] = $p;
+            }
+        }
+        return $found;
+    }
+
+    /**
+     * Mang một file SQLite của website về thư mục quản lý của TMS OS.
+     */
+    public function moveToManaged(string $sourcePath): array
+    {
+        if ($this->driver !== 'sqlite') {
+            throw new RuntimeException('Chức năng này chỉ dùng trong chế độ SQLite.');
+        }
+        $sourcePath = $this->safePath((string)$sourcePath);
+        if (!is_file($sourcePath)) {
+            throw new RuntimeException('File database không tồn tại.');
+        }
+        $dir = $this->home . '/.tms-os/data/db';
+        if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) {
+            throw new RuntimeException('Không thể tạo thư mục database.');
+        }
+        $base = pathinfo($sourcePath, PATHINFO_BASENAME);
+        $dst = $dir . '/' . $base;
+        if (is_file($dst)) {
+            throw new RuntimeException("File '{$base}' đã tồn tại trong thư mục quản lý.");
+        }
+        if (!@copy($sourcePath, $dst)) {
+            throw new RuntimeException('Không thể sao chép file database.');
+        }
+        @chmod($dst, 0600);
+        return ['name' => pathinfo($base, PATHINFO_FILENAME), 'path' => $dst];
+    }
+
+    /**
+     * Chặn path traversal — file SQLite phải nằm trong HOME của người dùng.
+     */
+    private function safePath(string $path): string
+    {
+        $real = realpath($path);
+        if ($real === false || !str_starts_with($real, rtrim((string)realpath($this->home), '/') . '/')) {
+            throw new RuntimeException('Đường dẫn database không hợp lệ.');
+        }
+        return $real;
     }
 
     public function create(string $name): void
@@ -137,6 +265,31 @@ final class DatabaseService
         $user = $this->name($user);
         $escapedUser = str_replace('`', '``', $user);
         $this->execute("DROP USER IF EXISTS `{$escapedUser}`@'localhost'; FLUSH PRIVILEGES;");
+    }
+
+    /**
+     * V15.2.1: xuất SQLite theo đường dẫn file bất kỳ (database của website).
+     */
+    public function exportByPath(string $sourcePath): string
+    {
+        $src = $this->safePath((string)$sourcePath);
+        if (!is_file($src)) {
+            throw new RuntimeException('File database không tồn tại.');
+        }
+        $dir = $this->home . '/backups/database';
+        if (!is_dir($dir) && !mkdir($dir, 0700, true) && !is_dir($dir)) {
+            throw new RuntimeException('Không thể tạo thư mục sao lưu database.');
+        }
+        $base = pathinfo($src, PATHINFO_FILENAME);
+        $file = $dir . '/' . $base . '_' . date('Ymd_His') . '.sql';
+        $command = 'sqlite3 ' . escapeshellarg($src) . ' ".dump" > ' . escapeshellarg($file) . ' 2>&1';
+        exec($command, $output, $code);
+        if ($code !== 0) {
+            @unlink($file);
+            throw new RuntimeException("Xuất database SQLite thất bại:\n" . implode("\n", $output));
+        }
+        @chmod($file, 0600);
+        return $file;
     }
 
     public function export(string $name): string

@@ -1,23 +1,21 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.2.0",
-  "build": "20260820-2",
+  "internal_version": "15.2.1",
+  "build": "20260820-3",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.2.0",
-  "version": "15.2.0",
-  "notes": "V15.2.0: Remote Access — truy cap panel quan tri tu xa qua Cloudflare Tunnel (panel.<domain>), khong phu thuoc WiFi/LAN. Website va panel tu dong hoat dong khi doi mang.",
+  "name": "TMS OS V15.2.1",
+  "version": "15.2.1",
+  "notes": "V15.2.1: Trang Database tu dong phat hien file SQLite trong website (Typecho, ung dung nguoi dung), xuat SQL va mang ve quan ly duoc tu panel.",
   "features": [
-    "Remote Access: bat truy cap panel tu xa bang subdomain rieng (mac dinh panel.<domain>) qua cung tunnel Cloudflare dang co",
-    "Them ingress rule + record DNS CNAME tu dong, giu nguyen ket noi website hien tai",
-    "Website va panel van hoat dong on dinh khi doi WiFi/mang (cloudflared tu reconnect)",
-    "Panel van yeu cau dang nhap nhu binh thuong khi truy cap tu xa",
-    "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
-    "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",
-    "Header mobile co dinh hoan toan (position:fixed), khong bi cuon theo trang"
+    "Database Manager tu dong quet file SQLite (*.sqlite3, *.sqlite, *.db) trong cac website (~/websites), bao gom file Typecho mac dinh trong usr/",
+    "Hien thi 2 nhom: Database TMS OS (tao/xuat/nhap/xoa) va Database trong website (xuat SQL + Mang ve quan ly)",
+    "Mang database tu website ve thu muc quan ly cua TMS OS (copy an toan, co kiem tra path traversal)",
+    "Chi chap nhan file SQLite that (kiem tra header SQLite format 3), loai tru thu muc nang (node_modules, vendor, .git)",
+    "Remote Access: truy cap panel tu xa qua Cloudflare Tunnel (panel.<domain>) khong phu thuoc WiFi/LAN (V15.2.0)"
   ],
-  "checksum_sha256": "b2f6ecfa43df9aeb68c1d63edddeba3553ae209de43341f1d326c465ebdcb92e",
+  "checksum_sha256": "",
   "build_date": "2026-08-20"
 }
