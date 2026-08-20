@@ -15,6 +15,6 @@
     "Sidebar SQL Editor render truc tiep danh sach database tu trang (co key m__/w__ chuan)",
     "Route /sql redirect ve /databases"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "4116b44ba06b56dae17a6c2101156afa24522f10c4e8ce9c2e5f1d6d877c4a0a",
   "build_date": "2026-08-20"
 }
