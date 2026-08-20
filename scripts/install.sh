@@ -209,23 +209,68 @@ max_input_time=300
 display_errors=Off
 log_errors=On
 session.save_path="$TARGET/storage/sessions"
+; V15.0.6: OPcache tăng tốc biên dịch PHP
+opcache.enable=1
+opcache.enable_cli=1
+opcache.memory_consumption=64
+opcache.interned_strings_buffer=8
+opcache.max_accelerated_files=4000
+opcache.revalidate_freq=60
+opcache.save_comments=0
 INI
 cat > "$NGINX" <<NGINX
 worker_processes auto;
 events { worker_connections 1024; }
-http { include mime.types; default_type application/octet-stream; sendfile on; keepalive_timeout 65; client_max_body_size 500M; server_tokens off; include $SITES/*.conf;
+# V15.0.6: tối ưu hiệu năng cho website qua Cloudflare Tunnel — nén gzip, cache tĩnh, keepalive
+http {
+  include mime.types;
+  default_type application/octet-stream;
+  sendfile on;
+  tcp_nopush on;
+  tcp_nodelay on;
+  keepalive_timeout 65;
+  client_max_body_size 500M;
+  server_tokens off;
+
+  # Nén gzip cho toàn bộ site — giảm mạnh dữ liệu truyền qua tunnel
+  gzip on;
+  gzip_vary on;
+  gzip_proxied any;
+  gzip_comp_level 4;
+  gzip_min_length 256;
+  gzip_buffers 16 8k;
+  gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript image/svg+xml;
+
+  # Cache file tĩnh 1 năm (ảnh, CSS, JS, font)
+  open_file_cache max=1000 inactive=60s;
+  open_file_cache_valid 60s;
+  open_file_cache_min_uses 2;
+  open_file_cache_errors on;
+
+  include $SITES/*.conf;
 server { listen 127.0.0.1:8888; server_name localhost; root $TARGET/public; index index.php;
 access_log $HOME/logs/nginx/tms-access.log; error_log $HOME/logs/nginx/tms-error.log;
 location / { try_files \$uri \$uri/ /index.php?\$query_string; }
 location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
-location ~ /\. { deny all; } } }
+  # Cache browser cho file tĩnh
+  location ~* \\.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot|mp3|mp4|webm)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+  }
+  location ~ \/\. { deny all; } } }
 NGINX
 cat > "$SITES/default.conf" <<NGINX
 server { listen 0.0.0.0:8080; server_name _; root $HOME/websites/default/public; index index.php index.html;
 access_log $HOME/logs/nginx/default-access.log; error_log $HOME/logs/nginx/default-error.log;
 location / { try_files \$uri \$uri/ /index.php?\$query_string; }
 location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
-location ~ /\. { deny all; } }
+  location ~* \.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot)$ {
+    expires 1y;
+    add_header Cache-Control "public, immutable";
+    access_log off;
+  }
+  location ~ /\. { deny all; } }
 NGINX
 [ -f "$HOME/websites/default/public/index.php" ] || printf '<?php echo "<h1>TMS OS hoạt động thành công</h1><p>PHP ".PHP_VERSION."</p>";\n' > "$HOME/websites/default/public/index.php"
 printf '[4/7] Khởi tạo database (%s)...\n' "$DB_MODE"

@@ -473,6 +473,13 @@ server {
         fastcgi_pass 127.0.0.1:9000;
     }
 
+    # V15.0.6: cache browser 1 năm cho file tĩnh
+    location ~* \.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot|mp3|mp4|webm)$ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        access_log off;
+    }
+
     location ~ /\. {
         deny all;
     }

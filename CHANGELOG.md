@@ -1,3 +1,9 @@
+# V15.0.6 — Tối ưu hiệu năng website qua Cloudflare Tunnel (gzip + cache tĩnh + OPcache + ingress keepalive)
+- Cài mới (install.sh): `nginx.conf` toàn cục bật nén gzip (comp_level 4, gzip_types đầy đủ), `tcp_nopush`/`tcp_nodelay`, `open_file_cache`, `keepalive_timeout 65`, `client_max_body_size 500M`, `server_tokens off`; site mặc định và site mới tạo có cache trình duyệt 1 năm cho file tĩnh (ảnh/CSS/JS/font).
+- PHP Engine: bật OPcache (`memory_consumption=64`, `revalidate_freq=60`) — tăng tốc biên dịch PHP.
+- Cloudflare Hosting: ingress rule mới thêm `originRequest` (`connectTimeout 10s`, `tcpKeepAlive 60s`, `noHappyEyeballs`, `httpHostHeader`) — giảm độ trễ kết nối tunnel.
+- Máy đã cài: tab Cloudflare Hosting có mục **HIỆU NĂNG** — nút "⚡ Bật tối ưu hóa hiệu năng" chạy `scripts/optimize-nginx.sh` (backup cấu hình cũ, ghi tối ưu, `nginx -t` trước khi reload, restart PHP, an toàn chạy lại nhiều lần).
+
 # V15.0.5 — Sửa dropdown "Website nội bộ" trống + hostname mặc định = domain gốc (Cloudflare Hosting)
 # V15.0.4 — Thêm fallback lấy account_id từ /zones, hướng dẫn token Cloudflare đầy đủ (Tunnel:Edit + Zone DNS:Edit + Zone Zone:Read)
 # V15.0.3 — Token Cloudflare không còn bắt buộc quyền "Account Settings: Read"

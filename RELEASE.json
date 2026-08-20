@@ -1,13 +1,13 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.5",
+  "internal_version": "15.0.6",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
   "name": "TMS OS V15.0.5",
-  "version": "15.0.5",
+  "version": "15.0.6",
   "notes": "V15.0.5: sua dropdown Website noi bo trong Cloudflare Hosting (them endpoint /internal-sites + nap danh sach bang JS), hostname mac dinh = domain goc da chon (ho tro gan chinh domain goc, khong bat buoc subdomain).",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",

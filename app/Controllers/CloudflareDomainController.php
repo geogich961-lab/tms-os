@@ -213,4 +213,37 @@ final class CloudflareDomainController
             $this->jsonError($e);
         }
     }
+
+    /** POST /api/cloudflare-domain/perf-status — kiểm tra trạng thái tối ưu hiệu năng */
+    public function perfStatus(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+        $prefix = str_contains((string)getenv('PREFIX'), 'com.termux') ? (getenv('PREFIX') ?: '') : '/data/data/com.termux/files/usr';
+        $enabled = is_file($home . '/.tms-os/nginx-optimized')
+            && str_contains((string)@file_get_contents($prefix . '/etc/nginx/nginx.conf'), 'gzip on;');
+        $this->json(['success' => true, 'enabled' => $enabled]);
+    }
+
+    /** POST /api/cloudflare-domain/perf-optimize — bật tối ưu Nginx + PHP */
+    public function perfOptimize(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+        $script = $home . '/tms-os/scripts/optimize-nginx.sh';
+        if (!is_file($script)) {
+            $this->json(['success' => false, 'error' => 'Script tối ưu không tồn tại. Hãy cập nhật TMS OS lên phiên bản mới nhất rồi thử lại.']);
+            return;
+        }
+        $out = [];
+        $code = 0;
+        exec('bash ' . escapeshellarg($script) . ' 2>&1', $out, $code);
+        if ($code !== 0) {
+            $this->json(['success' => false, 'error' => 'Không thể áp dụng tối ưu: ' . implode('\n', array_slice($out, -5))]);
+            return;
+        }
+        $this->json(['success' => true, 'message' => 'Đã bật nén gzip, cache trình duyệt cho file tĩnh và OPcache cho PHP. Nginx & PHP đã khởi động lại.']);
+    }
 }

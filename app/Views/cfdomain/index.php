@@ -61,6 +61,14 @@ $csrf=tms_csrf_token();
 <div class="form-stack"><button type="button" class="btn btn-danger-soft btn-block" id="cfd-uninstall">Xóa toàn bộ cấu hình Cloudflare</button></div>
 </section>
 
+<section class="panel-card" data-panel="hosting">
+<div class="section-title-row"><div><p class="eyebrow">HIỆU NĂNG</p><h2>Tối ưu tốc độ website</h2></div><span class="cf-live-dot" id="cfd-perf-dot"></span></div>
+<p class="muted">Bật nén <strong>gzip</strong> (giảm ~60-70% dung lượng truyền qua tunnel), cache trình duyệt cho ảnh/CSS/JS và bật <strong>OPcache</strong> cho PHP. Website sẽ tải nhanh hơn đáng kể trên đường truyền chậm.</p>
+<div id="cfd-perf-status" class="muted"><strong>Trạng thái: <span id="cfd-perf-text">Chưa kiểm tra</span></strong></div>
+<div class="btn-grid two"><button type="button" class="btn btn-success" id="cfd-perf-apply">⚡ Bật tối ưu hóa hiệu năng</button><button type="button" class="btn btn-secondary" id="cfd-perf-check">Kiểm tra trạng thái</button></div>
+<p class="muted">Sau khi bật, hệ thống tự khởi động lại Nginx &amp; PHP Engine (không làm mất dữ liệu). Nếu đang dùng OPcache, xóa cache panel sau khi cập nhật code.</p>
+</section>
+
 <section class="panel-card" data-panel="hosting"><div class="section-title-row"><h2>Nhật ký Tunnel</h2></div><pre id="cfd-log" class="terminal-output"><?=tms_h('')?></pre></section>
 
 <!-- ========== TAB 2: SMART FALLBACK (cũ) ========== -->

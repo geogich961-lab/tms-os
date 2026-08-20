@@ -650,6 +650,29 @@ if(document.querySelector('[data-service-alert]')){
     btn.disabled=false;btn.textContent='Xóa toàn bộ cấu hình Cloudflare';
   });
 
+  // ===== Tối ưu hiệu năng =====
+  const perfText=$('cfd-perf-text');
+  const renderPerf=async()=>{
+    if(!perfText) return;
+    try{
+      const d=await post('/api/cloudflare-domain/perf-status',{csrf:csrf()});
+      perfText.textContent=d.enabled?'Đã bật — gzip + cache tĩnh + OPcache':'Chưa bật';
+    }catch(e){perfText.textContent='Chưa kiểm tra';}
+  };
+  $('cfd-perf-check')?.addEventListener('click',renderPerf);
+  $('cfd-perf-apply')?.addEventListener('click',async()=>{
+    showAlert('');
+    const btn=$('cfd-perf-apply');btn.disabled=true;btn.textContent='Đang tối ưu...';
+    try{
+      const d=await post('/api/cloudflare-domain/perf-optimize',{csrf:csrf()});
+      if(!d.success) throw new Error(d.error||'Tối ưu thất bại.');
+      showAlert((d.message||'Đã bật tối ưu hóa hiệu năng.')+' Hãy đợi 2-3 giây rồi tải lại trang.');
+      renderPerf();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='⚡ Bật tối ưu hóa hiệu năng';
+  });
+
   renderStatus();
+  renderPerf();
   setInterval(renderStatus,15000);
 })();

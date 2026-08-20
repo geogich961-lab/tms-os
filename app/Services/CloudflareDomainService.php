@@ -182,10 +182,13 @@ final class CloudflareDomainService
         if ($tunnelId === '') {
             throw new RuntimeException('Chưa có tunnel. Hãy bấm "Tạo Cloudflare Tunnel" trước.');
         }
-        // 1. Ingress rule
+        // 1. Ingress rule — V15.0.6: keepalive 90s + connectTimeout 10s + noHappyEyeballs để giảm độ trễ
         $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
             'config' => ['ingress' => [
-                ['hostname' => $hostname, 'service' => $service, 'originRequest' => (object)[]],
+                ['hostname' => $hostname, 'service' => $service, 'originRequest' => (object)[
+                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                    'httpHostHeader' => $hostname,
+                ]],
                 ['service' => 'http_status:404'],
             ]],
         ]);
