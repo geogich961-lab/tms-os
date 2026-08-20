@@ -14,9 +14,9 @@ final class DatabaseController
  $databases=[];
  foreach($items as $item){
    if(is_array($item)){
-     $databases[]=['name'=>$item['name'],'source'=>$item['source'],'site'=>$item['site'],'size'=>$item['size'],'path'=>$item['path']];
+     $databases[]=['name'=>$item['name'],'source'=>$item['source'],'site'=>$item['site'],'size'=>$item['size'],'path'=>$item['path'],'db_key'=>$item['db_key'] ?? ('w__'.($item['site'] ?? '').'__'.md5($item['path'] ?? ''))];
    }else{
-     $databases[]=['name'=>(string)$item,'source'=>'managed','site'=>'','size'=>0,'path'=>''];
+     $databases[]=['name'=>(string)$item,'source'=>'managed','site'=>'','size'=>0,'path'=>'','db_key'=>'m__'.(string)$item];
    }
  }
  tms_view('databases.index',['databases'=>$databases,'error'=>$error,'flash'=>tms_pull_flash(),'csrf'=>tms_csrf_token(),'driver'=>$driver]);}

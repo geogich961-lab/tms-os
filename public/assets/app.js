@@ -679,25 +679,28 @@ if(document.querySelector('[data-service-alert]')){
   setInterval(renderStatus,15000);
 })();
 
-// ===== V15.3.0 SQL Editor =====
+// ===== V15.3.1 SQL Editor (tích hợp vào trang Database) =====
 (()=>{
   const path=(window.location.pathname||'').replace(/\/$/,'');
-  if(path!=='/sql')return;
+  if(path!=='/databases')return;
   const esc=(v)=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const $=id=>document.getElementById(id);
   const csrfInput=document.querySelector('form[action="/logout"] input[name=csrf]')||document.querySelector('[data-pwa-install]')||null;
   const csrf=()=>csrfInput?.value||'';
+  // CSRF qua header X-CSRF-Token (meta tag luôn có trên mọi trang đã đăng nhập, không phụ thuộc cache form)
+  const csrfToken=()=>document.querySelector('meta[name=csrf-token]')?.content||'';
+  const hdr=({'Content-Type':'application/x-www-form-urlencoded'});
   const post=async(url,body)=>{
     const fd=new URLSearchParams();Object.entries(body).forEach(([k,v])=>{
       if(Array.isArray(v)){v.forEach(x=>fd.append(k,String(x)));}
       else{fd.append(k,String(v));}
     });
-    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:fd.toString(),cache:'no-store'});
+    const r=await fetch(url,{method:'POST',headers:{...hdr,'X-CSRF-Token':csrfToken()},body:fd.toString(),cache:'no-store'});
     const d=await r.json();
     if(!r.ok)throw new Error(d.error||'Lỗi máy chủ.');
     return d;
   };
-  const get=async url=>{const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json'}});return await r.json();};
+  const get=async url=>{const r=await fetch(url,{cache:'no-store',headers:{Accept:'application/json','X-CSRF-Token':csrfToken()}});return await r.json();};
 
   // Trạng thái
   let dbKey='';let tables=[];let currentTable='';let dataColumns=[];let dataRows=[];let primaryKey=[];

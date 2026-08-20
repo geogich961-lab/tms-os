@@ -1,3 +1,11 @@
+# V15.3.1 — Gộp SQL Editor vào trang Database + sửa lỗi 403 CSRF
+
+- Lỗi V15.3.0: mở SQL Editor trên máy người dùng trả **403 Forbidden** (`api/sql/tables`...) vì file `app.js` cũ được trình duyệt cache không gửi CSRF theo cách server mới yêu cầu. Sửa gốc: mọi API `/api/sql/*` xác thực CSRF qua **header `X-CSRF-Token`** đọc từ `<meta name="csrf-token">` trong `<head>` — meta này luôn có trên mọi trang và tự động mới mỗi phiên, không phụ thuộc cache.
+- **SQL Editor được gộp vào trang Database** cho gọn: section "SQL Editor" ngay dưới danh sách database, sidebar chọn database (render trực tiếp từ danh sách server, mỗi nút chứa `db_key` chuẩn `m__`/`w__`), 3 tab Dữ liệu / Chạy SQL / Cấu trúc như cũ.
+- Menu trái không còn mục riêng ⚡ SQL Editor; route `/sql` tự redirect về `/databases`.
+
+---
+
 # V15.2.1 — Database Manager tự động phát hiện SQLite trong website (Typecho, ứng dụng người dùng)
 
 - Trang Database (chế độ SQLite) trước đây chỉ liệt kê database do TMS OS tạo (`~/.tms-os/data/db/`) — các ứng dụng tự cài như Typecho tạo file SQLite trong thư mục website (`usr/<uniqid>.db`) nên không hiển thị. Giờ tự động quét file `*.sqlite3`, `*.sqlite`, `*.db` trong `~/websites/<site>/public` (đệ quy 3 cấp, bỏ qua `node_modules`/`vendor`/`.git`) và chỉ nhận file SQLite thật (kiểm tra header "SQLite format 3").

@@ -27,19 +27,7 @@ final class SqlController
     public function index(): void
     {
         $this->guard();
-        $driver = $this->sql->getDriver();
-        $list = $driver === 'sqlite' ? $this->sql->sqliteList() : $this->sql->mariaList();
-        $error = null;
-        try {
-        } catch (Throwable $e) {
-            $error = $e->getMessage();
-        }
-        tms_view('sqleditor.index', [
-            'driver' => $driver,
-            'databases' => $list,
-            'error' => $error,
-            'csrf' => tms_csrf_token(),
-        ]);
+        tms_redirect('/databases');
     }
 
     public function apiList(): void
@@ -138,7 +126,7 @@ final class SqlController
     {
         $this->guard();
         header('Content-Type: application/json; charset=utf-8');
-        if (!tms_verify_csrf($_POST['csrf'] ?? $_GET['csrf'] ?? null)) {
+        if (!tms_verify_csrf($_SERVER['HTTP_X_CSRF_TOKEN'] ?? $_POST['csrf'] ?? $_GET['csrf'] ?? null)) {
             http_response_code(403);
             echo json_encode(['error' => 'Phiên không hợp lệ.'], JSON_UNESCAPED_UNICODE);
             exit;
