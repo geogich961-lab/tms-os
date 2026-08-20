@@ -21,6 +21,6 @@
     "Tab Cau truc: xem cot, kieu, gia tri mac dinh, khoa chinh cua tung bang",
     "Ho tro ca SQLite (moi file database cua TMS OS va website) va MariaDB; timeout 15s chong central"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "3187965faa3715a354d4e30a78b9686f66dd05c2b3f08d072602e3f610347927",
   "build_date": "2026-08-20"
 }
