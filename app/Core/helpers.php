@@ -142,9 +142,17 @@ function tms_hex_rgb(string $hex): string
  */
 function tms_brand_icon(string $size): string
 {
-    $sizes = ['192' => 'icon-192.png', '512' => 'icon-512.png', 'maskable-512' => 'icon-maskable-512.png', 'splash' => 'logo-splash.png', 'logo' => 'logo-tms-os.png'];
+    $sizes = ['192' => 'icon-192.png', '512' => 'icon-512.png', 'maskable-512' => 'icon-maskable-512.png', 'splash' => 'logo-splash.png', 'logo' => 'logo-tms-os.png', 'solid-192' => 'icon-192-solid.png', 'solid-512' => 'icon-512-solid.png', 'maskable-solid-512' => 'icon-maskable-512-solid.png'];
     $file = $sizes[$size] ?? $sizes['192'];
     $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+    // Logo hiển thị trong header/trang đăng nhập nằm trong public/assets/ (không trong icons/)
+    if ($file === 'logo-tms-os.png') {
+        $webLogo = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/assets/logo-tms-os.png';
+        $altLogo = $home . '/tms-os/public/assets/logo-tms-os.png';
+        $src = (is_file($webLogo) ? $webLogo : (is_file($altLogo) ? $altLogo : null));
+        $ts = $src ? (int)filemtime($src) : 1;
+        return '/assets/logo-tms-os.png?v=' . $ts;
+    }
     $brandFile = $home . '/.tms-os/brand/' . $file;
     if (is_file($brandFile)) {
         // Kiểm theo document root (môi trường web) trước; fallback vào target public/

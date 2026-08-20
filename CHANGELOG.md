@@ -1,3 +1,8 @@
+# V14.2.2 — Sửa 3 lỗi giao diện V14.2.0
+- Sửa SyntaxError trong app.js: khai báo `setRelative` trùng (2 lần) làm toàn bộ menu toggle, nút "Cài TMS OS lên màn hình chính" và theme toggle không hoạt động.
+- Sửa logo header/trang đăng nhập bị mất: helper `tms_brand_icon('logo')` trả đường dẫn vào thư mục `icons/` không chứa file logo — giờ trả đúng `/assets/logo-tms-os.png`.
+- Sửa icon PWA bị thu nhỏ có viền trắng: manifest và tính năng đổi logo giờ dùng icon solid chiếm đầy nền (`icon-192-solid.png`/`icon-512-solid.png`/`icon-maskable-solid-512.png`) — biểu tượng lấp đầy màn hình chính Android/iOS, không còn viền trắng.
+
 # V14.2.1 — Tính năng Xóa cache trong Cài đặt
 - Cài đặt → Xóa cache: xóa các session cũ (giữ phiên đăng nhập hiện tại), tệp tạm trong storage/cache, flash file cũ và bộ nhớ đệm PHP (nếu có opcache). Sau khi xóa, tự động tăng phiên bản cache để trình duyệt và PWA tải lại toàn bộ giao diện mới (CSS, JS, biểu tượng, manifest) — hữu ích sau khi cập nhật phiên bản mới để đảm bảo thấy đúng giao diện mới nhất.
 

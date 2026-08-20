@@ -141,7 +141,6 @@
   const sheetCopyForm=document.getElementById('sheet-copy-form');
   const sheetMoveForm=document.getElementById('sheet-move-form');
 
-  const setRelative=(form,value)=>{const input=form?.querySelector('input[name="relative"]');if(input)input.value=value;};
   const setRelativeAll=(relative)=>{setRelative(sheetCopyForm,relative);setRelative(sheetMoveForm,relative);};
 
   document.querySelector('[data-chmod-open]')?.addEventListener('click',()=>{

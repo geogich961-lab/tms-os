@@ -11,9 +11,9 @@ echo json_encode([
  'orientation'=>'portrait-primary','background_color'=>'#0a1220','theme_color'=>'#0a1220',
  'categories'=>['utilities','developer tools'],
  'icons'=>[
-  ['src'=>tms_brand_icon('192'),'sizes'=>'192x192','type'=>'image/png','purpose'=>'any'],
-  ['src'=>tms_brand_icon('512'),'sizes'=>'512x512','type'=>'image/png','purpose'=>'any'],
-  ['src'=>tms_brand_icon('maskable-512'),'sizes'=>'512x512','type'=>'image/png','purpose'=>'maskable'],
+  ['src'=>tms_brand_icon('solid-192'),'sizes'=>'192x192','type'=>'image/png','purpose'=>'any'],
+  ['src'=>tms_brand_icon('solid-512'),'sizes'=>'512x512','type'=>'image/png','purpose'=>'any'],
+  ['src'=>tms_brand_icon('maskable-solid-512'),'sizes'=>'512x512','type'=>'image/png','purpose'=>'maskable'],
  ],
  'shortcuts'=>[
   ['name'=>'Dashboard','short_name'=>'Dashboard','url'=>'/','icons'=>[['src'=>'/assets/icons/icon-192.png','sizes'=>'192x192']]],

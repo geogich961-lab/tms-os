@@ -123,6 +123,34 @@ final class SettingsController
         }
         @chmod($brandDir.'/icon-maskable-512.png',0644);
         imagedestroy($mask);
+        // Icon solid: logo chiếm đầy icon (không viền trắng, không trong suốt) — dùng làm PWA icon
+        foreach(['icon-192-solid.png'=>192,'icon-512-solid.png'=>512] as $dest=>$size){
+            $canvas=imagecreatetruecolor($size,$size);
+            imagecopyresampled($canvas,$square,0,0,0,0,$size,$size,$side,$side);
+            imagepng($canvas,$brandDir.'/'.$dest);
+            if(is_dir($icons)){
+                imagepng($canvas,$icons.'/'.$dest);
+                @chmod($icons.'/'.$dest,0644);
+            }
+            @chmod($brandDir.'/'.$dest,0644);
+            imagedestroy($canvas);
+        }
+        // Maskable solid: nền trong suốt với logo giữa (Android adaptive icon)
+        $maskSize=512;
+        $safe=(int)round($maskSize*0.66);
+        $mask=imagecreatetruecolor($maskSize,$maskSize);
+        imagealphablending($mask,false);
+        $transparent=imagecolorallocatealpha($mask,0,0,0,127);
+        imagefill($mask,0,0,$transparent);
+        imagecopyresampled($mask,$square,(int)(($maskSize-$safe)/2),(int)(($maskSize-$safe)/2),0,0,$safe,$safe,$side,$side);
+        imagesavealpha($mask,true);
+        imagepng($mask,$brandDir.'/icon-maskable-solid-512.png');
+        if(is_dir($icons)){
+            imagepng($mask,$icons.'/icon-maskable-solid-512.png');
+            @chmod($icons.'/icon-maskable-solid-512.png',0644);
+        }
+        @chmod($brandDir.'/icon-maskable-solid-512.png',0644);
+        imagedestroy($mask);
         imagedestroy($square);
         imagedestroy($src);
         tms_flash('success','Đã cập nhật logo. Hãy xóa biểu tượng cũ khỏi màn hình chính rồi bấm Cài TMS OS để biểu tượng mới có hiệu lực hoàn toàn.');
