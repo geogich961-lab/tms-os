@@ -72,6 +72,7 @@ final class DatabaseService
                     'path' => $dir . '/' . $f,
                     'site' => '',
                     'size' => is_file($dir . '/' . $f) ? (int)@filesize($dir . '/' . $f) : 0,
+                    'db_key' => 'm__' . pathinfo($f, PATHINFO_FILENAME),
                 ];
             }
         }
@@ -95,6 +96,7 @@ final class DatabaseService
                         'path' => $f,
                         'site' => $site,
                         'size' => (int)@filesize($f),
+                        'db_key' => 'w__' . $site . '__' . md5($f),
                     ];
                 }
             }

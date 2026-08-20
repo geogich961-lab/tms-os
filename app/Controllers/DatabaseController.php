@@ -14,7 +14,7 @@ final class DatabaseController
  $databases=[];
  foreach($items as $item){
    if(is_array($item)){
-     $databases[]=['name'=>$item['name'],'source'=>$item['source'],'site'=>$item['site'],'size'=>$item['size'],'path'=>$item['path'],'db_key'=>$item['db_key'] ?? ('w__'.($item['site'] ?? '').'__'.md5($item['path'] ?? ''))];
+     $databases[]=['name'=>$item['name'],'source'=>$item['source'],'site'=>$item['site'],'size'=>$item['size'],'path'=>$item['path'],'db_key'=>$item['db_key'] ?? (($item['source'] ?? '')==='website' ? 'w__'.($item['site'] ?? '').'__'.md5($item['path'] ?? '') : 'm__'.($item['name'] ?? ''))];
    }else{
      $databases[]=['name'=>(string)$item,'source'=>'managed','site'=>'','size'=>0,'path'=>'','db_key'=>'m__'.(string)$item];
    }

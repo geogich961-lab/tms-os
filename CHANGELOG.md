@@ -1,3 +1,10 @@
+# V15.3.2 — Sửa lỗi SQL Editor không tải bảng (400) + bản Service Worker mới
+
+- SQL Editor trên máy người dùng vẫn không tải được bảng (`api/sql/tables` trả 400): nguyên nhân gốc là **Service Worker bản V13 (`tms-os-v13-0-1`) cache file `app.js` cũ**, khiến máy đã cài PWA luôn chạy JS cũ dù đã cập nhật. Bản mới bump Service Worker lên `tms-os-v15-3-2` và **bỏ `app.js` khỏi danh sách cache** của Service Worker.
+- Sidebar SQL Editor không còn phụ thuộc attribute HTML `data-db` (có thể bị break bởi tên website tiếng Việt/ký tự đặc biệt): danh sách database được truyền qua JSON an toàn (`window.TMS_SQL_DBS` inline trong trang), JS render sidebar từ JSON này.
+
+---
+
 # V15.3.1 — Gộp SQL Editor vào trang Database + sửa lỗi 403 CSRF
 
 - Lỗi V15.3.0: mở SQL Editor trên máy người dùng trả **403 Forbidden** (`api/sql/tables`...) vì file `app.js` cũ được trình duyệt cache không gửi CSRF theo cách server mới yêu cầu. Sửa gốc: mọi API `/api/sql/*` xác thực CSRF qua **header `X-CSRF-Token`** đọc từ `<meta name="csrf-token">` trong `<head>` — meta này luôn có trên mọi trang và tự động mới mỗi phiên, không phụ thuộc cache.

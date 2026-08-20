@@ -706,6 +706,14 @@ if(document.querySelector('[data-service-alert]')){
   let dbKey='';let tables=[];let currentTable='';let dataColumns=[];let dataRows=[];let primaryKey=[];
 
   const noDb=$('sql-no-db');const panel=$('sql-panel');
+  // Render sidebar từ JSON server (an toàn với tên website tiếng Việt/ký tự đặc biệt, không phụ thuộc HTML attribute)
+  const dbListEl=$('sql-db-list');
+  const dbs=Array.isArray(window.TMS_SQL_DBS)?window.TMS_SQL_DBS:[];
+  if(dbListEl && dbs.length>0){
+    dbListEl.innerHTML=dbs.map((db,i)=>`<button type="button" class="sql-db-item btn btn-ghost" data-i="${i}" style="width:100%;text-align:left;font-size:.85em">${esc(db.name||'')}</button>`).join('');
+  }else if(dbListEl && !dbListEl.querySelector('.sql-db-item')){
+    dbListEl.innerHTML='<div class="sql-empty">Chưa có database nào.</div>';
+  }
   const tabs=document.querySelectorAll('.sql-tab');
   const tabData=$('tab-data');const tabSql=$('tab-sql');const tabStruct=$('tab-structure');
   const tableSelect=$('sql-tables');const structSelect=$('sql-struct-tables');
@@ -714,11 +722,15 @@ if(document.querySelector('[data-service-alert]')){
   const structWrap=$('sql-struct-wrap');const structEmpty=$('sql-struct-empty');
   const insertModal=$('sql-insert-modal');const insertForm=$('sql-insert-form');
 
-  // Chọn database
+  // Chọn database: ưu tiên JSON window.TMS_SQL_DBS theo data-i, fallback dataset.db (HTML cũ)
   document.querySelectorAll('.sql-db-item').forEach(btn=>btn.addEventListener('click',async()=>{
     document.querySelectorAll('.sql-db-item').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    dbKey=btn.dataset.db;noDb.hidden=true;panel.hidden=false;
+    dbKey='';
+    const idx=btn.dataset.i;
+    if(idx!==undefined && dbs[idx] && dbs[idx].db_key){dbKey=dbs[idx].db_key;}
+    if(!dbKey){dbKey=btn.dataset.db||'';}
+    noDb.hidden=true;panel.hidden=false;
     tableSelect.innerHTML='<option value="">— chọn bảng —</option>';
     structSelect.innerHTML='<option value="">— chọn bảng —</option>';
     currentTable='';dataRows=[];dataColumns=[];primaryKey=[];
