@@ -68,12 +68,12 @@ if [ "$HAS_OLD_INSTALL" -eq 1 ]; then
   echo '   [1] Sửa chữa — giữ nguyên toàn bộ dữ liệu (website, database, tài khoản), cài đè bản mới'
   echo '   [2] Cài mới — XÓA SẠCH mọi dữ liệu cũ, làm lại từ đầu'
   echo '============================================'
-  if [ -p /dev/stdin ]; then
-    # Chạy qua pipe: vẫn BẮT BUỘC hỏi — mở lại terminal tương tác
+  if [ ! -t 0 ]; then
+    # Không tương tác (pipe hoặc redirect). Với máy đã có TMS OS, dừng và hướng dẫn
+    # chạy tương tác thay vì treo chờ read (pipe không nhận được bàn phím).
     echo '[INFO] Bộ cài phát hiện đã có TMS OS cũ. Vui lòng chọn trực tiếp trong Termux:'
-    echo '  Hãy gõ lệnh này trong Termux và trả lời câu hỏi:'
-    echo "  bash $HOME/tms-os/scripts/install.sh   (nếu đã có bộ nguồn cũ)"
-    echo '  hoặc chạy lại dòng lệnh curl ở trên — khi đó hãy gõ "1" hoặc "2" khi được hỏi.'
+    echo '  Hãy chạy lệnh sau trong Termux và trả lời câu hỏi:'
+    echo "  bash <(curl -fsSL https://raw.githubusercontent.com/${TMS_REPO:-geogich961-lab/tms-os}/main/install.sh)"
     echo ''
     echo '[DỪNG] Bộ cài không thể hỏi lựa chọn khi chạy qua pipe. Nếu cài mới hoàn toàn trên máy CHƯA có TMS OS, lệnh curl sẽ chạy tự động không cần hỏi.'
     exit 2
@@ -155,7 +155,7 @@ if [ "$RC" -ne 0 ]; then
 fi
 
 # ---------- Bước 6: bật auto-start khi khởi động máy (tùy chọn) ----------
-if [ -p /dev/stdin ]; then
+if [ ! -t 0 ]; then
   BOOT_CHOICE="y"
 else
   printf 'Bước 6/7: Tự khởi động TMS OS khi bật máy? (cần app Termux:Boot) [Y/n]: '

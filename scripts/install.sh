@@ -47,7 +47,13 @@ if command -v pkg >/dev/null 2>&1; then
     echo '============================================'
     while true; do
       printf 'Chọn [1/2]: '
-      read -r REPAIR_CHOICE
+      if ! read -r REPAIR_CHOICE; then
+        # Stdin hết (pipe/EOF): không thể tương tác — dừng và hướng dẫn.
+        echo ''
+        echo '[DỪNG] Bộ cài cần bàn phím. Hãy chạy tương tác trong Termux:'
+        echo '  bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh)'
+        exit 2
+      fi
       case "$REPAIR_CHOICE" in
         1) INSTALL_MODE="repair"; break ;;
         2) INSTALL_MODE="clean"; break ;;
