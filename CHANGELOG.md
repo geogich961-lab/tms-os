@@ -220,3 +220,6 @@
 - Guardian repairs now call `tms-service-core.sh` instead of a separate PHP process detector.
 - Installer clears stale V12 queue jobs, pending state and worker locks during upgrade.
 - PWA and asset caches bumped to V13.0.
+
+# V14.2.4 — Sửa header menu biến mất trên điện thoại
+- V14.2.3 bị lỗi: rule CSS `.mobile-header{display:none}` toàn cục (không có media query) đứng sau rule hiển thị header → trên mọi kích thước màn hình điện thoại, thanh menu bị ẩn hoàn toàn. Đã xóa rule toàn cục này; header giờ luôn hiện với vị trí cố định (position:fixed) khi truy cập bằng điện thoại.

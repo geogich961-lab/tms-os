@@ -51,8 +51,6 @@ body.sheet-open{overflow:hidden}.tms-explorer{background:var(--surface);border:1
 .os-nav.os-nav-grid .nav-item{flex-direction:column;align-items:center;text-align:center;gap:4px;padding:12px 8px;font-size:.72rem}
 .os-nav.os-nav-grid .nav-item span{font-size:1.25rem;line-height:1}
 .os-nav.os-nav-grid .nav-divider{grid-column:1/-1;margin:2px 0}
-.mobile-header{display:none}
-.os-main{display:flex;flex-direction:column}
 .install-app-card .install-actions{display:flex;gap:10px;flex-wrap:wrap}
 .install-app-card .install-actions .btn{flex:1;min-width:150px}
 .install-badge{font-size:.7rem;font-weight:850;padding:5px 11px;border-radius:99px}
