@@ -198,6 +198,37 @@ final class CloudflareDomainController
         }
     }
 
+    /** POST /api/cloudflare-domain/attach-panel — bật truy cập panel từ xa (Remote Access V15.2.0) */
+    public function attachPanel(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        $panelHostname = trim((string)($_POST['panel_hostname'] ?? ''));
+        if ($panelHostname === '') { http_response_code(400); $this->json(['success' => false, 'error' => 'Chưa nhập hostname cho panel.']); return; }
+        if (!preg_match('/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i', $panelHostname)) {
+            http_response_code(400);
+            $this->json(['success' => false, 'error' => 'Hostname không hợp lệ. Ví dụ: panel.thc.io.vn']);
+            return;
+        }
+        try {
+            $this->json(array_merge(['success' => true], $this->cfDomain->attachPanelHostname($panelHostname)));
+        } catch (Throwable $e) {
+            $this->jsonError($e);
+        }
+    }
+
+    /** POST /api/cloudflare-domain/detach-panel — tắt truy cập panel từ xa */
+    public function detachPanel(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        try {
+            $this->json(array_merge(['success' => true], $this->cfDomain->detachPanelHostname()));
+        } catch (Throwable $e) {
+            $this->jsonError($e);
+        }
+    }
+
     /** POST /api/cloudflare-domain/perf-status — kiểm tra trạng thái tối ưu hiệu năng */
     public function perfStatus(): void
     {

@@ -57,6 +57,18 @@ $csrf=tms_csrf_token();
 </section>
 
 <section class="panel-card" data-panel="hosting">
+<div class="section-title-row"><div><p class="eyebrow">REMOTE ACCESS</p><h2>Truy cập panel từ xa</h2></div><span class="cf-live-dot" id="cfd-remote-dot"></span></div>
+<p class="muted">Bật truy cập <strong>panel quản trị</strong> từ bất kỳ máy nào qua Internet, trên <strong>subdomain riêng</strong> của chính bạn (ví dụ <strong>panel.thc.io.vn</strong>) — không phụ thuộc WiFi/LAN, tự hoạt động khi đổi mạng. Panel vẫn yêu cầu đăng nhập như bình thường nên an toàn khi bật.</p>
+<form class="form-stack" id="cfd-remote-form">
+<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+<label>Hostname panel<input type="text" id="cfd-panel-hostname" name="panel_hostname" placeholder="panel.thc.io.vn (mặc định: panel. + tên domain của bạn)" autocomplete="off"></label>
+<button type="submit" class="btn btn-success">🔗 Bật truy cập từ xa</button>
+</form>
+<div id="cfd-remote-url-card" class="cf-url-card" hidden><span>Truy cập panel từ xa</span><a id="cfd-remote-url" href="#" target="_blank" rel="noopener"></a><div class="cf-url-actions"><a id="cfd-remote-open" class="btn btn-primary btn-small" href="#" target="_blank" rel="noopener">Mở liên kết</a><button type="button" id="cfd-remote-copy" class="btn btn-secondary btn-small">Sao chép</button></div></div>
+<div class="form-stack"><button type="button" class="btn btn-danger-soft btn-block" id="cfd-remote-detach">Tắt truy cập từ xa</button></div>
+</section>
+
+<section class="panel-card" data-panel="hosting">
 <div class="section-title-row"><div><p class="eyebrow">HIỆU NĂNG</p><h2>Tối ưu tốc độ website</h2></div><span class="cf-live-dot" id="cfd-perf-dot"></span></div>
 <p class="muted">Bật nén <strong>gzip</strong> (giảm ~60-70% dung lượng truyền qua tunnel), cache trình duyệt cho ảnh/CSS/JS và bật <strong>OPcache</strong> cho PHP. Website sẽ tải nhanh hơn đáng kể trên đường truyền chậm.</p>
 <div id="cfd-perf-status" class="muted"><strong>Trạng thái: <span id="cfd-perf-text">Chưa kiểm tra</span></strong></div>

@@ -1,3 +1,9 @@
+# V15.2.0 — Remote Access: truy cập panel quản trị từ xa qua Cloudflare Tunnel
+
+- Tính năng mới "Truy cập panel từ xa" trong Cloudflare Hosting: bật bằng một cú bấm, tự chọn subdomain (mặc định `panel.<domain>` của bạn) và tự tạo ingress rule + record DNS CNAME trên cùng tunnel đang có — không tạo tunnel mới, không phá kết nối website hiện tại.
+- Panel quản trị có thể truy cập từ bất kỳ máy nào qua Internet (ví dụ `https://panel.thc.io.vn`), không phụ thuộc WiFi/LAN — di chuyển, đổi mạng vẫn hoạt động vì cloudflared tự reconnect.
+- Trang panel vốn đã yêu cầu đăng nhập nên an toàn khi bật truy cập từ xa. Có nút tắt riêng (tách subdomain panel, không ảnh hưởng tunnel và website).
+
 # V15.1.2 — Tự khởi động lại tunnel khi hệ thống tắt ngầm cloudflared (khắc phục Error 1033)
 
 - Khi cloudflared bị Android tắt ngầm (cơ chế tiết kiệm pin), website trả Cloudflare Error 1033 "unable to resolve". Trang Cloudflare Hosting giờ tự phát hiện (tunnel đã cấu hình đầy đủ mà tiến trình tắt) và tự khởi động lại tunnel đúng 1 lần mỗi 60 giây, kèm thông báo cho người dùng.

@@ -483,6 +483,30 @@ if(document.querySelector('[data-service-alert]')){
       if(publicUrl){publicUrl.textContent=url;publicUrl.href=url||'#';}
       if(openUrl) openUrl.href=url||'#';
       if(copyUrl){copyUrl.dataset.copy=url||'';copyUrl.onclick=async()=>{try{await navigator.clipboard.writeText(url);}catch(e){}const old=copyUrl.textContent;copyUrl.textContent='Đã sao chép';setTimeout(()=>copyUrl.textContent=old,1200);};}
+      // Remote Access (V15.2.0): hiển thị panel từ xa nếu đã bật
+      const panelUrl=d.panel_url||'';
+      const remoteCard=document.getElementById('cfd-remote-url-card');
+      const remoteUrlEl=document.getElementById('cfd-remote-url');
+      const remoteOpen=document.getElementById('cfd-remote-open');
+      const remoteCopy=document.getElementById('cfd-remote-copy');
+      const remoteDot=document.getElementById('cfd-remote-dot');
+      const panelInput=document.getElementById('cfd-panel-hostname');
+      if(remoteCard) remoteCard.hidden=!panelUrl;
+      if(remoteUrlEl){remoteUrlEl.textContent=panelUrl;remoteUrlEl.href=panelUrl||'#';}
+      if(remoteOpen) remoteOpen.href=panelUrl||'#';
+      if(remoteCopy){remoteCopy.dataset.copy=panelUrl||'';remoteCopy.onclick=async()=>{try{await navigator.clipboard.writeText(panelUrl);}catch(e){}const old=remoteCopy.textContent;remoteCopy.textContent='Đã sao chép';setTimeout(()=>remoteCopy.textContent=old,1200);};}
+      if(remoteDot) remoteDot.classList.toggle('active',!!panelUrl);
+      // Tự điền hostname panel mặc định = panel. + domain gốc đã chọn
+      if(panelInput&&d.hostname&&!panelInput.dataset.defaulted){
+        panelInput.dataset.defaulted='1';
+        panelInput.addEventListener('focus',()=>{
+          if(!panelInput.value.trim()){panelInput.value=d.hostname?'panel.'+d.hostname:'';}
+        });
+        zoneSelect?.addEventListener('change',()=>{
+          const opt=zoneSelect.selectedOptions?.[0];
+          if(opt?.value&&panelInput.dataset.defaulted&&!panelInput.value.trim()) panelInput.value=opt.textContent.trim()?'panel.'+opt.textContent.trim():'';
+        });
+      }
       if(logEl){logEl.textContent=d.log||'Chưa có nhật ký.';logEl.scrollTop=logEl.scrollHeight;}
     }catch(e){}
   };
@@ -602,6 +626,30 @@ if(document.querySelector('[data-service-alert]')){
     const btn=$('cfd-uninstall');btn.disabled=true;btn.textContent='Đang xóa...';
     try{const d=await post('/api/cloudflare-domain/uninstall',{csrf:csrf()});showAlert(d.message||'Đã xóa toàn bộ cấu hình.');renderStatus();}catch(e){showAlert(String(e.message));}
     btn.disabled=false;btn.textContent='Xóa toàn bộ cấu hình Cloudflare';
+  });
+
+  // ===== Remote Access (V15.2.0): truy cập panel từ xa =====
+  const remoteForm=form('cfd-remote-form');
+  remoteForm?.addEventListener('submit',async ev=>{
+    ev.preventDefault();showAlert('');
+    const panelHostname=(document.getElementById('cfd-panel-hostname')?.value||'').trim().toLowerCase();
+    if(!panelHostname){showAlert('Hãy nhập hostname cho panel, ví dụ: panel.thc.io.vn');return;}
+    if(!/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/.test(panelHostname)){showAlert('Hostname không hợp lệ. Ví dụ: panel.thc.io.vn');return;}
+    const btn=remoteForm.querySelector('button');btn.disabled=true;btn.textContent='Đang bật...';
+    try{
+      const d=await post('/api/cloudflare-domain/attach-panel',{csrf:csrf(),panel_hostname:panelHostname});
+      if(!d.success) throw new Error(d.error||'Bật truy cập từ xa thất bại.');
+      showAlert('Đã bật truy cập từ xa! Bạn có thể vào panel bằng '+d.url+' từ bất kỳ máy nào, không phụ thuộc WiFi/LAN.');
+      renderStatus();
+    }catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='🔗 Bật truy cập từ xa';
+  });
+  $('cfd-remote-detach')?.addEventListener('click',async()=>{
+    if(!confirm('Tắt truy cập panel từ xa? Subdomain panel sẽ ngừng hoạt động (tunnel và website không bị ảnh hưởng).')) return;
+    showAlert('');
+    const btn=$('cfd-remote-detach');btn.disabled=true;btn.textContent='Đang tắt...';
+    try{const d=await post('/api/cloudflare-domain/detach-panel',{csrf:csrf()});showAlert(d.message||'Đã tắt truy cập từ xa.');renderStatus();}catch(e){showAlert(String(e.message));}
+    btn.disabled=false;btn.textContent='Tắt truy cập từ xa';
   });
 
   // ===== Tối ưu hiệu năng =====

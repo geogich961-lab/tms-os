@@ -222,6 +222,110 @@ final class CloudflareDomainService
         return ['hostname' => $hostname, 'url' => 'https://' . $hostname, 'record_id' => $recordId];
     }
 
+    /**
+     * Remote Access (V15.2.0): bật truy cập panel từ xa qua tunnel.
+     * Thêm ingress rule cho panel hostname (trỏ vào localhost:8888) và CNAME DNS.
+     * Giữ nguyên rule website đang có (không phá kết nối hiện tại).
+     */
+    public function attachPanelHostname(string $panelHostname): array
+    {
+        $info = $this->cf();
+        $cfg = $info['cfg'];
+        $tunnelId = (string)($cfg['tunnel_id'] ?? '');
+        $zoneId = (string)($cfg['zone_id'] ?? '');
+        $websiteHostname = (string)($cfg['hostname'] ?? '');
+        $websiteService = (string)($cfg['service'] ?? 'http://localhost:8080');
+        if ($tunnelId === '') {
+            throw new RuntimeException('Chưa có tunnel. Hãy bấm "Tạo Cloudflare Tunnel" trước.');
+        }
+        if ($zoneId === '') {
+            throw new RuntimeException('Chưa gắn tên miền website. Hãy gắn tên miền trước khi bật truy cập từ xa.');
+        }
+        $panelHostname = strtolower(trim($panelHostname));
+        if ($panelHostname === '' || strpos($panelHostname, '.') === false) {
+            throw new RuntimeException('Hostname không hợp lệ. Ví dụ: panel.thc.io.vn');
+        }
+        if ($panelHostname === strtolower($websiteHostname)) {
+            throw new RuntimeException('Hostname panel không được trùng với tên miền website.');
+        }
+        // 1. Ingress: giữ rule website (nếu có), thêm rule panel, catch-all 404 cuối
+        $ingress = [];
+        if ($websiteHostname !== '') {
+            $ingress[] = ['hostname' => $websiteHostname, 'service' => $websiteService, 'originRequest' => (object)[
+                'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                'httpHostHeader' => $websiteHostname,
+            ]];
+        }
+        $ingress[] = ['hostname' => $panelHostname, 'service' => 'http://localhost:8888', 'originRequest' => (object)[
+            'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+            'httpHostHeader' => $panelHostname,
+        ]];
+        $ingress[] = ['service' => 'http_status:404'];
+        $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
+            'config' => ['ingress' => $ingress],
+        ]);
+        // 2. DNS CNAME → <tunnel_id>.cfargotunnel.com
+        $existing = $this->dnsRecords($zoneId);
+        $recordId = '';
+        foreach ($existing as $r) {
+            if (strcasecmp($r['name'], $panelHostname) === 0) {
+                $recordId = $r['id'];
+                $this->api('PUT', '/zones/' . $zoneId . '/dns_records/' . $recordId, [
+                    'type' => 'CNAME', 'name' => $panelHostname,
+                    'content' => $tunnelId . '.cfargotunnel.com', 'proxied' => true,
+                ]);
+                break;
+            }
+        }
+        if ($recordId === '') {
+            $created = $this->api('POST', '/zones/' . $zoneId . '/dns_records', [
+                'type' => 'CNAME', 'name' => $panelHostname,
+                'content' => $tunnelId . '.cfargotunnel.com', 'proxied' => true,
+            ]);
+            $recordId = (string)($created['id'] ?? '');
+        }
+        $cfg['panel_hostname'] = $panelHostname;
+        $cfg['panel_record_id'] = $recordId;
+        $this->writeJson($this->configFile, $cfg);
+        @chmod($this->configFile, 0600);
+        return ['hostname' => $panelHostname, 'url' => 'https://' . $panelHostname];
+    }
+
+    /**
+     * Tắt truy cập panel từ xa: xóa ingress rule panel + CNAME DNS.
+     */
+    public function detachPanelHostname(): array
+    {
+        $info = $this->cf();
+        $cfg = $info['cfg'];
+        $tunnelId = (string)($cfg['tunnel_id'] ?? '');
+        $zoneId = (string)($cfg['zone_id'] ?? '');
+        $panelHostname = (string)($cfg['panel_hostname'] ?? '');
+        $panelRecordId = (string)($cfg['panel_record_id'] ?? '');
+        $websiteHostname = (string)($cfg['hostname'] ?? '');
+        $websiteService = (string)($cfg['service'] ?? '');
+        if ($tunnelId !== '') {
+            $ingress = [['service' => 'http_status:404']];
+            if ($websiteHostname !== '') {
+                array_unshift($ingress, ['hostname' => $websiteHostname, 'service' => $websiteService, 'originRequest' => (object)[
+                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                    'httpHostHeader' => $websiteHostname,
+                ]]);
+            }
+            try {
+                $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
+                    'config' => ['ingress' => $ingress],
+                ]);
+            } catch (Throwable $e) { /* ingress có thể đã bị thay đổi thủ công — vẫn xóa DNS */ }
+        }
+        if ($zoneId !== '' && $panelHostname !== '' && $panelRecordId !== '') {
+            try { $this->api('DELETE', '/zones/' . $zoneId . '/dns_records/' . $panelRecordId); } catch (Throwable $e) { /* bỏ qua */ }
+        }
+        unset($cfg['panel_hostname'], $cfg['panel_record_id']);
+        $this->writeJson($this->configFile, $cfg);
+        return ['message' => 'Đã tắt truy cập panel từ xa.'];
+    }
+
     public function detachHostname(): array
     {
         $info = $this->cf();
@@ -318,6 +422,7 @@ final class CloudflareDomainService
             $lines = array_slice(file($this->logFile, FILE_IGNORE_NEW_LINES) ?: [], -10);
             $log = implode("\n", $lines);
         }
+        $panelHostname = (string)($cfg['panel_hostname'] ?? '');
         return [
             'configured' => trim((string)($cfg['api_token'] ?? '')) !== '',
             'account_id' => (string)($cfg['account_id'] ?? ''),
@@ -326,6 +431,9 @@ final class CloudflareDomainService
             'hostname' => (string)($cfg['hostname'] ?? ''),
             'service' => (string)($cfg['service'] ?? ''),
             'zone_id' => (string)($cfg['zone_id'] ?? ''),
+            'panel_hostname' => $panelHostname,
+            'panel_url' => $panelHostname !== '' ? 'https://' . $panelHostname : '',
+            'panel_configured' => $panelHostname !== '',
             'running' => $running,
             'health' => $health,
             'url' => trim((string)($cfg['hostname'] ?? '')) !== '' ? 'https://' . $cfg['hostname'] : '',
