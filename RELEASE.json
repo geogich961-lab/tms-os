@@ -1,13 +1,13 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.3",
+  "internal_version": "14.1.4",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V14.1.3",
-  "version": "14.1.3",
+  "name": "TMS OS V14.1.4",
+  "version": "14.1.4",
   "notes": "Update Center hoan chinh: cap nhat 1 cham trong panel (tai tu GitHub, backup, swap, health check, rollback tu dong); API tu cap nhat mot lenh (/api/updates/run voi token); rollback an toan (bo qua backup khong du phan, flash ben vung qua swap); bo cai toi uu dien thoai that (pre-check RAM/disk, php-zip check, repair skip admin).",
   "features": [
     "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",

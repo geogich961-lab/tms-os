@@ -25,7 +25,7 @@ fi
 if command -v pkg >/dev/null 2>&1; then
   # ========== V14.1.3: Pre-check thiết bị thật — RAM + dung lượng + quyền bộ nhớ ==========
   # Điện thoại đời cũ (RAM < 2GB hoặc disk < 1.5GB) chạy MariaDB rất dễ treo → đề xuất SQLite.
-  if [ "$INSTALL_MODE" != "repair" ] 2>/dev/null || [ "${TMS_DB_MODE_AUTO:-}" != "1" ]; then
+  if [ "${INSTALL_MODE:-}" != "repair" ] 2>/dev/null || [ "${TMS_DB_MODE_AUTO:-}" != "1" ]; then
     TMS_RAM_KB="$(free 2>/dev/null | awk '/Mem:/{print $2}')"
     TMS_DISK_KB="$(df "$HOME" 2>/dev/null | awk 'NR==2{print $4}')"
     if [ -n "$TMS_RAM_KB" ] && [ "$TMS_RAM_KB" -lt 1500000 ] 2>/dev/null; then
@@ -155,7 +155,7 @@ if command -v pkg >/dev/null 2>&1; then
   if [ "$INSTALL_MODE" = "repair" ]; then
     echo 'Sửa chữa — sao lưu dữ liệu hiện tại trước khi cài đè...'
     printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
-    mkdir -p "$HOME/.tms-os" "$HOME/.tms-os/backups" "$HOME/logs/services"
+    mkdir -p "$HOME/.tms-os" "$HOME/.tms-os/backups" "$HOME/logs/services" "$BACKUP"
     if [ -d "$TARGET" ]; then
       cp -a "$TARGET" "$BACKUP/tms-os" || true
     fi

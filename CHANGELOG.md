@@ -1,3 +1,8 @@
+# V14.1.4 — Sửa lỗi bộ cài (Repair Mode)
+
+- Sửa lỗi `INSTALL_MODE: unbound variable` tại dòng 28 khi chọn "Sửa chữa" — biến được dùng trước khi gán giá trị với `set -u` bật (`$INSTALL_MODE` → `${INSTALL_MODE:-}`).
+- Sửa lỗi sao lưu trong chế độ sửa chữa: tạo thư mục `$BACKUP` trước khi copy dữ liệu (trước đây `cp` báo lỗi "No such file or directory", luồng vẫn an toàn nhờ `|| true` nhưng không sao lưu được).
+
 # V14.1.3 — Update Center hoàn chỉnh + Tối ưu bộ cài
 - Update Center: Cập nhật 1 chạm trong panel — tải bản mới nhất từ GitHub, sao lưu, swap, kiểm tra sức khỏe, rollback tự động khi lỗi.
 - API tự cập nhật 1 lệnh: POST /api/updates/run với token riêng (~/.tms-os/update-token) — dùng được cho script/tự động hóa.
