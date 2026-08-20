@@ -1,3 +1,7 @@
+# V14.1.1 — Mirror 404 recovery (pkg install auto-retry with --fix-missing + mirror switch)
+
+- Tự động retry khi tải gói Termux lỗi 404 (mirror chưa cập nhật): cập nhật lại kho → apt-get install --fix-missing → đổi sang mirror dự phòng nếu vẫn lỗi.
+
 # V14.1.0 — Smart Installer (Clean/Repair) + Mandatory Accounts + Android 7.0+
 
 - Installer detects an existing TMS OS installation and asks the user to choose: [1] Repair (keeps all websites, databases, accounts; reinstalls the core) or [2] Clean install (wipes all old data after typing YES to confirm).

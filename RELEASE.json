@@ -1,13 +1,13 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.0",
+  "internal_version": "14.1.1",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-19",
-  "name": "TMS OS V14.1.0",
-  "version": "14.1.0",
+  "name": "TMS OS V14.1.1",
+  "version": "14.1.1",
   "notes": "Phat hien cai dat cu -> hoi cai moi (xoa sach du lieu) hoac sua chua (giu du lieu); nguoi dung tu nhap tai khoan + mat khau database va tai khoan admin panel (bat buoc); tuong thich Android 7.0+. Bo cai phai chay tuong tac (khong qua pipe).",
   "features": [
     "SQLite database mode: lightweight, no daemon, perfect for old/weak devices",

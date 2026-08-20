@@ -24,8 +24,28 @@ fi
 
 if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
-  pkg update -y
-  pkg install -y php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl
+  # V14.1.1: mirror Termux thỉnh thoảng lỗi 404 (index chưa cập nhật).
+  # Tự retry: apt-get update → apt-get install --fix-missing → đổi mirror nếu vẫn lỗi.
+  TMS_PKGS="php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl"
+  tms_pkg_ok=0
+  for TMS_ATTEMPT in 1 2 3; do
+    if pkg install -y $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
+    echo "[Khắc phục] Tải gói bị lỗi — cập nhật lại kho gói và thử với --fix-missing (lần $TMS_ATTEMPT/3)..."
+    apt-get update >/dev/null 2>&1 || pkg update -y >/dev/null 2>&1 || true
+    if apt-get install -y --fix-missing $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
+    # Lần cuối thử đổi mirror mặc định (khỏi 3san.dev sang mirrors termux chính thức)
+    if [ "$TMS_ATTEMPT" -eq 2 ]; then
+      echo "[Khắc phục] Vẫn lỗi — chuyển sang mirror dự phòng..."
+      termux-change-repo --choice-all --repository "Mirrors by Grimler" >/dev/null 2>&1 || termux-change-repo --choice-all >/dev/null 2>&1 || true
+      apt-get update >/dev/null 2>&1 || pkg update -y >/dev/null 2>&1 || true
+    fi
+  done
+  if [ "$tms_pkg_ok" -ne 1 ]; then
+    echo '[LỖI] Không cài được một số gói sau 3 lần thử (có thể do mạng hoặc mirror).'
+    echo '        Thử lại sau vài phút, hoặc chạy thủ công:'
+    echo '          pkg install php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl'
+    exit 1
+  fi
 
   # ========== Phát hiện cài đặt cũ — hỏi cài mới hay sửa chữa ==========
   # TMS_INSTALL_MODE được bộ cài root (install.sh) truyền; nếu không có
