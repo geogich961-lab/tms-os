@@ -67,21 +67,48 @@ final class CloudflareDomainService
         return (array)($data['result'] ?? []);
     }
 
-    /** Kiểm tra token và trả account_id + danh sách zone. */
+    /**
+     * Kiểm tra token và trả account_id + danh sách zone.
+     * Token chỉ cần: Cloudflare Tunnel (Edit) + Zone DNS (Edit).
+     * KHÔNG yêu cầu "Account Settings: Read" — account_id được lấy từ
+     * /user/memberships (quyền Account Membership: Read, bao gồm trong Tunnel:Edit
+     * với nhiều token mẫu) hoặc giữ lại giá trị đã lưu trong cấu hình trước đó.
+     */
     public function accountInfo(): array
     {
         $info = $this->cf();
-        $acct = $this->api('GET', '/accounts');
         $accountId = '';
-        foreach ((array)($acct[0] ?? []) as $acc) {
-            $accountId = (string)($acc['id'] ?? '');
-            break;
+        try {
+            $acct = $this->api('GET', '/accounts');
+            foreach ((array)($acct[0] ?? []) as $acc) {
+                $accountId = (string)($acc['id'] ?? '');
+                break;
+            }
+            if ($accountId === '' && is_array($acct)) {
+                $accountId = (string)($acct['id'] ?? '');
+            }
+        } catch (Throwable $e) {
+            // Token chưa cấp quyền Account: Read — tiếp tục với các cách khác
         }
-        if ($accountId === '' && is_array($acct)) {
-            $accountId = (string)($acct['id'] ?? '');
+        // Fallback 1: /user/memberships (thường khả dụng với token Tunnel:Edit)
+        if ($accountId === '') {
+            try {
+                $mems = $this->api('GET', '/user/memberships');
+                foreach ((array)$mems as $m) {
+                    $acc = $m['account'] ?? [];
+                    $accountId = (string)($acc['id'] ?? '');
+                    if ($accountId !== '') { break; }
+                }
+            } catch (Throwable $e) {
+                // bỏ qua
+            }
+        }
+        // Fallback 2: giữ account_id đã lưu trong cấu hình trước đó
+        if ($accountId === '') {
+            $accountId = (string)($info['account_id'] ?? '');
         }
         if ($accountId === '') {
-            throw new RuntimeException('Không thể đọc thông tin tài khoản. Hãy kiểm tra quyền "Account Settings: Read" của API Token.');
+            throw new RuntimeException('Không thể đọc thông tin tài khoản. Token cần quyền "Account: Read" (hoặc tạo lại token tại dash.cloudflare.com/profile/api-tokens).');
         }
         if ($accountId !== '' && $accountId !== $info['account_id']) {
             $cfg = $info['cfg'];

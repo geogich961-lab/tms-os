@@ -1,3 +1,7 @@
+# V15.0.3 — Token Cloudflare không còn bắt buộc quyền "Account Settings: Read"
+
+- Sửa lỗi xác thực API Token báo "Không thể đọc thông tin tài khoản. Hãy kiểm tra quyền Account Settings: Read" dù token đã đúng quyền Cloudflare Tunnel (Edit) + Zone DNS (Edit). `accountInfo()` giờ thử theo thứ tự: (1) `/accounts` — đọc account ID trực tiếp, (2) fallback `/user/memberships` — lấy tài khoản từ danh sách membership, (3) fallback giữ `account_id` đã lưu trong cấu hình trước đó. Chỉ báo lỗi khi cả ba cách đều không có dữ liệu.
+
 # V15.0.2 — Sửa race condition chữ ký SHA-256 khi cài đặt
 
 - Sửa lỗi "File tải về không khớp chữ ký SHA-256" khi chạy lại installer ngay sau khi phát hành bản mới: GitHub CDN có thể trả file ZIP của release mới nhưng `RELEASE.json` cũ (checksum chưa cập nhật trên branch main), khiến xác minh thất bại. Installer giờ tự tải lại tối đa 4 lần (cách nhau 5 giây) trước khi dừng an toàn, kèm in rõ EXPECTED/ACTUAL để dễ chẩn đoán.

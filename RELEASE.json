@@ -1,18 +1,19 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.2",
+  "internal_version": "15.0.3",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.0.2",
-  "version": "15.0.2",
-  "notes": "Sua race condition checksum: GitHub cache gop LATEST.zip moi voi RELEASE.json cu lam installer loi SHA-256. Installer gio tu tai lai toi da 4 lan truoc khi dung.",
+  "name": "TMS OS V15.0.3",
+  "version": "15.0.3",
+  "notes": "V15.0.3: Khong yeu cau quyen \"Account Settings: Read\" khi xac thuc token Cloudflare. account_id lay tu /accounts -> fallback /user/memberships -> fallback account_id da luu.",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
     "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",
     "Header mobile co dinh hoan toan (position:fixed), khong bi cuon theo trang"
   ],
-  "checksum_sha256": "3a173b9ba0d0e8703e05833df9c6a439c83955ca47c8069a2efca6bc4e2a6549"
+  "checksum_sha256": "3a173b9ba0d0e8703e05833df9c6a439c83955ca47c8069a2efca6bc4e2a6549",
+  "build_date": "2026-08-20"
 }
