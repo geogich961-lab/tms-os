@@ -1,3 +1,7 @@
+# V15.1.2 — Tự khởi động lại tunnel khi hệ thống tắt ngầm cloudflared (khắc phục Error 1033)
+
+- Khi cloudflared bị Android tắt ngầm (cơ chế tiết kiệm pin), website trả Cloudflare Error 1033 "unable to resolve". Trang Cloudflare Hosting giờ tự phát hiện (tunnel đã cấu hình đầy đủ mà tiến trình tắt) và tự khởi động lại tunnel đúng 1 lần mỗi 60 giây, kèm thông báo cho người dùng.
+
 # V15.1.1 — Sửa dropdown Domain trống trong Cloudflare Hosting
 - Trang Cloudflare Hosting giờ tự nạp danh sách domain từ Cloudflare ngay khi mở trang, không cần bấm "Kiểm tra & lưu token" trước.
 - Endpoint /api/cloudflare-domain/status trả thêm danh sách zones để giao diện hiển thị đầy đủ.

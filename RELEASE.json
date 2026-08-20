@@ -1,13 +1,13 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.1.1",
+  "internal_version": "15.1.2",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
   "name": "TMS OS V15.1.0",
-  "version": "15.1.1",
+  "version": "15.1.2",
   "notes": "V15.1.0: Xoa hoan toan Smart Fallback Engine (tao URL cong khai tam thoi qua localhost.run/Ngrok/Pinggy/TMS Relay). Chi con Cloudflare Hosting voi ten mien rieng chinh chu. Menu doi ten thanh Cloudflare Hosting.",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",

@@ -438,12 +438,31 @@ if(document.querySelector('[data-service-alert]')){
   };
   loadInternalSites();
 
+  // Auto-restart: Android hay kill cloudflared ngầm (tiết kiệm pin) khiến tunnel mất kết nối
+  // (Cloudflare Error 1033). Khi đã cấu hình đủ hostname + tunnel mà cloudflared bị tắt,
+  // tự khởi động lại đúng 1 lần mỗi 60 giây.
+  let lastAutoRestartAt = 0;
+  const autoRestart = async d => {
+    if (!(d.configured && d.tunnel_id && d.hostname && !d.running)) return;
+    const now = Date.now();
+    if (now - lastAutoRestartAt < 60000) return;
+    lastAutoRestartAt = now;
+    try {
+      const res = await post('/api/cloudflare-domain/start', {csrf: typeof csrf === 'function' ? csrf() : ''});
+      if (res && res.running) {
+        showAlert('Tunnel bị tắt ngầm bởi hệ thống — đã tự khởi động lại.');
+        setTimeout(renderStatus, 1500);
+      }
+    } catch (e) { console.warn('autoRestart failed', e); }
+  };
+
   const renderStatus=async()=>{
     try{
       const r=await fetch(endpoint,{cache:'no-store',headers:{Accept:'application/json'}});
       if(!r.ok) return;
       const d=await r.json();
       const healthy=!!d.running&&d.health?.status==='healthy';
+      await autoRestart(d);
       const anyConfig=!!d.configured||!!d.tunnel_id;
       if(pill){pill.textContent=healthy?'Đang hoạt động':(d.configured?'Đã cấu hình':'Chưa cấu hình');pill.classList.toggle('running',healthy);pill.classList.toggle('stopped',!healthy);}
       if(tunnelName) tunnelName.textContent=d.tunnel_name||'Chưa tạo';
