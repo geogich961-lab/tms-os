@@ -11,7 +11,8 @@ final class DiagnosticsService
         $checks[]=$this->item('Thư mục websites',is_dir($this->home.'/websites'),$this->home.'/websites');
         $checks[]=$this->item('Quyền ghi websites',is_writable($this->home.'/websites'),'Cần quyền ghi để upload và tạo website');
         $checks[]=$this->item('Thư mục Nginx sites-enabled',is_dir($this->prefix.'/etc/nginx/sites-enabled'),$this->prefix.'/etc/nginx/sites-enabled');
-        foreach(['nginx'=>'Nginx','php'=>'PHP Engine','mariadb'=>'MariaDB','ssh'=>'SSH'] as $id=>$label){$s=$this->core->service($id,false);$checks[]=$this->item($label,$s['running'],$s['running']?'Tiến trình đang chạy · PID '.$s['pid']:'Không phát hiện tiến trình qua Unified Core');}
+        // V14.1.5: duyệt dịch vụ theo danh mục động của Unified Core — MariaDB chỉ xuất hiện khi chế độ database là mariadb.
+        foreach($this->core->definitions() as $id=>$def){$s=$this->core->service($id,false);$checks[]=$this->item($def['name'],$s['running'],$s['running']?'Tiến trình đang chạy · PID '.$s['pid']:'Không phát hiện tiến trình qua Unified Core');}
         $r=$this->core->run('nginx -t',8);$checks[]=$this->item('Cấu hình Nginx',$r['code']===0,$r['output']);
         $checks[]=$this->item('Phiên PHP Session',is_dir(dirname(__DIR__,2).'/storage/sessions')&&is_writable(dirname(__DIR__,2).'/storage/sessions'),'storage/sessions');
         return $checks;

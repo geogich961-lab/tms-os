@@ -122,11 +122,9 @@ final class GuardianService
     {
         $data=@json_decode((string)@file_get_contents($this->state.'/guardian-status.json'),true);
         if(!is_array($data))$data=['updated_at'=>'','panel'=>'—','website'=>'—'];
-        $services=$this->core->all(false);
-        $data['nginx']=$services['nginx']['running'];
-        $data['php']=$services['php']['running'];
-        $data['mariadb']=$services['mariadb']['running'];
-        $data['ssh']=$services['ssh']['running'];
+        // V14.1.5: chỉ báo trạng thái các dịch vụ trong danh mục động (SQLite mode không có MariaDB).
+        $defs=$this->core->definitions();$services=$this->core->all(false);
+        foreach(['nginx','php','mariadb','ssh'] as $sid){$data[$sid]=isset($defs[$sid],$services[$sid])?(bool)$services[$sid]['running']:null;}
         $data['source']='Unified Core V13';
         return $data;
     }

@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.4",
+  "internal_version": "14.1.5",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V14.1.4",
-  "version": "14.1.4",
-  "notes": "Update Center hoan chinh: cap nhat 1 cham trong panel (tai tu GitHub, backup, swap, health check, rollback tu dong); API tu cap nhat mot lenh (/api/updates/run voi token); rollback an toan (bo qua backup khong du phan, flash ben vung qua swap); bo cai toi uu dien thoai that (pre-check RAM/disk, php-zip check, repair skip admin).",
+  "name": "TMS OS V14.1.5",
+  "version": "14.1.5",
+  "notes": "Sua loi System Check HTTP 500 trong che do SQLite (duyet dich vu theo danh muc dong); Internet Access bao loi Viet hoi ro rang khi website noi bo chua chay; Dashboard/Runtime Packages chi hien MariaDB khi che do database la mariadb (V14.1.5).",
   "features": [
     "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
     "One-command self-update API /api/updates/run with per-install token (scripts and automation safe)",

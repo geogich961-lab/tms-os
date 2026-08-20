@@ -21,15 +21,14 @@ final class SystemService
         }
     }
 
+    // V14.1.5: trạng thái dịch vụ theo danh mục động — MariaDB chỉ xuất hiện khi chế độ database là mariadb.
     public function serviceStatus(): array
     {
-        $all=$this->core->all(false);
-        return [
-            'Nginx'=>$all['nginx']['running'],
-            'PHP Engine'=>$all['php']['running'],
-            'MariaDB'=>$all['mariadb']['running'],
-            'SSH'=>$all['ssh']['running'],
-        ];
+        $defs = $this->core->definitions();
+        $all = $this->core->all(false);
+        $status = [];
+        foreach (array_keys($defs) as $id) { if (isset($all[$id])) { $status[$defs[$id]['name']] = (bool)$all[$id]['running']; } }
+        return $status;
     }
 
     public function metrics(): array
@@ -58,12 +57,21 @@ final class SystemService
 
     public function action(string $action): array
     {
-        $map=[
-            'reload_nginx'=>['nginx','restart'],'restart_nginx'=>['nginx','restart'],'stop_nginx'=>['nginx','stop'],
-            'restart_php'=>['php','restart'],'stop_php'=>['php','stop'],
-            'start_mariadb'=>['mariadb','start'],'restart_mariadb'=>['mariadb','restart'],'stop_mariadb'=>['mariadb','stop'],
-            'start_ssh'=>['ssh','start'],'restart_ssh'=>['ssh','restart'],'stop_ssh'=>['ssh','stop'],
+        // V14.1.5: hành động dịch vụ chỉ áp dụng với dịch vụ trong danh mục động (SQLite mode không có MariaDB).
+        $defs = $this->core->definitions();
+        $map = [
+            'reload_nginx' => ['nginx','restart'],
+            'restart_nginx' => ['nginx','restart'],
+            'stop_nginx' => ['nginx','stop'],
+            'restart_php' => ['php','restart'],
+            'stop_php' => ['php','stop'],
         ];
+        foreach (array_keys($defs) as $id) {
+            if ($id === 'redis') continue;
+            $map['restart_'.$id] = [$id,'restart'];
+            $map['stop_'.$id] = [$id,'stop'];
+            if ($id !== 'nginx' && $id !== 'php') { $map['start_'.$id] = [$id,'start']; }
+        }
         if($action==='start_all'){$r=$this->core->run('bash '.escapeshellarg($this->home.'/tms-os/scripts/start-tms.sh'),60);return ['ok'=>$r['code']===0,'message'=>$r['output']?:'Hoàn tất.'];}
         if($action==='backup'){$r=$this->core->run('bash '.escapeshellarg($this->home.'/tms-os/scripts/quick-backup.sh'),120);return ['ok'=>$r['code']===0,'message'=>$r['output']?:'Hoàn tất.'];}
         if(!isset($map[$action]))return ['ok'=>false,'message'=>'Thao tác không hợp lệ.'];

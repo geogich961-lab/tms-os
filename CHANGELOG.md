@@ -1,3 +1,9 @@
+# V14.1.5 — Sửa lỗi SQLite mode (System Check 500 + Internet Access)
+
+- System Check (Kiểm tra hệ thống) trả HTTP 500 khi dùng SQLite: `DiagnosticsService` duyệt danh sách dịch vụ cứng gồm MariaDB dù `definitions()` chỉ thêm MariaDB trong chế độ mariadb → throw "Dịch vụ không hợp lệ". Sửa: duyệt theo `definitions()` động.
+- Dashboard/Runtime Packages/Guardian: thống nhất chỉ hiển thị và điều khiển MariaDB khi chế độ database là mariadb — người dùng SQLite không còn thấy mục MariaDB "dừng" gây nhầm lẫn.
+- Internet Access: thông báo lỗi tiếng Việt rõ ràng khi website nội bộ chưa phản hồi (hướng dẫn khởi động lại dịch vụ từ Trang chủ) thay vì lỗi tiếng Anh gây khó hiểu.
+
 # V14.1.4 — Sửa lỗi bộ cài (Repair Mode)
 
 - Sửa lỗi `INSTALL_MODE: unbound variable` tại dòng 28 khi chọn "Sửa chữa" — biến được dùng trước khi gán giá trị với `set -u` bật (`$INSTALL_MODE` → `${INSTALL_MODE:-}`).

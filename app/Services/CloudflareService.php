@@ -101,7 +101,7 @@ final class CloudflareService
     {
         $this->validateTarget($target);
         if (!$this->targetReachable($target)) {
-            throw new RuntimeException('Website nội bộ chưa phản hồi tại ' . $target . '.');
+            throw new RuntimeException('Website nội bộ tại ' . $target . ' chưa phản hồi. Hãy khởi động Nginx và website (Trang chủ → Khởi động tất cả dịch vụ) rồi thử lại.');
         }
         $allowed = ['auto','cloudflare','ngrok','pinggy','localhostrun','relay'];
         if (!in_array($provider, $allowed, true)) {
