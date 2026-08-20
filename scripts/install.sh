@@ -46,7 +46,7 @@ if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
   # V14.1.1: mirror Termux thỉnh thoảng lỗi 404 (index chưa cập nhật).
   # Tự retry: apt-get update → apt-get install --fix-missing → đổi mirror nếu vẫn lỗi.
-  TMS_PKGS="php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl"
+  TMS_PKGS="php php-gd nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl"
   tms_pkg_ok=0
   for TMS_ATTEMPT in 1 2 3; do
     if pkg install -y $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
@@ -81,6 +81,10 @@ if command -v pkg >/dev/null 2>&1; then
   # PHP ext zip: ZIP handler yêu cầu ext zip — bắt buộc cài php-zip nếu thiếu
   if ! php -m 2>/dev/null | grep -q '^zip$'; then
     pkg install -y php-zip >/dev/null 2>&1 || apt-get install -y --fix-missing php-zip >/dev/null 2>&1 || true
+  fi
+  # PHP ext gd: xử lý logo/hình ảnh trong panel (chức năng đổi logo) — cài nếu thiếu
+  if ! php -m 2>/dev/null | grep -q '^gd$'; then
+    pkg install -y php-gd >/dev/null 2>&1 || apt-get install -y --fix-missing php-gd >/dev/null 2>&1 || true
   fi
 
   # ========== Phát hiện cài đặt cũ — hỏi cài mới hay sửa chữa ==========

@@ -5,7 +5,7 @@ $ui=tms_ui_settings();
 header('Content-Type: application/manifest+json; charset=UTF-8');
 header('Cache-Control: no-cache, must-revalidate');
 echo json_encode([
- 'id'=>'/','name'=>'TMS OS by THCGaming','short_name'=>'TMS OS',
+ 'id'=>'/','name'=>'TMS OS','short_name'=>'TMS OS',
  'description'=>'Nền tảng quản trị server Android/Termux.','lang'=>'vi',
  'start_url'=>'/','scope'=>'/','display'=>'standalone','display_override'=>['standalone'],
  'orientation'=>'portrait-primary','background_color'=>'#0a1220','theme_color'=>'#0a1220',

@@ -101,7 +101,7 @@ final class SettingsController
             $canvas=imagecreatetruecolor($size,$size);
             imagecopyresampled($canvas,$square,0,0,0,0,$size,$size,$side,$side);
             imagepng($canvas,$brandDir.'/'.$dest);
-            if($dest!=='logo-tms-os.png' && is_dir($icons)){
+            if(is_dir($icons)){
                 imagepng($canvas,$icons.'/'.$dest);
                 @chmod($icons.'/'.$dest,0644);
             }

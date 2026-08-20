@@ -145,9 +145,15 @@ function tms_brand_icon(string $size): string
     $sizes = ['192' => 'icon-192.png', '512' => 'icon-512.png', 'maskable-512' => 'icon-maskable-512.png', 'splash' => 'logo-splash.png', 'logo' => 'logo-tms-os.png'];
     $file = $sizes[$size] ?? $sizes['192'];
     $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
-    if (is_file($home . '/.tms-os/brand/' . $file) && is_file('/assets/icons/' . $file)) {
-        $ts = (int)filemtime($home . '/.tms-os/brand/' . $file);
-        return '/assets/icons/' . $file . '?v=' . $ts;
+    $brandFile = $home . '/.tms-os/brand/' . $file;
+    if (is_file($brandFile)) {
+        // Kiểm theo document root (môi trường web) trước; fallback vào target public/
+        $web = ($_SERVER['DOCUMENT_ROOT'] ?? '') . '/assets/icons/' . $file;
+        $alt = $home . '/tms-os/public/assets/icons/' . $file;
+        if (is_file($web) || is_file($alt)) {
+            $ts = (int)filemtime($brandFile);
+            return '/assets/icons/' . $file . '?v=' . $ts;
+        }
     }
     return '/assets/icons/' . $file . '?v=1';
 }
