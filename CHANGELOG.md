@@ -1,3 +1,8 @@
+# V15.0.1 — Sửa lỗi cài đặt 500 (thiếu require class CloudflareDomain)
+
+- Sửa lỗi installer dừng ở bước 6/7 với `curl (22) error 500` khi khởi động PHP Engine: `public/index.php` thiếu khai báo `require` hai class mới `CloudflareDomainService` và `CloudflareDomainController` (V15.0.0), gây PHP Fatal "Class not found" trên Termux. Đã thêm vào danh sách require trực tiếp như các service khác.
+
+
 # V15.0.0 — Cloudflare Hosting: website qua tên miền riêng chính chủ
 
 - Thay thế chế độ tunnel tạm thời bằng **Cloudflare Hosting** chính chủ: người dùng cung cấp API Token Cloudflare, hệ thống lấy tài khoản và danh sách domain tự động qua API, tạo **Cloudflare Tunnel** trực tiếp trên tài khoản, gán hostname (ví dụ `shop.example.com`), tự tạo record DNS **CNAME** trỏ `cfargotunnel.com` (có bật Proxy — website đi qua hạ tầng Cloudflare, HTTPS miễn phí) và chạy `cloudflared` bằng tunnel token.

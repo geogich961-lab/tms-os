@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.0",
+  "internal_version": "15.0.1",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.0.0",
-  "version": "15.0.0",
-  "notes": "Cloudflare Hosting chinh chu: public website qua ten mien rieng bang Cloudflare Tunnel + API (luu token, danh sach domain, tao tunnel, gan hostname/DNS CNAME tu dong, start/stop/detach/delete/uninstall). Tab Smart Fallback (tunnel) van giu nguyen. Sua header mobile fixed (position:fixed), xoa nhan version cu V10/V11/V13 trong giao dien.",
+  "name": "TMS OS V15.0.1",
+  "version": "15.0.1",
+  "notes": "Sua loi 500 cai dat: index.php thieu require CloudflareDomainService/CloudflareDomainController (khai bao final class khong duoc autoloader tim thay o Termux). Da them vao danh sach require truc tiep.",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
     "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",
