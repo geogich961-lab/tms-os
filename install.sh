@@ -112,39 +112,45 @@ echo '[OK] Đã cài đủ các thành phần.'
 # ---------- Bước 4: tải và kiểm tra bộ nguồn TMS OS ----------
 echo 'Bước 4/7: Tải bộ nguồn TMS OS mới nhất...'
 ZIP="$WORK/TMS_OS.zip"
-# Cơ chế xác minh checksum chống race condition: GitHub có thể trả file ZIP của release mới
-# nhưng RELEASE.json cũ (hoặc ngược lại) do cache CDN. Installer tự thử tải lại (tối đa 4 lần)
-# trước khi dừng, giúp update ngay sau khi phát hành không bị lỗi chữ ký.
+# Cơ chế xác minh checksum 3 lớp, chống race condition GitHub CDN:
+#   Lớp 1: checksum ONLINE từ RELEASE.json (phiên bản phát hành)
+#   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
+#   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
+# Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
+EMBED_SHA256="3a173b9ba0d0e8703e05833df9c6a439c83955ca47c8069a2efca6bc4e2a6549"
 VERIFY_OK=0
+VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do
   if ! curl -fsSL --retry 3 --retry-delay 2 -m 120 -o "$ZIP" "$RELEASE_URL"; then
     echo "[LỖI] Không tải được bộ nguồn từ $RELEASE_URL"
     echo '        Kiểm tra kết nối mạng, hoặc đặt biến môi trường TMS_REPO=owner/repo rồi chạy lại.'
     exit 1
   fi
-  EXPECTED="$(curl -fsSL -m 30 "https://raw.githubusercontent.com/${REPO}/main/RELEASE.json?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/p')"
-  if [ -z "$EXPECTED" ]; then
-    echo "[CẢNH BÁO] Không đọc được chữ ký từ RELEASE.json — bỏ qua xác minh."
-    break
-  fi
   ACTUAL="$(sha256sum "$ZIP" | awk '{print $1}')"
-  if [ "$ACTUAL" = "$EXPECTED" ]; then
-    VERIFY_OK=1
+  # Lớp 1: checksum online
+  EXPECTED="$(curl -fsSL -m 30 "https://raw.githubusercontent.com/${REPO}/main/RELEASE.json?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/p')"
+  if [ "$ACTUAL" = "$EXPECTED" ] && [ -n "$EXPECTED" ]; then
+    VERIFY_OK=1; VERIFY_SOURCE="online"
     break
   fi
-  echo "[THỬ LẠI] File tải về (try $VERIFY_ATTEMPT) chưa khớp chữ ký SHA-256 — có thể GitHub đang cập nhật release. Tải lại sau 5 giây..."
+  # Lớp 2: checksum embed trong installer (ghithub CDN cache RELEASE.json cũ)
+  if [ "$ACTUAL" = "$EMBED_SHA256" ] && [ "$EMBED_SHA256" != "__EMBED_SHA256_PLACEHOLDER__" ]; then
+    VERIFY_OK=1; VERIFY_SOURCE="embedded"
+    echo '[THÔNG BÁO] Chữ ký online chưa cập nhật trên GitHub — dùng chữ ký nhúng trong bộ cài (đã xác minh).'
+    break
+  fi
+  echo "[THỬ LẠI] File tải về (try $VERIFY_ATTEMPT) chưa khớp chữ ký SHA-256 — GitHub đang cập nhật release. Tải lại sau 5 giây..."
   sleep 5
 done
-if [ "$VERIFY_OK" -ne 1 ] && [ -n "$EXPECTED" ]; then
+if [ "$VERIFY_OK" -ne 1 ]; then
   echo "[LỖI] File tải về không khớp chữ ký SHA-256 sau 4 lần thử. Dừng cài đặt vì lý do an toàn."
-  echo "        EXPECTED: $EXPECTED"
-  echo "        ACTUAL  : $ACTUAL"
+  echo "        EXPECTED (online) : ${EXPECTED:-'(không đọc được)'}"
+  echo "        EXPECTED (embed)  : ${EMBED_SHA256:-'(không có)'}"
+  echo "        ACTUAL            : $ACTUAL"
   echo '        Nếu lỗi tiếp diễn, hãy chạy lại cùng lệnh sau 5 phút hoặc báo lỗi tại GitHub issues.'
   exit 1
 fi
-if [ "$VERIFY_OK" -eq 1 ]; then
-  echo "[OK] Đã xác minh chữ ký SHA-256."
-fi
+echo "[OK] Đã xác minh chữ ký SHA-256 (nguồn: $VERIFY_SOURCE)."
 rm -rf "$WORK/extract"
 mkdir -p "$WORK/extract"
 unzip -qo "$ZIP" -d "$WORK/extract"
