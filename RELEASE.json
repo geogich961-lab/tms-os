@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.0.6",
+  "internal_version": "15.1.0",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V15.0.5",
-  "version": "15.0.6",
-  "notes": "V15.0.5: sua dropdown Website noi bo trong Cloudflare Hosting (them endpoint /internal-sites + nap danh sach bang JS), hostname mac dinh = domain goc da chon (ho tro gan chinh domain goc, khong bat buoc subdomain).",
+  "name": "TMS OS V15.1.0",
+  "version": "15.1.0",
+  "notes": "V15.1.0: Xoa hoan toan Smart Fallback Engine (tao URL cong khai tam thoi qua localhost.run/Ngrok/Pinggy/TMS Relay). Chi con Cloudflare Hosting voi ten mien rieng chinh chu. Menu doi ten thanh Cloudflare Hosting.",
   "features": [
     "Cloudflare Hosting: website truy cap bang ten mien rieng qua Cloudflare Tunnel (api_token, zones, tao tunnel, gan hostname/DNS CNAME, start/stop)",
     "Nhom label version cu (V10.3.1, V11.1, V13) da thay bang TMS OS V14 dong bo",

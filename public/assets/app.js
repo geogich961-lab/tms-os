@@ -311,70 +311,6 @@ if(document.querySelector('[data-service-alert]')){
 
 // In-page splash removed: navigation between modules is now immediate.
 
-// ===== TMS OS Platform Stable V9 · Cloudflare Tunnel V2 =====
-(()=>{
-  const endpoint=window.TMS_CLOUDFLARE_STATUS_URL;
-  if(!endpoint) return;
-  const pill=document.getElementById('cf-status-pill');
-  const box=document.getElementById('cf-state-box');
-  const icon=document.getElementById('cf-state-icon');
-  const title=document.getElementById('cf-state-title');
-  const message=document.getElementById('cf-state-message');
-  const urlCard=document.getElementById('cf-url-card');
-  const publicUrl=document.getElementById('cf-public-url');
-  const openUrl=document.getElementById('cf-open-url');
-  const copyUrl=document.getElementById('cf-copy-url');
-  const log=document.getElementById('cf-log');
-  const liveDot=document.getElementById('cf-live-dot');
-  const refresh=document.getElementById('cf-refresh');
-  const processState=document.getElementById('cf-process-state');
-  const edgeState=document.getElementById('cf-edge-state');
-  const providerState=document.getElementById('cf-provider');
-  const httpCode=document.getElementById('cf-http-code');
-  const labels={stopped:'Đã dừng',starting:'Đang khởi động',connecting:'Đang kết nối',verifying:'Đang xác minh',connected:'Đã kết nối',timeout:'Hết thời gian',error:'Có lỗi'};
-  let timer=null;
-
-  const updateCopy=value=>{
-    if(!copyUrl) return;
-    copyUrl.dataset.copy=value||'';
-    copyUrl.onclick=async()=>{
-      if(!value) return;
-      try{await navigator.clipboard.writeText(value);}catch(e){const area=document.createElement('textarea');area.value=value;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();}
-      const old=copyUrl.textContent;copyUrl.textContent='Đã sao chép';setTimeout(()=>copyUrl.textContent=old,1200);
-    };
-  };
-
-  const render=data=>{
-    const state=data.status||'stopped';
-    const active=['starting','connecting','verifying','connected'].includes(state)&&data.running;
-    if(pill){pill.textContent=labels[state]||state;pill.classList.toggle('running',active);pill.classList.toggle('stopped',!active);}
-    if(liveDot) liveDot.classList.toggle('active',active);
-    if(box){box.className=`cf-state-box state-${state}`;}
-    if(icon) icon.textContent=state==='connected'?'✓':(['error','timeout'].includes(state)?'!':'…');
-    if(title) title.textContent=labels[state]||state;
-    if(message) message.textContent=data.message||'';
-    if(processState) processState.textContent=data.running?'Đang chạy':'Đã dừng';
-    if(edgeState) edgeState.textContent=data.registered?'Đã đăng ký':'Chưa đăng ký';
-    if(providerState) providerState.textContent=data.provider_label||'Chưa chọn';
-    if(httpCode) httpCode.textContent=data.http_code||'—';
-    if(log){log.textContent=data.log||'Chưa có nhật ký.';log.scrollTop=log.scrollHeight;}
-    const url=data.url||'';
-    if(urlCard) urlCard.hidden=!url;
-    if(publicUrl){publicUrl.textContent=url;publicUrl.href=url||'#';}
-    if(openUrl) openUrl.href=url||'#';
-    updateCopy(url);
-    if(['connected','stopped'].includes(state)&&timer){clearInterval(timer);timer=null;}
-    if(['error','timeout'].includes(state)&&!data.running&&timer){clearInterval(timer);timer=null;}
-  };
-
-  const poll=async()=>{
-    try{const response=await fetch(endpoint,{cache:'no-store',headers:{Accept:'application/json'}});if(!response.ok) return;render(await response.json());}catch(e){}
-  };
-  refresh?.addEventListener('click',poll);
-  updateCopy(copyUrl?.dataset.copy||'');
-  timer=setInterval(poll,2500);
-  poll();
-})();
 
 // ===== TMS OS Platform Stable V10 · Appearance Center =====
 (()=>{
@@ -461,13 +397,6 @@ if(document.querySelector('[data-service-alert]')){
     const r=await fetch(path,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:fd.toString(),cache:'no-store'});
     return await r.json();
   };
-
-  // ===== Tab switch =====
-  document.querySelectorAll('.cfh-tab').forEach(tab=>tab.addEventListener('click',()=>{
-    document.querySelectorAll('.cfh-tab').forEach(t=>t.classList.toggle('active',t===tab));
-    document.querySelectorAll('.panel-card[data-panel]').forEach(p=>p.hidden=p.dataset.panel!==tab.dataset.tab);
-    if(tab.dataset.tab==='hosting') renderStatus();
-  }));
 
   // ===== Trạng thái tab =====
   const pill=$('cfd-status-pill');

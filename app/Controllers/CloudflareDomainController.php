@@ -10,7 +10,6 @@ final class CloudflareDomainController
         private AuthService $auth,
         private CloudflareDomainService $cfDomain,
         private WebsiteService $websites,
-        private CloudflareService $cloudflare,
     ) {}
 
     private function guard(): void
@@ -41,24 +40,9 @@ final class CloudflareDomainController
         } catch (Throwable $e) {
             $status = ['configured' => false, 'tunnel_id' => '', 'tunnel_name' => '', 'hostname' => '', 'running' => false, 'health' => ['status' => 'unconfigured'], 'url' => '', 'log' => 'Chưa cấu hình Cloudflare Hosting.'] + (is_array($status) ? $status : []);
         }
-        $cf = [];
-        try {
-            $cf = $this->cloudflare->status();
-        } catch (Throwable $e) {
-            $cf = ['status' => 'stopped', 'running' => false, 'provider' => 'auto', 'message' => '', 'log' => '', 'capabilities' => [], 'settings' => []];
-        }
-        $state = (string)($cf['status'] ?? 'stopped');
-        $stateLabels = ['stopped' => 'Đã dừng', 'starting' => 'Đang khởi động', 'connecting' => 'Đang kết nối', 'verifying' => 'Đang xác minh', 'connected' => 'Đã kết nối', 'timeout' => 'Hết thời gian', 'error' => 'Có lỗi'];
-        $stateLabel = $stateLabels[$state] ?? $state;
         tms_view('cfdomain.index', [
-            'status' => $cf,
             'sites' => $this->websites->all(),
-            'flash' => [],
             'csrf' => tms_csrf_token(),
-            'state' => $state,
-            'stateLabel' => $stateLabel,
-            'settings' => $cf['settings'] ?? [],
-            'caps' => $cf['capabilities'] ?? [],
         ]);
     }
 
@@ -220,9 +204,18 @@ final class CloudflareDomainController
         $this->guard();
         if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
         $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
-        $prefix = str_contains((string)getenv('PREFIX'), 'com.termux') ? (getenv('PREFIX') ?: '') : '/data/data/com.termux/files/usr';
+        if (!str_contains((string)getenv('PREFIX'), 'com.termux')) {
+            $prefix = is_dir('/data/data/com.termux/files/usr') ? '/data/data/com.termux/files/usr' : '';
+        } else {
+            $prefix = (string)getenv('PREFIX');
+        }
+        $confPath = '';
+        foreach ([$prefix . '/etc/nginx/nginx.conf', '/etc/nginx/nginx.conf'] as $p) {
+            if ($p !== '' && is_file($p)) { $confPath = $p; break; }
+        }
         $enabled = is_file($home . '/.tms-os/nginx-optimized')
-            && str_contains((string)@file_get_contents($prefix . '/etc/nginx/nginx.conf'), 'gzip on;');
+            && $confPath !== ''
+            && str_contains((string)@file_get_contents($confPath), 'gzip on;');
         $this->json(['success' => true, 'enabled' => $enabled]);
     }
 

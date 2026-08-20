@@ -14,7 +14,7 @@ if(!function_exists('nav_active')){function nav_active(string $prefix,string $cu
 <a class="nav-item <?=nav_active('/terminal',$current)?>" href="/terminal"><span>›_</span>Terminal</a>
 <a class="nav-item <?=nav_active('/services',$current)?>" href="/services"><span>◉</span>Service Manager</a>
 <a class="nav-item <?=nav_active('/guardian',$current)?>" href="/guardian"><span>🛡</span>TMS Guardian</a>
-<a class="nav-item <?=nav_active('/cf-hosting',$current)?>" href="/cf-hosting"><span>☁</span>Internet Access</a>
+<a class="nav-item <?=nav_active('/cf-hosting',$current)?>" href="/cf-hosting"><span>☁</span>Cloudflare Hosting</a>
 <a class="nav-item <?=nav_active('/modules',$current)?>" href="/modules"><span>◇</span>Module Center</a>
 <a class="nav-item <?=nav_active('/packages',$current)?>" href="/packages"><span>◫</span>Runtime Packages</a>
 <a class="nav-item <?=nav_active('/apps',$current)?>" href="/apps"><span>▣</span>App Marketplace</a>

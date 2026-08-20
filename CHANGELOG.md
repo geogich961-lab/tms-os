@@ -1,3 +1,10 @@
+# V15.1.0 — Loại bỏ hoàn toàn Smart Fallback Engine, chỉ còn Cloudflare Hosting
+
+- Xóa hoàn toàn Smart Fallback Engine (tạo URL công khai tạm thời qua localhost.run/Ngrok/Pinggy/TMS Relay) — Cloudflare Hosting với tên miền riêng là cách duy nhất đưa website online.
+- Loại bỏ `CloudflareService`/`CloudflareController` cũ cùng toàn bộ route `/internet-access` và `/cloudflare` (tự chuyển hướng sang `/cf-hosting`).
+- Trang Cloudflare Hosting bỏ tab "Smart Fallback (cũ)" — giao diện một tab gọn gàng, bỏ logic poll trạng thái cũ.
+- Menu điều hướng đổi tên "Internet Access" thành "Cloudflare Hosting".
+
 # V15.0.6 — Tối ưu hiệu năng website qua Cloudflare Tunnel (gzip + cache tĩnh + OPcache + ingress keepalive)
 - Cài mới (install.sh): `nginx.conf` toàn cục bật nén gzip (comp_level 4, gzip_types đầy đủ), `tcp_nopush`/`tcp_nodelay`, `open_file_cache`, `keepalive_timeout 65`, `client_max_body_size 500M`, `server_tokens off`; site mặc định và site mới tạo có cache trình duyệt 1 năm cho file tĩnh (ảnh/CSS/JS/font).
 - PHP Engine: bật OPcache (`memory_consumption=64`, `revalidate_freq=60`) — tăng tốc biên dịch PHP.
