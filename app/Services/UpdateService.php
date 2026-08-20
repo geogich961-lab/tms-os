@@ -61,21 +61,19 @@ final class UpdateService
     /** Lấy thông tin release mới nhất từ GitHub API (release v14.0.4+ đều có TMS_OS_LATEST.zip). */
     public function latestRelease(): array
     {
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 15,
-                'header' => "User-Agent: TMS-OS-Updater/1.3\r\nAccept: application/json\r\n",
-                'ignore_errors' => true,
-            ],
-        ]);
-        $json = @file_get_contents('https://api.github.com/repos/geogich961-lab/tms-os/releases/latest', false, $ctx);
-        if ($json === false) {
-            throw new RuntimeException('Không thể kết nối GitHub.');
+        $endpoints = [
+            'https://api.github.com/repos/geogich961-lab/tms-os/releases/latest',
+            'https://www.github.com/api/v3/repos/geogich961-lab/tms-os/releases/latest',
+        ];
+        $data = null;
+        foreach ($endpoints as $url) {
+            $result = $this->httpGet($url, 20, 'TMS-OS-Updater/1.4');
+            if ($result === '') { continue; }
+            $parsed = json_decode($result, true);
+            if (is_array($parsed) && !empty($parsed['tag_name'])) { $data = $parsed; break; }
         }
-        $data = json_decode($json, true);
-        if (!is_array($data) || empty($data['tag_name'])) {
-            throw new RuntimeException('Phản hồi GitHub không hợp lệ.');
+        if ($data === null) {
+            throw new RuntimeException('Không thể kết nối GitHub — kiểm tra thiết bị đã có mạng và thử lại sau vài giây.');
         }
         $zipUrl = '';
         $zipName = '';
@@ -110,19 +108,13 @@ final class UpdateService
         if ($zipUrl === null) {
             $zipUrl = $release['zip_url'];
         }
-        $ctx = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => 60,
-                'header' => "User-Agent: TMS-OS-Updater/1.3\r\nAccept: application/octet-stream\r\n",
-                'follow_location' => true,
-            ],
-        ]);
         $tmp = $this->dir . '/.download-' . bin2hex(random_bytes(8));
-        $bytes = @file_put_contents($tmp, file_get_contents($zipUrl, false, $ctx));
+        $content = $this->httpGet($zipUrl, 90, 'TMS-OS-Updater/1.4');
+        $bytes = $content === '' ? false : @file_put_contents($tmp, $content);
+        unset($content);
         if ($bytes === false || $bytes < 1000) {
             @unlink($tmp);
-            throw new RuntimeException('Tải gói cập nhật thất bại (kết nối GitHub).');
+            throw new RuntimeException('Tải gói cập nhật thất bại (kết nối GitHub) — kiểm tra mạng và thử lại.');
         }
         $this->validateZip($tmp);
 
@@ -464,13 +456,36 @@ final class UpdateService
 
     private function fetchExpectedHash(string $releaseJsonUrl): string
     {
-        $ctx = stream_context_create(['http' => ['timeout' => 10, 'ignore_errors' => true]]);
-        $json = @file_get_contents($releaseJsonUrl, false, $ctx);
-        if ($json === false) {
+        $json = $this->httpGet($releaseJsonUrl, 15, 'TMS-OS-Updater/1.4');
+        if ($json === '') {
             return '';
         }
         $data = json_decode($json, true);
         return (string)($data['checksum_sha256'] ?? '');
+    }
+
+    /** GET HTTP với retry — V14.1.6: chống lỗi mạng thoáng qua (DNS chặn api.github.com trên một số mạng di động). */
+    private function httpGet(string $url, int $timeout, string $ua): string
+    {
+        $lastError = '';
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $ctx = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'timeout' => $timeout,
+                    'follow_location' => true,
+                    'header' => "User-Agent: {$ua}\r\nAccept: */*\r\n",
+                    'ignore_errors' => true,
+                ],
+            ]);
+            $content = @file_get_contents($url, false, $ctx);
+            if ($content !== false) {
+                return $content;
+            }
+            $lastError = (error_get_last()['message'] ?? '');
+            if ($attempt < 3) { usleep(1000000 * $attempt); }
+        }
+        return '';
     }
 
     private function normalizeVersion(string $v): string

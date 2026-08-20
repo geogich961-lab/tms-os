@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "14.1.5",
+  "internal_version": "14.1.6",
   "build": "20260820-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-20",
-  "name": "TMS OS V14.1.5",
-  "version": "14.1.5",
-  "notes": "Sua loi System Check HTTP 500 trong che do SQLite (duyet dich vu theo danh muc dong); Internet Access bao loi Viet hoi ro rang khi website noi bo chua chay; Dashboard/Runtime Packages chi hien MariaDB khi che do database la mariadb (V14.1.5).",
+  "name": "TMS OS V14.1.6",
+  "version": "14.1.6",
+  "notes": "Update Check khong con loi 'Khong the ket noi GitHub' tren mot so mang: retry 3 lan, du endpoint (api.github.com + www.github.com/api), timeout dai hon, thong bao loi Viet ro rang (V14.1.6).",
   "features": [
     "One-touch update in panel: downloads latest release from GitHub, backs up, swaps, health-checks, rolls back on failure",
     "One-command self-update API /api/updates/run with per-install token (scripts and automation safe)",

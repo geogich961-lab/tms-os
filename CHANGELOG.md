@@ -1,3 +1,8 @@
+# V14.1.6 — Update Check bền vững với mạng di động
+
+- Bấm "Kiểm tra cập nhật" báo "Không thể kết nối GitHub": nhiều mạng di động chặn/làm chậm `api.github.com`. Sửa: retry 3 lần với backoff, thử thêm endpoint dự phòng `www.github.com/api/v3`, tăng timeout (15s → 20s cho API, 60s → 90s cho tải ZIP), thông báo lỗi tiếng Việt rõ ràng kèm hướng dẫn.
+- Tải gói cập nhật (cập nhật 1 chạm + API tự cập nhật) cũng dùng cơ chế retry 3 lần mới.
+
 # V14.1.5 — Sửa lỗi SQLite mode (System Check 500 + Internet Access)
 
 - System Check (Kiểm tra hệ thống) trả HTTP 500 khi dùng SQLite: `DiagnosticsService` duyệt danh sách dịch vụ cứng gồm MariaDB dù `definitions()` chỉ thêm MariaDB trong chế độ mariadb → throw "Dịch vụ không hợp lệ". Sửa: duyệt theo `definitions()` động.
