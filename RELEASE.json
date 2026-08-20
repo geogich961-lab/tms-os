@@ -15,5 +15,5 @@
     "Safe rollback: only uses backups containing app+public+config; flash messages survive target swap via flash.json",
     "Installer hardened: RAM/disk pre-check before MariaDB (suggests SQLite on weak devices), php-zip check, repair skips account setup, stronger pkg retry"
   ],
-  "checksum_sha256": "11e970cb413b3390d192c131199c4a3ef4cf7322243140a1eb75df0daf869e0d"
+  "checksum_sha256": "843f537dbefa5332164024db65a8c3dcac9190ce11b216caf457795828e705c3"
 }
