@@ -302,6 +302,15 @@ final class CloudflareDomainService
     {
         $cfg = $this->readJson($this->configFile);
         $running = $this->running();
+        $zones = [];
+        if (trim((string)($cfg['api_token'] ?? '')) !== '') {
+            try {
+                $raw = $this->api('GET', '/zones');
+                foreach ((array)$raw as $z) {
+                    $zones[] = ['id' => (string)($z['id'] ?? ''), 'name' => (string)($z['name'] ?? '')];
+                }
+            } catch (Throwable $e) { /* danh sách zone không bắt buộc cho trạng thái */ }
+        }
         $health = ['status' => 'unconfigured', 'connections' => 0, 'running' => $running];
         try { $health = $this->tunnelHealth(); } catch (Throwable $e) { /* giữ giá trị mặc định */ }
         $log = '';
@@ -320,6 +329,7 @@ final class CloudflareDomainService
             'running' => $running,
             'health' => $health,
             'url' => trim((string)($cfg['hostname'] ?? '')) !== '' ? 'https://' . $cfg['hostname'] : '',
+            'zones' => $zones,
             'log' => $log,
         ];
     }

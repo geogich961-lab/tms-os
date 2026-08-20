@@ -452,7 +452,13 @@ if(document.querySelector('[data-service-alert]')){
       if(tunnelRunning) tunnelRunning.textContent=d.running?'Đang chạy':'Đã dừng';
       if(runningDot) runningDot.classList.toggle('active',!!d.running);
       if(accountIdEl){accountIdEl.textContent=d.account_id||'—';if(accountBox)accountBox.hidden=!d.account_id;}
-      if(zonesCountEl) zonesCountEl.textContent=d.zones||'—';
+      const zones=d.zones||[];
+      if(zones.length){
+        if(zonesCountEl) zonesCountEl.textContent=`${zones.length} domain`;
+        if(zoneSelect&&zoneSelect.options.length<=1){
+          zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+zones.map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
+        }
+      }
       const url=d.url||'';
       if(urlCard) urlCard.hidden=!url;
       if(publicUrl){publicUrl.textContent=url;publicUrl.href=url||'#';}

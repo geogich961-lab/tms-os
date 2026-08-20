@@ -1,3 +1,7 @@
+# V15.1.1 — Sửa dropdown Domain trống trong Cloudflare Hosting
+- Trang Cloudflare Hosting giờ tự nạp danh sách domain từ Cloudflare ngay khi mở trang, không cần bấm "Kiểm tra & lưu token" trước.
+- Endpoint /api/cloudflare-domain/status trả thêm danh sách zones để giao diện hiển thị đầy đủ.
+
 # V15.1.0 — Loại bỏ hoàn toàn Smart Fallback Engine, chỉ còn Cloudflare Hosting
 
 - Xóa hoàn toàn Smart Fallback Engine (tạo URL công khai tạm thời qua localhost.run/Ngrok/Pinggy/TMS Relay) — Cloudflare Hosting với tên miền riêng là cách duy nhất đưa website online.
