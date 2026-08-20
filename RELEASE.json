@@ -24,5 +24,5 @@
     "sslip.io retained only as an optional advanced URL when a valid LAN IP exists",
     "Unified Core V13.0 service and queue architecture retained"
   ],
-  "checksum_sha256": "05fe6ae9230d5899bb642ef0f3c9b1a3538c2720e00e02d1d6f0018dfa094065"
+  "checksum_sha256": "4b35c9266868d0c81fd5076076ca4d719412189e762132dfea4a9a0e056dc434"
 }
