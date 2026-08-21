@@ -7,9 +7,7 @@
 	  <p class="muted">Cấu hình chế độ hiển thị và thông báo hệ thống.</p>
 	  <form method="post" action="/settings/appearance" class="stack" id="appearance-form">
 	    <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
-	    <div class="alert alert-success" style="margin: 0; font-size: 0.85rem;">
-	      Hệ thống đang sử dụng bộ nhận diện <strong>Red Gradient</strong> mặc định. Tính năng đổi màu đã được vô hiệu hóa để đảm bảo tính đồng bộ.
-	    </div>
+
 	    <label><span>Chế độ mặc định</span><select name="default_theme"><option value="light" <?=$ui['default_theme']==='light'?'selected':''?>>Sáng</option><option value="dark" <?=$ui['default_theme']==='dark'?'selected':''?>>Tối</option></select></label>
 	    <label><span>Thời gian hiển thị thông báo (giây)</span><input type="number" name="toast_duration" value="<?=tms_h($ui['toast_duration'])?>" min="1" max="60"></label>
 	    <div class="row-actions"><button class="btn btn-primary">Lưu cài đặt</button></div>

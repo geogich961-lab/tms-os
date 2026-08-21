@@ -1,3 +1,7 @@
+## V16.0.4 (2026-08-21)
+- **UI Cleanup**:
+  - Loại bỏ khung thông báo màu xanh (alert-info) trong trang Cài đặt để giao diện sạch sẽ và chuyên nghiệp hơn.
+
 ## V16.0.3 (2026-08-21)
 - **Login UI Polish**:
   - Bo tròn 4 góc cho logo trang đăng nhập (20px) để giao diện mềm mại hơn.
