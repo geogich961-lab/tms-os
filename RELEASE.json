@@ -1,24 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.0,
-  "build": "20260821-20",
+  "internal_version": 16.01,
+  "build": "20260821-30",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V16.0.0",
-  "version": "16.0.0",
-  "notes": "V16.0.0: Đại tu TMS Explorer - Hỗ trợ chọn nhiều mục (Multi-select), thanh công cụ ngữ cảnh (Context Toolbar) và tối ưu hóa hoàn toàn giao diện quản lý tệp cho thiết bị di động.",
+  "name": "TMS OS V16.0.1",
+  "version": "16.0.1",
+  "notes": "V16.0.1: Cập nhật bộ nhận diện thương hiệu mới - Logo và Icon hiện đại theo phong cách Tech-Minimalism.",
   "features": [
-    "Multi-select: Chọn nhiều file/thư mục bằng checkbox hoặc nhấn giữ (long press)",
-    "Context Toolbar: Thanh công cụ thông minh xuất hiện khi chọn mục để thực hiện thao tác hàng loạt",
-    "Batch Operations: Sao chép, di chuyển, xóa, nén ZIP và phân quyền hàng loạt",
-    "Mobile Optimized UI: Giao diện Explorer mượt mà, chuyên nghiệp như ứng dụng quản lý file gốc"
+    "New Branding: Logo mới kết hợp biểu tượng Smartphone và Server/Cloud hiện đại.",
+    "Modern Icons: Cập nhật bộ icon PWA (192x192, 512x512) và favicon mới.",
+    "UI Polish: Cải thiện hiển thị logo trên thanh Header và màn hình đăng nhập."
   ],
-  "checksum_sha256": "54bd5c9bfbf9ee279f9e58cc6f698e9f5d7076a04b9b3431dec907534f1e9220",
+  "checksum_sha256": "73e7380738b701550a3e51d9e88148b5e2cdf77fa67ea52ecc153710b7e05f09",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V16.0.0",
-  "changelog": "V16.0.0: Major upgrade for TMS Explorer - Multi-select, Context Toolbar, Batch Operations, and Mobile UX overhaul.",
+  "version_display": "TMS OS V16.0.1",
+  "changelog": "V16.0.1: Brand identity update - New modern logo and PWA icons.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

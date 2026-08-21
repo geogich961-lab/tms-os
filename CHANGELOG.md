@@ -1,3 +1,9 @@
+## V16.0.1 (2026-08-21)
+- **Cập nhật nhận diện thương hiệu**:
+  - Logo mới hiện đại theo phong cách Tech-Minimalism.
+  - Bộ icon PWA mới (192x192, 512x512) và favicon.
+  - Tối ưu hiển thị logo trên toàn bộ hệ thống.
+
 ## V16.0.0 (2026-08-21)
 - **TMS Explorer Đại tu**:
   - Hỗ trợ chọn nhiều mục (Multi-select) bằng checkbox hoặc nhấn giữ (long press) trên điện thoại.
