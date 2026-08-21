@@ -8,7 +8,12 @@ window.tmsToast=(msg,type,ms)=>{
     ms = d ? parseInt(d)*1000 : (type==='error'?5500:3500);
   }
   let box=document.getElementById('tms-toast-container');
-  if(!box){box=document.createElement('div');box.id='tms-toast-container';document.body.appendChild(box);}
+  if(!box){
+    box=document.createElement('div');
+    box.id='tms-toast-container';
+    // Đảm bảo box luôn nằm trực tiếp dưới body để tránh lỗi vị trí fixed do transform ở thẻ cha
+    document.body.appendChild(box);
+  }
   const t=document.createElement('div');t.className='tms-toast tms-toast-'+type;
   t.innerHTML='<span class="tms-toast-icon">'+({'success':'✓','error':'✕','warn':'!','info':'i'}[type])+'</span><span class="tms-toast-text"></span>';
   t.querySelector('.tms-toast-text').textContent=text;

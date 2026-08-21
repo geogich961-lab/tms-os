@@ -1,22 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.49,
-  "build": "20260821-7",
+  "internal_version": 15.5,
+  "build": "20260821-8",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.9",
-  "version": "15.4.9",
-  "notes": "V15.4.9: Nâng cấp Toast Notification - Chuyển vị trí thông báo lên phía trên (Top); Thêm cài đặt tùy chỉnh thời gian hiển thị thông báo trong trang Cài đặt.",
+  "name": "TMS OS V15.5.0",
+  "version": "15.5.0",
+  "notes": "V15.5.0: Fix triệt để vị trí Toast Notification - Ép thông báo hiển thị ở phía trên cùng (Top) trên mọi thiết bị và giao diện, khắc phục lỗi bị dính ở cuối trang.",
   "features": [
-    "Toast Position: Chuyển thông báo lên đầu trang (Top) để dễ quan sát",
-    "Custom Duration: Tùy chỉnh thời gian hiển thị thông báo (1-60 giây)"
+    "Toast Fix: Ép vị trí Top !important trên toàn hệ thống",
+    "Z-Index Fix: Tăng mức độ ưu tiên hiển thị cao nhất cho thông báo"
   ],
-  "checksum_sha256": "f4e55e691fe7e2819afb9ee476cf6db1fa7f7871917f66473bd51647d8171dbc",
+  "checksum_sha256": "36642da1b26d58b08e483d8f4d8544c9834ea3bcd456518effd75dfde680704d",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.9",
-  "changelog": "V15.4.9: Move toast to top; Add toast_duration setting; Sync SW V15.4.9.",
+  "version_display": "TMS OS V15.5.0",
+  "changelog": "V15.5.0: Final fix for toast position (Top !important); Sync SW V15.5.0.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

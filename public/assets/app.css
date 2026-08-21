@@ -1209,10 +1209,12 @@ body.sheet-open { overflow: hidden; }
    TMS OS V15.3.6 — Toast notification (stack, fixed bottom-right)
    ========================================================================== */
 #tms-toast-container {
-  position: fixed;
-  right: 16px;
-  top: calc(20px + env(safe-area-inset-top));
-  z-index: 9999;
+  position: fixed !important;
+  right: 16px !important;
+  top: calc(20px + env(safe-area-inset-top)) !important;
+  bottom: auto !important;
+  left: auto !important;
+  z-index: 999999 !important;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1924,7 +1926,13 @@ html[data-theme="dark"] .cfd-sync-note b { color: #f0b94a; }
 @media (max-width: 760px) {
 
 /* Toast full-width trên mobile */
-#tms-toast-container { right: 12px; left: 12px; max-width: none; top: calc(16px + env(safe-area-inset-top)); }
+#tms-toast-container { 
+  right: 12px !important; 
+  left: 12px !important; 
+  max-width: none !important; 
+  top: calc(12px + env(safe-area-inset-top)) !important; 
+  bottom: auto !important;
+}
 .tms-toast { font-size: 0.86rem; }
   .os-sidebar {
     width: min(88vw, 300px);
