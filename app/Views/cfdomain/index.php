@@ -60,7 +60,7 @@ $csrf=tms_csrf_token();
 <!-- ========== ĐIỀU KHIỂN TUNNEL ========== -->
 <section class="panel-card cfd-section" data-panel="hosting">
 <div class="section-title-row"><h2>Điều khiển Tunnel</h2><span class="online-dot" id="cfd-running-dot"></span></div>
-<div class="btn-grid cfd-btn-grid two">
+<div class="btn-grid cfd-btn-grid two" style="gap: 12px; margin-bottom: 12px;">
 <button type="button" class="btn btn-success" id="cfd-start">▶ Khởi động Tunnel</button>
 <button type="button" class="btn btn-danger-soft" id="cfd-stop">■ Dừng Tunnel</button>
 </div>

@@ -1,3 +1,16 @@
+## V16.0.5 (2026-08-21)
+- **UI/UX Refinement**:
+  - Đổi tên **TMS Explorer** thành **File Manager** trên toàn hệ thống (Sidebar, Website view).
+  - Đổi tên **TMS Guardian** thành **Guardian** và tối ưu lại khoảng cách giữa các khung giám sát.
+  - Loại bỏ phần giải thích "Unified Core" dư thừa trong Service Manager để giao diện tinh gọn hơn.
+  - Fix lỗi hiển thị chữ bị lọt dòng trong trang **Cài đặt** trên màn hình nhỏ.
+  - Tăng khoảng cách giữa các nút trong **Cloudflare Hosting** (Điều khiển Tunnel) để tránh bấm nhầm trên điện thoại.
+- **Update Center Upgrade**:
+  - Hỗ trợ **Xóa hàng loạt (Batch Delete)** các gói cập nhật đã tải về, giúp dọn dẹp bộ nhớ nhanh chóng.
+  - Đồng bộ hóa kích thước các nút thao tác để giao diện cân đối và chuyên nghiệp hơn.
+- **Backend Enhancements**:
+  - Nâng cấp `UpdateService` và `UpdateController` để xử lý mảng dữ liệu xóa hàng loạt.
+
 ## V16.0.4 (2026-08-21)
 - **UI Cleanup**:
   - Loại bỏ khung thông báo màu xanh (alert-info) trong trang Cài đặt để giao diện sạch sẽ và chuyên nghiệp hơn.
@@ -30,18 +43,3 @@
   - Tối ưu hóa giao diện di động: Icon lớn hơn, khoảng cách chạm rộng hơn, mượt mà và chuyên nghiệp như ứng dụng quản lý file gốc.
 - **Backend Batch Support**: Nâng cấp `FileManagerController` và `FileManagerService` để xử lý các mảng dữ liệu file hàng loạt.
 - **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V16.0.0.
-
-## V15.5.2 (2026-08-21)
-- **Termux:API Enhanced**: Tăng thời gian chờ (timeout) cho các lệnh API lên 3 giây, giúp hệ thống ổn định hơn trên các dòng máy phản hồi chậm.
-- **Diagnostic Messages**: Hiển thị thông báo chi tiết khi API không phản hồi (thường do chưa cấp quyền Android hoặc chưa cài ứng dụng APK) thay vì chỉ báo "Chưa cài".
-- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.5.2.
-
-## V15.5.1 (2026-08-21)
-- **Fix Cập nhật 2 lần**: Tích hợp `tms_clear_cache()` vào cuối quy trình cập nhật, giúp hệ thống tự động làm mới Asset Version ngay sau khi swap code thành công.
-- **Toast Force Top**: Sử dụng JavaScript Inline Style để ép thông báo hiển thị ở phía trên (Top), bỏ qua hoàn toàn các quy tắc CSS bị cache trong trình duyệt.
-- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.5.1.
-
-## V15.5.0 (2026-08-21)
-- **Toast Position Fix**: Ép vị trí thông báo toast lên phía trên cùng (Top) bằng quy tắc `!important` và `bottom: auto`, đảm bảo thông báo không bao giờ bị dính ở chân trang trên bất kỳ dòng Android nào.
-- **Z-Index Fix**: Nâng z-index của thông báo lên mức cao nhất để không bị các thành phần khác che khuất.
-- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.5.0.

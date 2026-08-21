@@ -164,14 +164,16 @@ final class UpdateService
         return ['ok' => true, 'message' => 'Đã kiểm tra và lưu gói cập nhật.', 'name' => $name];
     }
 
-    public function delete(string $name): void
+    public function delete(string|array $names): void
     {
-        $name = basename($name);
-        $file = $this->dir . '/' . $name;
-        if (!is_file($file) || !str_ends_with($name, '.zip')) {
-            throw new RuntimeException('Gói cập nhật không tồn tại.');
+        $names = is_array($names) ? $names : [$names];
+        foreach ($names as $name) {
+            $name = basename((string)$name);
+            $file = $this->dir . '/' . $name;
+            if (is_file($file) && str_ends_with($name, '.zip')) {
+                @unlink($file);
+            }
         }
-        @unlink($file);
     }
 
     public function staged(): array

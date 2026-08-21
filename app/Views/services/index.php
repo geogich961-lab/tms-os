@@ -31,6 +31,6 @@
 </article>
 <?php endforeach;?>
 </div>
-<section class="panel-card service-safety"><div><h2>Unified Core dành riêng cho Termux</h2><p>Mọi module dùng cùng adapter Termux để đọc trạng thái, PID, RAM, uptime và phiên bản. Thao tác vẫn chạy qua queue/worker độc lập; PHP luôn được xử lý cuối trong Restart All.</p></div><span class="release-badge">One Source of Truth</span></section>
+<!-- Unified Core Section Removed -->
 <dialog class="tms-dialog service-log-dialog" id="service-log-dialog"><div class="service-log-shell"><div class="dialog-head"><div><h2 id="service-log-title">Live Log</h2><small>Auto refresh mỗi 3 giây</small></div><button type="button" data-dialog-close aria-label="Đóng">×</button></div><div class="service-log-tools"><button type="button" class="btn btn-secondary btn-small" data-log-refresh>Làm mới</button><button type="button" class="btn btn-ghost btn-small" data-log-pause>Tạm dừng</button><select data-log-lines><option value="80">80 dòng</option><option value="150" selected>150 dòng</option><option value="300">300 dòng</option><option value="500">500 dòng</option></select></div><pre class="terminal-output service-live-log" data-service-log-output>Đang tải log...</pre></div></dialog>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

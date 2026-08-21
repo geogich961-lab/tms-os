@@ -20,7 +20,23 @@
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="form-stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="file" name="package" accept=".zip,application/zip" required><button class="btn btn-primary">Kiểm tra và lưu</button></form>
 <p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
 
-<section class="panel-card"><h2>Gói đã lưu trữ</h2><?php if(empty($items)):?><p>Chưa có gói nào.</p><?php else:?><div class="table-wrap"><table><thead><tr><th>File</th><th>Dung lượng</th><th>SHA-256</th><th></th><th></th></tr></thead><tbody><?php foreach($items as $i):?><tr><td><?=tms_h($i['name'])?></td><td><?=number_format($i['size']/1048576,2)?> MB</td><td><code><?=tms_h(substr($i['sha256'],0,16))?>…</code></td><td><form method="post" action="/updates/staged/apply" style="display:inline" onsubmit="return confirm('Áp dụng gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-primary-soft btn-small">Áp dụng</button></form></td><td><form method="post" action="/updates/delete" style="display:inline"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-danger-soft btn-small">Xóa</button></form></td></tr><?php endforeach;?></tbody></table></div><?php endif;?></section>
+<section class="panel-card">
+<div class="section-title-row"><h2>Gói đã lưu trữ</h2><?php if(!empty($items)):?><button type="button" class="btn btn-danger-soft btn-small" id="batch-delete-btn" style="display:none">Xóa mục đã chọn</button><?php endif;?></div>
+<?php if(empty($items)):?><p class="muted">Chưa có gói nào.</p><?php else:?>
+<form id="batch-delete-form" method="post" action="/updates/delete">
+<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+<div class="table-wrap"><table><thead><tr><th style="width:40px"><input type="checkbox" id="select-all-packages"></th><th>File</th><th>Dung lượng</th><th>SHA-256</th><th style="text-align:right">Thao tác</th></tr></thead><tbody>
+<?php foreach($items as $i):?><tr>
+<td><input type="checkbox" name="names[]" value="<?=tms_h($i['name'])?>" class="package-checkbox"></td>
+<td><?=tms_h($i['name'])?></td>
+<td><?=number_format($i['size']/1048576,2)?> MB</td>
+<td><code><?=tms_h(substr($i['sha256'],0,16))?>…</code></td>
+<td style="text-align:right; white-space:nowrap;">
+<div style="display:inline-flex; gap:6px; justify-content:flex-end">
+<form method="post" action="/updates/staged/apply" style="display:inline" onsubmit="return confirm('Áp dụng gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-primary-soft btn-small">Áp dụng</button></form>
+<form method="post" action="/updates/delete" style="display:inline" onsubmit="return confirm('Xóa gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-danger-soft btn-small">Xóa</button></form>
+</div>
+</td></tr><?php endforeach;?></tbody></table></div></form><?php endif;?></section>
 
 <script>
 document.getElementById('check-update-btn')?.addEventListener('click',function(){
@@ -34,6 +50,25 @@ document.getElementById('check-update-btn')?.addEventListener('click',function()
       out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><a href="#apply-github-btn" class="btn btn-primary btn-small" style="margin-top:8px;display:inline-block" onclick="document.querySelector(\'#online-update-card form\').submit()">Cập nhật ngay</a>';
     }else{out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';}
   }).catch(function(){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent='Không thể kiểm tra — hãy thử lại.';});
+});
+
+document.getElementById('select-all-packages')?.addEventListener('change', function() {
+  document.querySelectorAll('.package-checkbox').forEach(cb => cb.checked = this.checked);
+  updateBatchBtn();
+});
+document.querySelectorAll('.package-checkbox').forEach(cb => cb.addEventListener('change', updateBatchBtn));
+function updateBatchBtn() {
+  var count = document.querySelectorAll('.package-checkbox:checked').length;
+  var btn = document.getElementById('batch-delete-btn');
+  if (btn) {
+    btn.style.display = count > 0 ? 'block' : 'none';
+    btn.textContent = 'Xóa ' + count + ' gói đã chọn';
+  }
+}
+document.getElementById('batch-delete-btn')?.addEventListener('click', function() {
+  if (confirm('Xóa các gói đã chọn?')) {
+    document.getElementById('batch-delete-form').submit();
+  }
 });
 </script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

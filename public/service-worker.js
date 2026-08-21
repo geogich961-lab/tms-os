@@ -1,4 +1,4 @@
-const VERSION='tms-os-v16-0-4';
+const VERSION='tms-os-v16-0-5';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
   '/offline.html','/manifest.php?v=16.0.4',

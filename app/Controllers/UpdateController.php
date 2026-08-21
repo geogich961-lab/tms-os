@@ -107,8 +107,12 @@ final class UpdateController
         $this->guard();
         try {
             $this->verify();
-            $this->updates->delete((string)($_POST['name'] ?? ''));
-            tms_flash('success', 'Đã xóa gói cập nhật.');
+            $names = $_POST['names'] ?? ($_POST['name'] ?? null);
+            if ($names === null) {
+                throw new RuntimeException('Chưa chọn gói cần xóa.');
+            }
+            $this->updates->delete($names);
+            tms_flash('success', 'Đã xóa các gói cập nhật được chọn.');
         } catch (Throwable $e) {
             tms_flash('error', $e->getMessage());
         }
