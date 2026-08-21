@@ -14,7 +14,7 @@
     "Trang thai route that: status() doc ingress thuc te tren Cloudflare, moi ten mien trong 'Ten mien dang hoat dong' hien badge 'Route OK' (xanh) hoac 'Chua co route' (cam) kem giai thich",
     "Dashboard bao ro: route chua co tren tunnel nghia la truy cap se 404, khong de nguoi dung nghi ten mien da hoat dong"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "71045f14940920b2c6aaa311ea29e9b060942f2bad2c554fdfeb5151f071f253",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.8",
   "changelog": "V15.3.8: fix gan ten mien Cloudflare khong them route vao tunnel; hien trang thai route that (Route OK / Chua co route).",
