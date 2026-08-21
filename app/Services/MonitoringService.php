@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * V15.4.6 — Resource Monitor tối ưu hóa lấy thông tin thiết bị và đồng bộ UI.
+ * V15.4.7 — Resource Monitor hoàn thiện: quét đa card mạng, tối ưu nhiệt độ và pin.
  */
 final class MonitoringService
 {
@@ -21,7 +21,6 @@ final class MonitoringService
     {
         $maxAge = $force ? 0 : 12;
         $cached = $this->readFreshCache($maxAge);
-        // Nếu cache hợp lệ và có dữ liệu RAM thật, dùng cache
         if ($cached !== null && isset($cached['details']['memory_total_mb']) && (int)$cached['details']['memory_total_mb'] > 0) {
             return $cached;
         }
@@ -44,13 +43,20 @@ final class MonitoringService
                 @file_put_contents($this->file, json_encode($rows, JSON_UNESCAPED_UNICODE), LOCK_EX);
             }
 
+            $battery = $this->safeBattery();
+            $temp = $this->safeTemperature();
+            // Fallback nhiệt độ CPU sang nhiệt độ pin nếu không đọc được cảm biến nhiệt trực tiếp
+            if ($temp === null && isset($battery['temperature'])) {
+                $temp = $battery['temperature'];
+            }
+
             $out = [
                 'current' => $row,
                 'history' => $rows,
                 'services' => $this->safeServices(),
                 'details' => [
-                    'battery' => $this->safeBattery(),
-                    'temperature' => $this->safeTemperature(),
+                    'battery' => $battery,
+                    'temperature' => $temp,
                     'network' => $this->safeNetwork(),
                     'processes' => $this->safeProcessCount(),
                     'memory_used_mb' => (int)($m['memory_used_mb'] ?? 0),
@@ -101,13 +107,9 @@ final class MonitoringService
     private function readFreshCache(int $maxAge): ?array
     {
         try {
-            if (!is_file($this->cacheFile)) {
-                return null;
-            }
+            if (!is_file($this->cacheFile)) return null;
             $mtime = @filemtime($this->cacheFile);
-            if (!$mtime || time() - $mtime > max(1, $maxAge)) {
-                return null;
-            }
+            if (!$mtime || time() - $mtime > max(1, $maxAge)) return null;
             $data = @json_decode((string)@file_get_contents($this->cacheFile), true);
             return is_array($data) ? $data : null;
         } catch (\Throwable) {
@@ -133,7 +135,6 @@ final class MonitoringService
                 return is_string($r) ? trim($r) : '';
             };
             
-            // Lấy model máy chính xác hơn
             $model = $getprop('ro.product.model');
             $brand = $getprop('ro.product.brand');
             $manufacturer = $getprop('ro.product.manufacturer');
@@ -171,7 +172,6 @@ final class MonitoringService
             $info = ['current' => '', 'temperature' => null];
             if (isset($d['current'])) {
                 $c = (int)$d['current'];
-                // termux-battery-status trả về microAmperes, cần chia 1000 để ra mA
                 if (abs($c) > 10000) $c = (int)round($c / 1000);
                 $info['current'] = $c . ' mA';
             }
@@ -209,12 +209,30 @@ final class MonitoringService
     {
         try {
             $rx = 0; $tx = 0;
-            foreach (@glob('/sys/class/net/*/statistics/rx_bytes') ?: [] as $f) {
-                if (str_contains($f, '/lo/')) continue;
-                $txf = str_replace('rx_bytes', 'tx_bytes', $f);
-                $rx += $this->readCounter($f);
-                $tx += $this->readCounter($txf);
+            // Cách 1: Quét /proc/net/dev (Chính xác và bao quát nhất trên Android)
+            $dev = @shell_exec('timeout 1s cat /proc/net/dev 2>/dev/null');
+            if (is_string($dev)) {
+                $lines = explode("\n", $dev);
+                foreach ($lines as $line) {
+                    if (!str_contains($line, ':')) continue;
+                    $parts = preg_split('/\s+/', trim($line));
+                    $iface = str_replace(':', '', $parts[0]);
+                    if (in_array($iface, ['lo', 'sit0', 'ip6tnl0'])) continue;
+                    if (isset($parts[1])) $rx += (int)$parts[1];
+                    if (isset($parts[9])) $tx += (int)$parts[9];
+                }
             }
+            
+            // Cách 2: Fallback /sys/class/net nếu cách 1 không ra kết quả
+            if ($rx === 0) {
+                foreach (@glob('/sys/class/net/*/statistics/rx_bytes') ?: [] as $f) {
+                    if (str_contains($f, '/lo/')) continue;
+                    $txf = str_replace('rx_bytes', 'tx_bytes', $f);
+                    $rx += $this->readCounter($f);
+                    $tx += $this->readCounter($txf);
+                }
+            }
+            
             return ['rx_mb' => round($rx / 1048576, 1), 'tx_mb' => round($tx / 1048576, 1), 'rx_bytes' => $rx, 'tx_bytes' => $tx];
         } catch (\Throwable) {
             return ['rx_mb' => 0.0, 'tx_mb' => 0.0, 'rx_bytes' => 0, 'tx_bytes' => 0];

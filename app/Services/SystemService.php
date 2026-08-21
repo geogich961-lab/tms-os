@@ -21,7 +21,6 @@ final class SystemService
         }
     }
 
-    // V14.1.5: trạng thái dịch vụ theo danh mục động — MariaDB chỉ xuất hiện khi chế độ database là mariadb.
     public function serviceStatus(): array
     {
         $defs = $this->core->definitions();
@@ -57,7 +56,6 @@ final class SystemService
 
     public function action(string $action): array
     {
-        // V14.1.5: hành động dịch vụ chỉ áp dụng với dịch vụ trong danh mục động (SQLite mode không có MariaDB).
         $defs = $this->core->definitions();
         $map = [
             'reload_nginx' => ['nginx','restart'],
@@ -80,7 +78,6 @@ final class SystemService
         $r=$this->core->core($id,$verb);
         return ['ok'=>$r['code']===0,'message'=>$r['output']?:($r['code']===0?'Hoàn tất và đã xác minh trạng thái.':'Thao tác thất bại.')];
     }
-
 
     private function memoryInfo(): array
     {
@@ -106,6 +103,9 @@ final class SystemService
     private function loadAverage(): float
     {
         $raw = @file_get_contents('/proc/loadavg');
+        if (empty($raw)) {
+            $raw = @shell_exec('timeout 1s cat /proc/loadavg 2>/dev/null') ?: '';
+        }
         if (is_string($raw) && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
             return (float)$m[1];
         }
@@ -115,10 +115,16 @@ final class SystemService
     private function androidUptimeSeconds(): int
     {
         $raw = @file_get_contents('/proc/uptime');
+        if (empty($raw)) {
+            $raw = @shell_exec('timeout 1s cat /proc/uptime 2>/dev/null') ?: '';
+        }
         if (is_string($raw) && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
             return max(0, (int)floor((float)$m[1]));
         }
         $stat = @file_get_contents('/proc/stat');
+        if (empty($stat)) {
+            $stat = @shell_exec('timeout 1s cat /proc/stat 2>/dev/null') ?: '';
+        }
         if (is_string($stat) && preg_match('/^btime\s+(\d+)/m', $stat, $m)) {
             return max(0, time() - (int)$m[1]);
         }

@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.46,
-  "build": "20260821-4",
+  "internal_version": 15.47,
+  "build": "20260821-5",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.6",
-  "version": "15.4.6",
-  "notes": "V15.4.6: Fix loi hien thi 0/0 va dong bo du lieu Resource Monitor - dong bo hoa SystemService va MonitoringService; them data-monitor-value vao view de app.js cap nhat du lieu live; toi uu lay thong tin thiet bi (getprop/cat fallback) cho cac dong may Xiaomi/Redmi.",
+  "name": "TMS OS V15.4.7",
+  "version": "15.4.7",
+  "notes": "V15.4.7: Hoàn thiện Resource Monitor - Network multi-card + Thermal zones. Tự động phát hiện card mạng đang hoạt động (wlan0, rmnet, eth0...); Fix nhiệt độ CPU quét đa thermal zones; Tối ưu SystemService timeout fallback cho /proc reads.",
   "features": [
-    "Resource Monitor đồng bộ dữ liệu live: RAM, CPU, Pin, Mạng, Tiến trình, Uptime cập nhật ngay lập tức qua API",
-    "Thông tin thiết bị chính xác: tối ưu getprop cho Xiaomi/Redmi",
-    "View Resource Monitor mới: hiển thị chi tiết, đẹp mắt và an toàn tuyệt đối"
+    "Network Monitor: Tự động phát hiện và tính toán lưu lượng trên mọi card mạng",
+    "CPU Temperature: Hỗ trợ quét đa cảm biến nhiệt độ (Thermal Zones)",
+    "Hệ thống ổn định: Timeout fallback cho các truy vấn hệ thống /proc tránh treo PHP-CGI"
   ],
-  "checksum_sha256": "81a7821b17b46b606f5f6fc4fb762efcf6e775b9b474cd4fc67769a9fdeeaf01",
+  "checksum_sha256": "0537b09db58c04120ed804af0dff5375606a315d115f8d657dcff234754c9176",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.6",
-  "changelog": "V15.4.6: Fix loi hien thi 0/0 va dong bo du lieu Resource Monitor: SystemService memoryInfo fallback shell_exec cat; View monitoring them data attributes; app.js polling cap nhat toan bo o chi tiet; device info qua getprop/cat fallback.",
+  "version_display": "TMS OS V15.4.7",
+  "changelog": "V15.4.7: Hoàn thiện Resource Monitor: Network multi-card detection; Thermal zones scanning; SystemService timeout fallback; Fix bug 0/0 network.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }
