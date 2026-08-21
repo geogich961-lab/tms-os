@@ -14,7 +14,7 @@
     "Session autostart hook (nginx + PHP + MariaDB)",
     "Khắc phục lỗi 'Không thể kết nối máy chủ'"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "5bb5b7ec6f72b28eda9c1c6bf9502d96d1c647146b2069daa0c2f2c16704f7d9",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.8",
   "changelog": "V15.4.1: Tự khởi động máy chủ khi mở Termux (session hook) — mở Termux là Nginx + PHP + MariaDB tự bật ngầm, không còn lỗi 'Không thể kết nối máy chủ'; thêm tms-session-autostart.sh + hook ~/.bashrc; fix hook installer.",
