@@ -52,7 +52,7 @@ document.getElementById('check-update-btn')?.addEventListener('click',function()
     if(d.error){out.textContent='Lỗi: '+d.error;return;}
     if(d.available){
       var notes=(d.available.notes||'').split('\n').filter(function(l){return l.trim().startsWith('-');}).slice(0,6).join('<br>');
-      out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><a href="#apply-github-btn" class="btn btn-primary btn-small" style="margin-top:8px;display:inline-block" onclick="document.querySelector(\'#online-update-card form\').submit()">Cập nhật ngay</a>';
+      out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><p class="muted small" style="margin-top:8px">Vui lòng sử dụng mục "Cập nhật nhanh" bên dưới để áp dụng.</p>';
     }else{out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';}
   }).catch(function(){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent='Không thể kiểm tra — hãy thử lại.';});
 });

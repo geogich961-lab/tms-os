@@ -364,22 +364,32 @@ final class UpdateService
         file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT));
 
         // 5. Swap: target → target.previous, staging → target
+        // Sử dụng lệnh shell cp -rf thay vì rename của PHP để đảm bảo ghi đè file an toàn trên Termux
         $previous = $this->target . '.previous';
         $this->rmdir($previous);
-        $oldParts = ['app', 'config', 'public', 'routes', 'scripts'];
-        foreach ($oldParts as $part) {
-            if (is_dir($this->target . '/' . $part)) {
-                @mkdir(dirname($previous) === '/' ? $previous : $previous, 0700, true);
-                rename($this->target . '/' . $part, $previous . '/' . $part);
+        @mkdir($previous, 0700, true);
+        
+        $parts = ['app', 'config', 'public', 'routes', 'scripts'];
+        foreach ($parts as $part) {
+            $src = $this->target . '/' . $part;
+            if (is_dir($src)) {
+                exec("cp -rf " . escapeshellarg($src) . " " . escapeshellarg($previous . '/' . $part));
             }
         }
-        @mkdir($this->target, 0700, true);
-        foreach (['app', 'config', 'public', 'routes', 'scripts'] as $part) {
-            if (is_dir($staging . '/' . $part)) {
-                rename($staging . '/' . $part, $this->target . '/' . $part);
+        
+        // Áp dụng code mới từ staging vào target
+        foreach ($parts as $part) {
+            $src = $staging . '/' . $part;
+            if (is_dir($src)) {
+                // Xóa thư mục cũ trước khi chép mới để tránh file rác
+                $dst = $this->target . '/' . $part;
+                exec("rm -rf " . escapeshellarg($dst));
+                @mkdir($dst, 0700, true);
+                exec("cp -rf " . escapeshellarg($src . '/.') . " " . escapeshellarg($dst));
             }
         }
-        // Storage giữ nguyên (sessions/logs/cache không nằm trong ZIP).
+        
+        // Dọn dẹp staging
         $this->rmdir($staging);
 
         // 6. Health check — kiểm tra cú pháp PHP của source mới vừa swap vào

@@ -1,3 +1,9 @@
+## V16.0.10 (2026-08-21)
+- **Robust Update Engine**: 
+  - Thay thế `rename` bằng `cp -rf` để đảm bảo ghi đè file thành công trên môi trường Termux.
+  - Tự động xóa thư mục cũ trước khi chép mới để tránh file rác và xung đột.
+- **UI Optimization**: Xóa nút "Cập nhật ngay" dư thừa trong phần kiểm tra phiên bản để giao diện gọn gàng hơn.
+
 ## V16.0.9 (2026-08-21)
 - **Fix Redirect Loop**: Sửa lỗi sau khi đăng nhập bị chuyển về Landing Page thay vì Dashboard.
 - **Update Center Reliability**: 
