@@ -212,9 +212,23 @@ final class CloudflareDomainService
             'httpHostHeader' => $hostname,
         ]];
         $ingress[] = ['service' => 'http_status:404'];
-        $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
-            'config' => ['ingress' => $ingress],
-        ]);
+        // V15.3.8: xác nhận rule thực sự được thêm trên Cloudflare (retry 1 lần nếu chưa thấy)
+        $verified = false;
+        for ($attempt = 0; $attempt <= 1; $attempt++) {
+            if ($attempt === 1) { usleep(1500000); }
+            try {
+                $verify = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations');
+            } catch (Throwable $e) { $verify = []; }
+            foreach ((array)(($verify['config'] ?? [])['ingress'] ?? []) as $rule) {
+                if (strcasecmp((string)($rule['hostname'] ?? ''), $hostname) === 0) {
+                    $verified = true;
+                    break 2;
+                }
+            }
+        }
+        if (!$verified) {
+            throw new RuntimeException('Route cho "' . $hostname . '" chưa được thêm vào tunnel trên Cloudflare. Vui lòng thử lại, nếu vẫn lỗi hãy kiểm tra API Token có quyền Tunnel:Edit.');
+        }
         // 2. DNS CNAME → <tunnel_id>.cfargotunnel.com
         $existing = $this->dnsRecords($zoneId);
         $recordId = '';
@@ -527,11 +541,28 @@ final class CloudflareDomainService
         $panelHostname = (string)($cfg['panel_hostname'] ?? '');
         $defaultUrl = '';
         $hostnamesOut = [];
+        // V15.3.8: đọc ingress THẬT trên Cloudflare để xác nhận từng route (so với config local)
+        $ingressReal = [];
+        $tunnelIdSt = (string)($cfg['tunnel_id'] ?? '');
+        if ($tunnelIdSt !== '' && trim((string)($cfg['api_token'] ?? '')) !== '') {
+            try {
+                $ingCfg = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelIdSt . '/configurations');
+                foreach ((array)(($ingCfg['config'] ?? [])['ingress'] ?? []) as $rule) {
+                    $hn = (string)($rule['hostname'] ?? '');
+                    if ($hn !== '') { $ingressReal[strtolower($hn)] = (string)($rule['service'] ?? ''); }
+                }
+            } catch (Throwable $e) { /* không bắt buộc */ }
+        }
         foreach ((array)($cfg['hostnames'] ?? []) as $h) {
+            $hn = (string)($h['hostname'] ?? '');
+            $hnLow = strtolower($hn);
+            $routeStatus = $ingressReal !== [] ? 'missing' : 'unknown';
+            if (isset($ingressReal[$hnLow]) && $ingressReal[$hnLow] !== '') { $routeStatus = 'ok'; }
             $hostnamesOut[] = [
-                'hostname' => (string)($h['hostname'] ?? ''),
+                'hostname' => $hn,
                 'service' => (string)($h['service'] ?? ''),
                 'url' => (string)($h['url'] ?? ('https://' . $h['hostname'])),
+                'route_status' => $routeStatus,
             ];
         }
         if ($defaultUrl === '' && $hostnamesOut !== []) {

@@ -1,3 +1,8 @@
+# V15.3.8 — Fix Cloudflare Hosting gắn tên miền không thêm route vào tunnel (lỗi 404)
+- Gắn tên miền/subdomain (Gắn tên miền & tạo record DNS): sau khi gửi cấu hình tunnel lên Cloudflare, hệ thống ĐỌC LẠI cấu hình để xác nhận route thực sự đã tồn tại trên tunnel (retry 1 lần sau 1.5s nếu chưa thấy). Nếu vẫn không có route, hệ thống báo lỗi rõ ràng thay vì vẫn hiển thị "hoạt động" — tránh trường hợp tên miền báo hoạt động nhưng truy cập 404.
+- Trang "Tên miền đang hoạt động" giờ hiển thị trạng thái route THẬT trên Cloudflare: badge xanh "Route OK" (route tồn tại trên tunnel) hoặc cam "Chưa có route" (route chưa có — truy cập sẽ 404, kèm hướng dẫn thử lại hoặc thêm route thủ công trong dashboard).
+- Badge có tooltip giải thích, giúp phát hiện ngay lỗi route không đồng bộ giữa panel và Cloudflare.
+
 # V15.3.7 — Database Manager kiểu Navicat
 - Viết lại hoàn toàn trang Database theo phong cách Navicat: Object Explorer bên trái (nhóm database TMS OS / Website, mở rộng như cây thư mục, tìm bảng nhanh), vùng làm việc bên phải với 3 tab: Dữ liệu / SQL / Cấu trúc.
 - Tab Dữ liệu: grid bảng với chỉnh sửa trực tiếp (bấm vào ô để sửa, Enter lưu), thêm dòng bằng form tự sinh từ cấu trúc bảng, xóa dòng an toàn theo khóa chính, đánh dấu khóa chính (PK) và cột dài.

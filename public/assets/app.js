@@ -496,14 +496,19 @@ if(document.querySelector('[data-service-alert]')){
     const hostnames=Array.isArray(d.hostnames)?d.hostnames:[];
     listEl.hidden=!hostnames.length;
     const panelUrl=d.panel_url||'';
-    const rows=hostnames.map(h=>`<div class="cfd-hostname-card">
-      <div class="cfd-hostname-main"><strong>${esc(h.hostname)}</strong><small>Trỏ đến ${esc(h.service)}</small></div>
+    const rows=hostnames.map(h=>{
+      let badge='';
+      if(h.route_status==='ok'){badge='<span class="cfd-route-ok" title="Route đã tồn tại trên tunnel Cloudflare">● Route OK</span>';}
+      else if(h.route_status==='missing'){badge='<span class="cfd-route-missing" title="Route chưa có trên tunnel Cloudflare — truy cập sẽ báo lỗi 404. Hãy thử lại Gắn tên miền hoặc thêm route thủ công trong dashboard.">● Chưa có route</span>';}
+      return `<div class="cfd-hostname-card">
+      <div class="cfd-hostname-main"><strong>${esc(h.hostname)}</strong><small>Trỏ đến ${esc(h.service)}</small>${badge}</div>
       <div class="cfd-hostname-actions">
         <a class="btn btn-secondary btn-small" href="${esc(h.url)}" target="_blank" rel="noopener">Mở</a>
         <button type="button" class="btn btn-secondary btn-small cfd-copy-host" data-copy="${esc(h.url)}">Sao chép</button>
         <button type="button" class="btn btn-danger-soft btn-small cfd-detach-host" data-hostname="${esc(h.hostname)}">Tách</button>
       </div>
-    </div>`).join('');
+    </div>`;
+    }).join('');
     listEl.innerHTML='<div class="cfd-hostnames-head"><h3>Tên miền đang hoạt động ('+hostnames.length+')</h3></div>'+rows;
     listEl.querySelectorAll('.cfd-copy-host').forEach(b=>{b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);}catch(e){}const old=b.textContent;b.textContent='Đã sao chép';setTimeout(()=>b.textContent=old,1200);};});
     listEl.querySelectorAll('.cfd-detach-host').forEach(b=>{b.onclick=async()=>{

@@ -1595,6 +1595,18 @@ canvas#monitor-chart { width: 100%; display: block; }
   font-weight: 750;
 }
 .cfd-hostname-card small { display: block; color: var(--muted); font-size: 0.8rem; word-break: break-all; }
+/* V15.3.8: trạng thái route thật trên tunnel Cloudflare */
+.cfd-hostname-card .cfd-route-ok,
+.cfd-hostname-card .cfd-route-missing {
+  display: inline-block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 5px;
+  cursor: help;
+}
+.cfd-hostname-card .cfd-route-ok { color: #16a34a; }
+.cfd-hostname-card .cfd-route-missing { color: #d97706; }
 .cfd-hostname-actions { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }
 .cfd-hostname-actions .btn { white-space: nowrap; }
 .cfd-btn-grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
