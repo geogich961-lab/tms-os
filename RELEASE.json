@@ -1,20 +1,19 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.3.3",
-  "build": "20260820-7",
+  "internal_version": "15.3.4",
+  "build": "20260821-1",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-20",
-  "name": "TMS OS V15.3.3",
-  "version": "15.3.3",
-  "notes": "V15.3.3: Giao dien moi (Redesigned UI Kit). Thanh ben sidebar cot don, font Inter, mau sac tinh te, icon SVG thay emoji. Giu nguyen toan bo tinh nang (Database, SQL Editor, Cloudflare Hosting, Explorer, PWA...).",
+  "released_at": "2026-08-21",
+  "name": "TMS OS V15.3.4",
+  "version": "15.3.4",
+  "notes": "V15.3.4: Sua loi thanh menu di dong bi cuon theo trang. Header mobile gio co dinh (fixed), khong bi cuon nua, noi dung khong bi che.",
   "features": [
-    "Giao dien Redesigned UI Kit: sidebar cot don, font Inter, design tokens mau sac moi",
-    "Icon SVG thay emoji trong menu, Explorer, Dashboard — giao dien sac net hon",
-    "Service Worker tms-os-v15-3-3: cap nhat cache CSS moi, tu dong xoa cache cu khi update",
-    "Giữ nguyen toan bo tinh nang: Database + SQL Editor, Cloudflare Hosting, Remote Access, Explorer, PWA"
+    "Fix: Thanh menu header o dien thoai gio co dinh tren cung man hinh, khong cuon theo trang nua",
+    "Header mobile dung position: fixed + tinh padding an toan (safe-area-inset-top) cho dien thoai notch",
+    "Service Worker tms-os-v15-3-4: cap nhat cache CSS moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "217e962fdacb429d2a2099e88bd7999cb7b82710b251f91b661b6bbd0774fc05",
-  "build_date": "2026-08-20"
+  "checksum_sha256": "",
+  "build_date": "2026-08-21"
 }

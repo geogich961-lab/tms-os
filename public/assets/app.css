@@ -1783,19 +1783,23 @@ canvas#monitor-chart { width: 100%; display: block; }
     border-right: 1px solid var(--border);
   }
   .os-sidebar.open { transform: translateX(0); }
-  .os-main { margin-left: 0; padding: 16px 14px 84px; }
+  .os-main { margin-left: 0; padding: 16px 14px 84px; padding-top: calc(72px + env(safe-area-inset-top)); }
   .mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    padding: 11px 15px;
+    padding: 10px 15px;
+    padding-top: calc(10px + env(safe-area-inset-top));
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    position: sticky;
+    position: fixed;
     top: 0;
-    z-index: 35;
+    left: 0;
+    right: 0;
+    height: calc(54px + env(safe-area-inset-top));
     min-height: 54px;
+    z-index: 35;
   }
   .mobile-header strong { font-size: 1rem; font-weight: 800; letter-spacing: -0.01em; }
   .mobile-header .online-dot { margin-left: auto; }

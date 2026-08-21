@@ -1,3 +1,9 @@
+# V15.3.4 — Fix: thanh menu di dong bi cuon theo trang
+- Sửa lỗi thanh header menu ở chế độ điện thoại (màn hình <= 760px) bị cuộn theo trang khi lướt nội dung: chuyển sang `position: fixed` phủ toàn bộ chiều ngang, thêm `safe-area-inset-top` cho điện thoại notch.
+- Nội dung trang tự động đẩy xuống tránh bị header che (padding-top động).
+- Service Worker bump lên `tms-os-v15-3-4`, cập nhật cache CSS version mới và tự xóa cache cũ khi kích hoạt bản mới.
+
+---
 # V15.3.3 — Giao diện mới (Redesigned UI Kit)
 
 - Tích hợp bộ giao diện thiết kế lại (Redesigned UI Kit): thanh bên sidebar một cột gọn gàng, font Inter, hệ màu sắc tinh tế hơn, icon SVG thay emoji trong menu, Dashboard, TMS Explorer và các preset phân quyền.
