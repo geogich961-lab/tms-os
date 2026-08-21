@@ -6,18 +6,18 @@
 <p>Bản đang chạy: <strong><?=tms_h($status['current']??'unknown')?></strong>
 <?php if(!empty($status['previous_exists'])):?><span class="status-pill running">Có bản sao lưu gần đây</span><?php endif;?>
 </p>
-<div style="display:flex;gap:8px;flex-wrap:wrap">
-<button class="btn" id="check-update-btn">Kiểm tra cập nhật</button>
-<?php if(!empty($status['previous_exists'])):?><form method="post" action="/updates/rollback" style="display:inline" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-danger-soft">Khôi phục bản trước</button></form><?php endif;?>
+<div class="update-btn-group">
+<button class="btn btn-secondary" id="check-update-btn">Kiểm tra cập nhật</button>
+<?php if(!empty($status['previous_exists'])):?><form method="post" action="/updates/rollback" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-danger-soft">Khôi phục bản trước</button></form><?php endif;?>
 </div>
 <p class="muted" id="check-result"></p></section>
 
-<section class="panel-card" id="online-update-card"><h2>Cập nhật từ GitHub (1 chạm)</h2>
+<section class="panel-card" id="online-update-card"><h2>Cập nhật nhanh</h2>
 <p>TMS OS sẽ tải bản mới nhất từ kho chính thức, kiểm tra checksum SHA-256, sao lưu source hiện tại, rồi áp dụng. Nếu panel không hoạt động sau khi áp dụng, hệ thống tự động khôi phục bản trước.</p>
 <form method="post" action="/updates/apply" onsubmit="return confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ reload sau khi hoàn tất.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
 <p class="muted">Hoặc qua lệnh (từ thiết bị khác trên mạng LAN): <code>curl -sS -X POST http://127.0.0.1:8888/api/updates/run -d "token=TOKEN_CỦA_BẠN"</code></p></section>
 
-<section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="form-stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="file" name="package" accept=".zip,application/zip" required><button class="btn btn-primary">Kiểm tra và lưu</button></form>
+<section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>
 <p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
 
 <section class="panel-card">

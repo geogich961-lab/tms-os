@@ -3,7 +3,7 @@
 <?php if($flash):?><div class="alert <?=$flash['type']==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=$flash['type']==='success'?'success':'error'?>" hidden><?=tms_h((string)$flash['message'])?></div><?php endif;?>
 <section class="settings-grid">
 <article class="panel-card appearance-card">
-	  <div class="section-title-row" style="flex-wrap: wrap; gap: 12px;"><div><p class="eyebrow">Appearance Center</p><h2>Giao diện & Thông báo</h2></div><div class="appearance-preview" id="appearance-preview" style="background: linear-gradient(45deg, #a70e13, #ed1d24, #a70e13); flex-shrink: 0;"><span></span><strong>TMS OS</strong></div></div>
+	  <div class="section-title-row" style="flex-wrap: wrap; gap: 12px;"><div><p class="eyebrow">Appearance Center</p><h2>Giao diện & Thông báo</h2></div></div>
 	  <p class="muted">Cấu hình chế độ hiển thị và thông báo hệ thống.</p>
 	  <form method="post" action="/settings/appearance" class="stack" id="appearance-form">
 	    <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
@@ -14,7 +14,7 @@
 	  </form>
 	</article>
 <article class="panel-card appearance-card">
-  <div class="section-title-row" style="flex-wrap: wrap; gap: 12px;"><div><p class="eyebrow">Brand Center</p><h2>Logo &amp; Thương hiệu</h2></div><div class="appearance-preview" id="brand-preview" style="flex-shrink: 0;"><span></span><img class="brand-preview-img" src="<?=tms_h(tms_brand_icon('192'))?>" alt="Logo" id="brand-preview-img"></div></div>
+  <div class="section-title-row" style="flex-wrap: wrap; gap: 12px;"><div><p class="eyebrow">Brand Center</p><h2>Logo &amp; Thương hiệu</h2></div><div id="brand-preview" style="flex-shrink: 0;"><img class="brand-preview-img" src="<?=tms_h(tms_brand_icon('192'))?>" alt="Logo" id="brand-preview-img"></div></div>
   <p class="muted">Đổi logo của TMS OS. Logo mới được áp dụng cho trang đăng nhập, menu, biểu tượng trên màn hình chính Android và iPhone/iPad.</p>
   <p class="security-note"><strong>Yêu cầu hình ảnh:</strong> định dạng PNG, JPG hoặc WebP · kích thước tối thiểu <strong>128x128px</strong> · tối đa <strong>2048x2048px</strong> · dung lượng tối đa <strong>2 MB</strong> · khuyến nghị <strong>512x512px</strong> vuông để icon hiển thị đẹp nhất trên mọi thiết bị.</p>
   <form method="post" action="/settings/logo" enctype="multipart/form-data" class="stack" id="brand-form">

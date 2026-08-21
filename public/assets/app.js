@@ -32,7 +32,7 @@ window.tmsToast=(msg,type,ms)=>{
 // Auto-convert: flash message từ server (POST truyền thống) → toast notification
 (()=>{
   const flash=document.querySelector('[data-flash-toast]');
-  if(flash){const text=flash.textContent.trim();if(text) tmsToast(text,flash.dataset.flashToast||'info',7000);flash.remove();}
+  if(flash){const text=flash.textContent.trim();if(text) tmsToast(text,flash.dataset.flashToast||'info');flash.remove();}
 })();
 
 (()=>{

@@ -36,7 +36,7 @@ require dirname(__DIR__) . '/layouts/header.php';
 <section class="panel-card install-app-card">
  <div class="section-title-row"><div><p class="eyebrow">Install to Device</p><h2>Cài đặt ứng dụng</h2></div><span class="install-badge <?=($pwaStatus??'')==='installed'?'install-badge-done':'install-badge-new'?>"><?=($pwaStatus??'')==='installed'?'Đã cài':'Chưa cài'?></span></div>
  <p class="muted">Cài TMS OS lên màn hình chính để mở nhanh như ứng dụng gốc, không cần mở trình duyệt — hỗ trợ Android và iPhone/iPad.</p>
- <div class="install-actions"><button type="button" class="btn btn-primary" data-pwa-install>Cài TMS OS lên màn hình chính</button><button type="button" class="btn btn-secondary" data-ios-instructions>Chỉ dẫn cho iPhone/iPad</button></div>
+ <div class="install-actions"><button type="button" class="btn btn-primary" data-pwa-install>Thêm vào màn hình chính - Android</button><button type="button" class="btn btn-secondary" data-ios-instructions>Thêm vào màn hình chính - iOS</button></div>
  <div id="ios-instructions" hidden class="ios-steps"><div><span>1</span>Chạm nút chia sẻ (mũi tên lên hoặc ba chấm) trên thanh trình duyệt.</div><div><span>2</span>Chọn <strong>Thêm vào Màn hình chính</strong> (Add to Home Screen).</div><div><span>3</span>Chạm <strong>Thêm</strong> — biểu tượng TMS OS sẽ hiện trên màn hình chính.</div></div>
 </section>
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

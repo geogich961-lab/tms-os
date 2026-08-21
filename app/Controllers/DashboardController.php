@@ -11,6 +11,13 @@ final class DashboardController
     ) {
     }
 
+    public function landing(): void
+    {
+        tms_view('dashboard.landing', [
+            'build' => tms_config('build', 'V16.0.6'),
+        ]);
+    }
+
     public function index(): void
     {
         $this->guard();

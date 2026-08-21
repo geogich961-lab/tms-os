@@ -1,3 +1,13 @@
+## V16.0.6 (2026-08-21)
+- **Landing Page**: Thêm trang giới thiệu công khai với thiết kế Gradient Red/Yellow chuẩn.
+- **UI/UX Polish**: 
+  - Xóa preview "TMS OS" trong Cài đặt, bỏ viền đỏ logo.
+  - Sửa lỗi placeholder "Nhập tên tài khoản" tại trang đăng nhập.
+  - Rút gọn mục cài đặt ứng dụng (Android/iOS).
+  - Đồng bộ kích thước các nút trong Update Center.
+- **Bug Fixes**: Fix lỗi thời gian hiển thị Toast notification (đồng bộ với cài đặt người dùng).
+- **Router**: Dashboard chuyển sang `/dashboard`, trang chủ `/` là Landing Page.
+
 ## V16.0.5 (2026-08-21)
 - **UI/UX Refinement**:
   - Đổi tên **TMS Explorer** thành **File Manager** trên toàn hệ thống (Sidebar, Website view).
