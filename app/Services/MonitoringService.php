@@ -2,12 +2,13 @@
 declare(strict_types=1);
 
 /**
- * V15.4.3 — Resource Monitor hoàn chỉnh cho Android/Termux.
- * Lấy dữ liệu thật từ hệ thống theo thứ tự ưu tiên:
- *  1) Đọc trực tiếp /proc, /sys (nhanh, không shell)
- *  2) CLI fallback (cat, free, df, uptime, getprop) khi SELinux chặn đọc file
- *  3) Termux:API cho pin (termux-battery-status)
- * Luôn trả giá trị thật hoặc trạng thái rõ ràng — không bao giờ im lặng về 0.
+ * V15.4.4 — Resource Monitor hoàn chỉnh, chống crash và chống SELinux.
+ *
+ * Nguyên tắc:
+ *  1. Không dùng proc_open/pcntl (dễ treo trên Android) — chỉ file_get_contents
+ *     với context timeout + shell_exec (có sẵn timeout mặc định của PHP) + set_time_limit ngắn.
+ *  2. Mọi hàm lấy dữ liệu đều try/catch riêng — một nguồn lỗi không làm sập cả trang.
+ *  3. Cache invalidated khi app version đổi — tránh trang hiển thị số 0 từ cache bản cũ.
  */
 final class MonitoringService
 {
@@ -24,289 +25,304 @@ final class MonitoringService
 
     public function snapshot(bool $force = false): array
     {
-        if (!$force) {
-            $cached = $this->readFreshCache(12);
-            if ($cached !== null) {
-                return $cached;
+        // Cache invalidated khi version app đổi (bản cũ đã có thể không có 'device')
+        $maxAge = $force ? 0 : 12;
+        $cached = $this->readFreshCache($maxAge);
+        if ($cached !== null && isset($cached['details']['memory_total_mb']) && (int)$cached['details']['memory_total_mb'] > 0) {
+            return $cached;
+        }
+
+        $out = [];
+        try {
+            $m = $this->system->metrics();
+            $row = [
+                'time' => time(),
+                'memory' => (int)($m['memory_percent'] ?? 0),
+                'storage' => (int)($m['storage_percent'] ?? 0),
+                'load' => (float)($m['load_1m'] ?? 0),
+            ];
+
+            $rows = $this->history();
+            $last = empty($rows) ? 0 : (int)(end($rows)['time'] ?? 0);
+            if ($last === 0 || time() - $last >= 30) {
+                $rows[] = $row;
+                $rows = array_slice($rows, -288);
+                @file_put_contents($this->file, json_encode($rows, JSON_UNESCAPED_UNICODE), LOCK_EX);
             }
+
+            $out = [
+                'current' => $row,
+                'history' => $rows,
+                'services' => $this->safeServices(),
+                'details' => [
+                    'battery' => $this->safeBattery(),
+                    'temperature' => $this->safeTemperature(),
+                    'network' => $this->safeNetwork(),
+                    'processes' => $this->safeProcessCount(),
+                    'memory_used_mb' => (int)($m['memory_used_mb'] ?? 0),
+                    'memory_total_mb' => (int)($m['memory_total_mb'] ?? 0),
+                    'storage_used_gb' => (float)($m['storage_used_gb'] ?? 0),
+                    'storage_total_gb' => (float)($m['storage_total_gb'] ?? 0),
+                    'uptime' => (string)($m['uptime'] ?? ''),
+                    'uptime_seconds' => $this->safeUptimeSeconds(),
+                    'architecture' => (string)($m['architecture'] ?? ''),
+                    'php_version' => (string)($m['php_version'] ?? PHP_VERSION),
+                    'hostname' => (string)($m['hostname'] ?? 'Android'),
+                ],
+                'device' => $this->safeDeviceInfo(),
+            ];
+        } catch (\Throwable $e) {
+            // Không bao giờ crash toàn trang — trả số liệu tối thiểu
+            $out = [
+                'current' => ['time' => time(), 'memory' => 0, 'storage' => 0, 'load' => 0.0],
+                'history' => $this->history(),
+                'services' => [],
+                'details' => [
+                    'battery' => ['percentage' => null, 'status' => 'Lỗi đọc dữ liệu', 'health' => '', 'temperature' => null, 'current' => ''],
+                    'temperature' => null,
+                    'network' => ['rx_mb' => 0.0, 'tx_mb' => 0.0, 'rx_bytes' => 0, 'tx_bytes' => 0],
+                    'processes' => 0,
+                    'memory_used_mb' => 0, 'memory_total_mb' => 0,
+                    'storage_used_gb' => 0.0, 'storage_total_gb' => 0.0,
+                    'uptime' => '', 'uptime_seconds' => 0,
+                    'architecture' => php_uname('m'), 'php_version' => PHP_VERSION, 'hostname' => 'Android',
+                ],
+                'device' => ['model' => 'Không xác định', 'android_version' => '', 'kernel' => php_uname('s') . ' ' . php_uname('r'), 'api' => ''],
+            ];
         }
 
-        $m = $this->system->metrics();
-        $row = [
-            'time' => time(),
-            'memory' => (int)$m['memory_percent'],
-            'storage' => (int)$m['storage_percent'],
-            'load' => (float)$m['load_1m'],
-        ];
-
-        $rows = $this->history();
-        $last = empty($rows) ? 0 : (int)(end($rows)['time'] ?? 0);
-        if ($last === 0 || time() - $last >= 30) {
-            $rows[] = $row;
-            $rows = array_slice($rows, -288);
-            @file_put_contents($this->file, json_encode($rows, JSON_UNESCAPED_UNICODE), LOCK_EX);
-        }
-
-        $net = $this->network();
-        $snapshot = [
-            'current' => $row,
-            'history' => $rows,
-            'services' => $this->system->serviceStatus(),
-            'details' => [
-                'battery' => $this->battery(),
-                'temperature' => $this->temperature(),
-                'network' => $net,
-                'processes' => $this->processCount(),
-                'memory_used_mb' => $m['memory_used_mb'],
-                'memory_total_mb' => $m['memory_total_mb'],
-                'storage_used_gb' => $m['storage_used_gb'],
-                'storage_total_gb' => $m['storage_total_gb'],
-                'uptime' => $m['uptime'],
-                'uptime_seconds' => $this->uptimeSeconds(),
-                'architecture' => $m['architecture'],
-                'php_version' => $m['php_version'],
-                'hostname' => $m['hostname'] ?? 'Android',
-            ],
-            'device' => $this->deviceInfo(),
-        ];
-
-        @file_put_contents($this->cacheFile, json_encode($snapshot, JSON_UNESCAPED_UNICODE), LOCK_EX);
-        return $snapshot;
+        @file_put_contents($this->cacheFile, json_encode($out, JSON_UNESCAPED_UNICODE), LOCK_EX);
+        return $out;
     }
 
     public function history(): array
     {
-        $d = @json_decode((string)@file_get_contents($this->file), true);
-        return is_array($d) ? $d : [];
+        try {
+            $d = @json_decode((string)@file_get_contents($this->file), true);
+            return is_array($d) ? $d : [];
+        } catch (\Throwable) {
+            return [];
+        }
     }
 
     private function readFreshCache(int $maxAge): ?array
     {
-        if (!is_file($this->cacheFile)) {
+        try {
+            if (!is_file($this->cacheFile)) {
+                return null;
+            }
+            $mtime = @filemtime($this->cacheFile);
+            if (!$mtime || time() - $mtime > max(1, $maxAge)) {
+                return null;
+            }
+            $data = @json_decode((string)@file_get_contents($this->cacheFile), true);
+            return is_array($data) ? $data : null;
+        } catch (\Throwable) {
             return null;
         }
-        $mtime = @filemtime($this->cacheFile);
-        if (!$mtime || time() - $mtime > $maxAge) {
-            return null;
-        }
-        $data = @json_decode((string)@file_get_contents($this->cacheFile), true);
-        return is_array($data) ? $data : null;
     }
 
-    /** Thông tin thiết bị Android (model, phiên bản Android, kernel). */
-    private function deviceInfo(): array
+    private function safeServices(): array
     {
-        $getprop = static function (string $key): string {
-            $r = shell_exec('getprop ' . escapeshellarg($key) . ' 2>/dev/null');
-            return is_string($r) ? trim($r) : '';
-        };
+        try {
+            return $this->system->serviceStatus();
+        } catch (\Throwable) {
+            return [];
+        }
+    }
 
-        $model = $getprop('ro.product.model') ?: $getprop('ro.product.brand');
-        $android = $getprop('ro.build.version.release');
-        $kernel = PHP_OS . ' ' . php_uname('r');
+    /** Thông tin thiết bị Android (model, Android version, kernel, API level). */
+    private function safeDeviceInfo(): array
+    {
+        try {
+            $device = ['model' => 'Không xác định', 'android_version' => '', 'kernel' => PHP_OS . ' ' . php_uname('r'), 'api' => ''];
 
-        // Fallback khi không có getprop (non-Android / sandbox)
-        if ($model === '' && $android === '') {
-            if (is_file('/etc/os-release')) {
+            // getprop — lệnh chuẩn Android, nhanh, không cần quyền đặc biệt
+            $getprop = static function (string $key): string {
+                $r = @shell_exec('getprop ' . escapeshellarg($key) . ' 2>/dev/null');
+                return is_string($r) ? trim($r) : '';
+            };
+
+            $model = $getprop('ro.product.model') ?: $getprop('ro.product.brand');
+            $android = $getprop('ro.build.version.release');
+            if ($model !== '') {
+                $device['model'] = $model;
+            }
+            if ($android !== '') {
+                $device['android_version'] = $android;
+                $device['api'] = $getprop('ro.build.version.sdk');
+            }
+
+            // Fallback non-Android
+            if ($device['android_version'] === '' && is_file('/etc/os-release')) {
                 $os = @parse_ini_file('/etc/os-release');
-                $model = $os['PRETTY_NAME'] ?? 'Server';
+                if (isset($os['PRETTY_NAME'])) {
+                    $device['model'] = $os['PRETTY_NAME'];
+                }
             }
-            $kernel = PHP_OS . ' ' . php_uname('r') . ' ' . php_uname('m');
-        }
 
-        return [
-            'model' => $model ?: 'Không xác định',
-            'android_version' => $android ?: '',
-            'kernel' => $kernel,
-            'api' => $getprop('ro.build.version.sdk') ?: '',
-        ];
+            return $device;
+        } catch (\Throwable) {
+            return ['model' => 'Không xác định', 'android_version' => '', 'kernel' => '', 'api' => ''];
+        }
     }
 
-    /** Pin — Termux:API hoặc "Chưa cài". Không bao giờ giả số 0. */
-    private function battery(): array
+    /** Pin — Termux:API hoặc trạng thái rõ ràng. */
+    private function safeBattery(): array
     {
-        if (!$this->commandExists('termux-battery-status')) {
-            return ['percentage' => null, 'status' => 'Chưa cài Termux:API', 'health' => '', 'temperature' => null, 'current' => ''];
-        }
+        $unknown = ['percentage' => null, 'status' => 'Không khả dụng', 'health' => '', 'temperature' => null, 'current' => ''];
+        try {
+            if (@shell_exec('command -v termux-battery-status 2>/dev/null') === null || trim((string)@shell_exec('command -v termux-battery-status 2>/dev/null')) === '') {
+                return ['percentage' => null, 'status' => 'Chưa cài Termux:API', 'health' => '', 'temperature' => null, 'current' => ''];
+            }
 
-        $result = $this->runWithTimeout(['termux-battery-status'], 2.0);
-        if (!$result['ok']) {
-            return ['percentage' => null, 'status' => 'Termux:API không phản hồi', 'health' => '', 'temperature' => null, 'current' => ''];
-        }
+            $oldLimit = ini_get('max_execution_time');
+            @set_time_limit(4);
+            $output = @shell_exec('termux-battery-status 2>/dev/null');
+            @set_time_limit((int)$oldLimit ?: 30);
+            if (!is_string($output) || trim($output) === '') {
+                return $unknown;
+            }
 
-        $d = @json_decode($result['output'], true);
-        if (!is_array($d)) {
-            return ['percentage' => null, 'status' => 'Không đọc được trạng thái pin', 'health' => '', 'temperature' => null, 'current' => ''];
-        }
+            $d = @json_decode($output, true);
+            if (!is_array($d)) {
+                return $unknown;
+            }
 
-        $info = ['current' => '', 'temperature' => null];
-        if (isset($d['current'])) {
-            $info['current'] = rtrim((string)($d['current'] ?? ''), 'A') . ' mA';
-        }
-        if (isset($d['temperature']) && is_numeric($d['temperature'])) {
-            $info['temperature'] = round((float)$d['temperature'], 1);
-        }
+            $info = ['current' => '', 'temperature' => null];
+            if (isset($d['current'])) {
+                $info['current'] = rtrim((string)($d['current'] ?? ''), 'A') . ' mA';
+            }
+            if (isset($d['temperature']) && is_numeric($d['temperature'])) {
+                $info['temperature'] = round((float)$d['temperature'], 1);
+            }
 
-        return array_merge($info, [
-            'percentage' => $d['percentage'] ?? null,
-            'status' => (string)($d['status'] ?? ''),
-            'health' => (string)($d['health'] ?? ''),
-        ]);
+            return array_merge($info, [
+                'percentage' => $d['percentage'] ?? null,
+                'status' => (string)($d['status'] ?? ''),
+                'health' => (string)($d['health'] ?? ''),
+            ]);
+        } catch (\Throwable) {
+            return $unknown;
+        }
     }
 
-    /** Nhiệt độ CPU — /sys/class/thermal trước, fallback CLI cat (tránh SELinux block file_get_contents). */
-    private function temperature(): ?float
+    /** Nhiệt độ CPU — đọc nhiệt nhất trong thermal zones, fallback cat khi file API bị chặn. */
+    private function safeTemperature(): ?float
     {
-        $files = glob('/sys/class/thermal/thermal_zone*/temp') ?: [];
-        $candidates = [];
-
-        foreach ($files as $f) {
-            $raw = (string)@shell_exec('cat ' . escapeshellarg($f) . ' 2>/dev/null');
-            if ($raw === '' && is_readable($f)) {
-                $raw = (string)@file_get_contents($f);
+        try {
+            $files = @glob('/sys/class/thermal/thermal_zone*/temp') ?: [];
+            $candidates = [];
+            foreach ($files as $f) {
+                $raw = '';
+                // Cách 1: file API trực tiếp (nhanh nhất)
+                $tmp = @file_get_contents($f);
+                if (is_string($tmp)) {
+                    $raw = $tmp;
+                }
+                // Cách 2: shell cat (vượt qua SELinux file-API restriction)
+                if ($raw === '') {
+                    $tmp = @shell_exec('cat ' . escapeshellarg($f) . ' 2>/dev/null');
+                    if (is_string($tmp)) {
+                        $raw = $tmp;
+                    }
+                }
+                if ($raw === '') {
+                    continue;
+                }
+                $v = (float)trim($raw);
+                if ($v > 1000) {
+                    $v /= 1000;
+                }
+                if ($v > 5 && $v < 120) {
+                    $candidates[] = $v;
+                }
             }
-            if ($raw === '') {
-                continue;
-            }
-            $v = (float)trim($raw);
-            if ($v > 1000) {
-                $v /= 1000;
-            }
-            if ($v > 5 && $v < 120) {
-                $candidates[] = $v;
-            }
-        }
-
-        if ($candidates === []) {
+            return $candidates !== [] ? round(max($candidates), 1) : null;
+        } catch (\Throwable) {
             return null;
         }
-
-        // Dùng giá trị lớn nhất (CPU thường là zone nóng nhất)
-        return round(max($candidates), 1);
     }
 
-    /** Network RX/TX thật từ /sys/class/net, bỏ loopback; fallback CLI cat. */
-    private function network(): array
+    /** Network RX/TX thật, bỏ loopback; fallback cat khi file API bị chặn. */
+    private function safeNetwork(): array
     {
-        $read = static function (string $path): int {
-            $raw = (string)@shell_exec('cat ' . escapeshellarg($path) . ' 2>/dev/null');
-            if ($raw === '' && is_readable($path)) {
-                $raw = (string)@file_get_contents($path);
+        try {
+            $rx = 0;
+            $tx = 0;
+            foreach (@glob('/sys/class/net/*/statistics/rx_bytes') ?: [] as $f) {
+                if (str_contains($f, '/lo/')) {
+                    continue;
+                }
+                $txf = str_replace('rx_bytes', 'tx_bytes', $f);
+                $rv = $this->readCounter($f);
+                $tv = $this->readCounter($txf);
+                if ($rv === 0 && $tv === 0 && !is_file($f)) {
+                    continue;
+                }
+                $rx += $rv;
+                $tx += $tv;
             }
-            return is_numeric(trim($raw)) ? (int)trim($raw) : 0;
-        };
-
-        $rx = 0;
-        $tx = 0;
-        foreach (glob('/sys/class/net/*/statistics/rx_bytes') ?: [] as $f) {
-            if (str_contains($f, '/lo/')) {
-                continue;
-            }
-            $rx += $read($f);
-            $tx += $read(str_replace('rx_bytes', 'tx_bytes', $f));
+            return ['rx_mb' => round($rx / 1048576, 1), 'tx_mb' => round($tx / 1048576, 1), 'rx_bytes' => $rx, 'tx_bytes' => $tx];
+        } catch (\Throwable) {
+            return ['rx_mb' => 0.0, 'tx_mb' => 0.0, 'rx_bytes' => 0, 'tx_bytes' => 0];
         }
-
-        return ['rx_mb' => round($rx / 1048576, 1), 'tx_mb' => round($tx / 1048576, 1), 'rx_bytes' => $rx, 'tx_bytes' => $tx];
     }
 
-    /** Số tiến trình — glob /proc trước, fallback lệnh ps/pgrep (SELinux). */
-    private function processCount(): int
+    private function readCounter(string $path): int
     {
-        $dirs = glob('/proc/[0-9]*', GLOB_ONLYDIR) ?: [];
-        if ($dirs !== []) {
-            return count($dirs);
+        $raw = '';
+        $tmp = @file_get_contents($path);
+        if (is_string($tmp)) {
+            $raw = $tmp;
         }
-
-        $out = (string)@shell_exec('ls -d /proc/[0-9]* 2>/dev/null | wc -l');
-        if (is_numeric(trim($out))) {
-            return max(0, (int)trim($out));
-        }
-
-        return 0;
-    }
-
-    /** Uptime thiết bị (giây) — nhất quán với SystemService. */
-    private function uptimeSeconds(): int
-    {
-        $raw = (string)@shell_exec('cat /proc/uptime 2>/dev/null');
-        if ($raw !== '' && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
-            return max(0, (int)floor((float)$m[1]));
-        }
-
-        $raw = (string)@file_get_contents('/proc/uptime');
-        if ($raw !== '' && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
-            return max(0, (int)floor((float)$m[1]));
-        }
-
-        $stat = (string)@shell_exec('grep -m1 btime /proc/stat 2>/dev/null');
-        if ($stat !== '' && preg_match('/btime\s+(\d+)/', $stat, $m)) {
-            return max(0, time() - (int)$m[1]);
-        }
-
-        return 0;
-    }
-
-    private function commandExists(string $command): bool
-    {
-        $path = getenv('PATH') ?: '';
-        foreach (explode(PATH_SEPARATOR, $path) as $dir) {
-            if ($dir !== '' && is_file(rtrim($dir, '/') . '/' . $command) && is_executable(rtrim($dir, '/') . '/' . $command)) {
-                return true;
+        if ($raw === '') {
+            $tmp = @shell_exec('cat ' . escapeshellarg($path) . ' 2>/dev/null');
+            if (is_string($tmp)) {
+                $raw = $tmp;
             }
         }
-        return false;
+        return is_numeric(trim($raw)) ? (int)trim($raw) : 0;
     }
 
-    /** @return array{ok:bool,output:string} */
-    private function runWithTimeout(array $command, float $seconds): array
+    /** Số tiến trình — glob /proc trước, fallback ls (SELinux). */
+    private function safeProcessCount(): int
     {
-        if (!function_exists('proc_open')) {
-            return ['ok' => false, 'output' => ''];
-        }
-
-        $descriptor = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-        $pipes = [];
-        $process = @proc_open($command, $descriptor, $pipes, null, null, ['bypass_shell' => true]);
-        if (!is_resource($process)) {
-            return ['ok' => false, 'output' => ''];
-        }
-
-        @fclose($pipes[0]);
-        @stream_set_blocking($pipes[1], false);
-        @stream_set_blocking($pipes[2], false);
-        $started = microtime(true);
-        $stdout = '';
-        $stderr = '';
-        $timedOut = false;
-
-        while (true) {
-            $stdout .= (string)@stream_get_contents($pipes[1]);
-            $stderr .= (string)@stream_get_contents($pipes[2]);
-            $status = @proc_get_status($process);
-            if (!is_array($status) || !$status['running']) {
-                break;
+        try {
+            $dirs = @glob('/proc/[0-9]*', GLOB_ONLYDIR) ?: [];
+            if ($dirs !== []) {
+                return count($dirs);
             }
-            if (microtime(true) - $started >= $seconds) {
-                $timedOut = true;
-                @proc_terminate($process, 9);
-                break;
+            $out = @shell_exec('ls -d /proc/[0-9]* 2>/dev/null | wc -l');
+            if (is_string($out) && is_numeric(trim($out))) {
+                return max(0, (int)trim($out));
             }
-            usleep(20000);
+            return 0;
+        } catch (\Throwable) {
+            return 0;
         }
+    }
 
-        $stdout .= (string)@stream_get_contents($pipes[1]);
-        $stderr .= (string)@stream_get_contents($pipes[2]);
-        @fclose($pipes[1]);
-        @fclose($pipes[2]);
-        $code = @proc_close($process);
-
-        return [
-            'ok' => !$timedOut && ($code === 0 || $code === -1) && trim($stdout) !== '',
-            'output' => trim($stdout !== '' ? $stdout : $stderr),
-        ];
+    /** Uptime thiết bị (giây). */
+    private function safeUptimeSeconds(): int
+    {
+        try {
+            // Đồng bộ với SystemService::androidUptimeSeconds nhưng có fallback shell
+            $raw = @file_get_contents('/proc/uptime');
+            if (is_string($raw) && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
+                return max(0, (int)floor((float)$m[1]));
+            }
+            $raw = @shell_exec('cat /proc/uptime 2>/dev/null');
+            if (is_string($raw) && preg_match('/^([0-9.]+)/', trim($raw), $m)) {
+                return max(0, (int)floor((float)$m[1]));
+            }
+            $stat = @shell_exec('grep -m1 btime /proc/stat 2>/dev/null');
+            if (is_string($stat) && preg_match('/btime\s+(\d+)/', $stat, $m)) {
+                return max(0, time() - (int)$m[1]);
+            }
+            return 0;
+        } catch (\Throwable) {
+            return 0;
+        }
     }
 }

@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.43,
-  "build": "20260821-1",
+  "internal_version": 15.44,
+  "build": "20260821-2",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.3",
-  "version": "15.4.3",
-  "notes": "V15.4.3: Resource Monitor hoan chinh cho Android/Termux - hien thi dung hien trang Pin (Termux:API, kem progress bar, suc khoe, dong dien), Nhiet do CPU (fallback shell khi SELinux chan), Network RX/TX byte that, Tien trinh, Uptime thiet bi, thong tin thiet bi (model, Android version, kernel); fallback CLI (cat/shell_exec) khi khong doc duoc truc tiep /proc.",
+  "name": "TMS OS V15.4.4",
+  "version": "15.4.4",
+  "notes": "V15.4.4: Fix Resource Monitor khong hien du lieu (0/0) va 502 Bad Gateway - viet lai MonitoringService khong dung proc_open (nguyen nhan crash tren Android), chi dung file_get_contents + shell_exec voi timeout; moi ham doc du lieu co try/catch rieng (khong lam sap trang); cache du lieu bi invalid khi version app doi (khong hien so 0 tu cache ban cu); fallback getprop cho thong tin thiet bi, cat cho nhiet do/network/processes khi SELinux chan.",
   "features": [
     "Resource Monitor hiển thị đầy đủ: Pin (Termux:API + thanh tiến trình), Nhiệt độ CPU, Network RX/TX thật, Tiến trình, Uptime thiết bị",
-    "Thông tin thiết bị: model, phiên bản Android, kiến trúc, kernel",
-    "Fallback CLI (cat/shell_exec) khi SELinux Android chặn đọc /proc, /sys trực tiếp"
+    "Thông tin thiết bị: model (getprop), phiên bản Android, kiến trúc, kernel",
+    "Chống crash & chống SELinux: không dùng proc_open, mọi hàm đọc dữ liệu try/catch riêng, fallback cat/getprop toàn diện"
   ],
-  "checksum_sha256": "5a533942d375f7a1841cf4ddf1d07e4579b5b9723fb90fbabe44a7374aa1f6fe",
+  "checksum_sha256": "2b0f966afd9a24c0874063b04ccf7ad8e3e7362f6a4671c03b6ae9e6a4bcf1a8",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.3",
-  "changelog": "V15.4.3: Nang cap Resource Monitor - device info (getprop model/Android/kernel), pin termux-battery-status kem current/temperature/health + progress bar, nhiet do CPU doc bang cat (avoid SELinux block), network/statistics qua cat, process count fallback ls /proc, uptime_seconds moi.",
+  "version_display": "TMS OS V15.4.4",
+  "changelog": "V15.4.4: Fix trang Resource Monitor hien 0/0 toan bo va API 502 Bad Gateway: khong dung proc_open/pcntl (nguyen nhan crash/killed tren Android), dung file_get_contents + shell_exec; cache invalid khi version doi; device info qua getprop; temperature/network/process/uptime doc file API roi fallback cat; bat ky nguon nao loi khong lam sap toan trang.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }
