@@ -64,11 +64,23 @@ final class UpdateController
     public function apply(): void
     {
         $this->guard();
+        $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
         try {
             $this->verify();
             $r = $this->updates->applyFromGitHub();
+            
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode(['ok' => true, 'message' => $r['message']], JSON_UNESCAPED_UNICODE);
+                return;
+            }
             tms_flash('success', $r['message']);
         } catch (Throwable $e) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode(['ok' => false, 'error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+                return;
+            }
             tms_flash('error', $e->getMessage());
         }
         tms_redirect('/updates');

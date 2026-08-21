@@ -19,7 +19,7 @@
 
 <section class="panel-card" id="online-update-card"><h2>Cập nhật nhanh</h2>
 <p>TMS OS sẽ tải bản mới nhất từ kho chính thức, kiểm tra checksum SHA-256, sao lưu source hiện tại, rồi áp dụng. Nếu panel không hoạt động sau khi áp dụng, hệ thống tự động khôi phục bản trước.</p>
-<form method="post" action="/updates/apply" onsubmit="return confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ reload sau khi hoàn tất.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
+<form id="github-update-form" method="post" action="/updates/apply"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
 <p class="muted">Hoặc qua lệnh (từ thiết bị khác trên mạng LAN): <code>curl -sS -X POST http://127.0.0.1:8888/api/updates/run -d "token=TOKEN_CỦA_BẠN"</code></p></section>
 
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>
@@ -71,9 +71,54 @@ function updateBatchBtn() {
   }
 }
 document.getElementById('batch-delete-btn')?.addEventListener('click', function() {
-  if (confirm('Xóa các gói đã chọn?')) {
-    document.getElementById('batch-delete-form').submit();
-  }
-});
-</script>
+	  if (confirm('Xóa các gói đã chọn?')) {
+	    document.getElementById('batch-delete-form').submit();
+	  }
+	});
+
+	// V16.0.14: Xử lý cập nhật bất đồng bộ để tránh lỗi 502 Bad Gateway
+	document.getElementById('apply-github-btn')?.addEventListener('click', function() {
+	  if (!confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ khởi động lại dịch vụ sau khi hoàn tất.')) return;
+	  
+	  var btn = this;
+	  btn.disabled = true;
+	  btn.textContent = 'Đang tải & áp dụng...';
+	  
+	  var form = document.getElementById('github-update-form');
+	  var formData = new FormData(form);
+	  
+	  fetch(form.action, {
+	    method: 'POST',
+	    body: formData,
+	    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+	  }).then(function(r) {
+	    return r.json();
+	  }).then(function(d) {
+	    if (d.ok) {
+	      btn.textContent = 'Đang khởi động lại...';
+	      btn.className = 'btn btn-success';
+	      
+	      // Hiển thị thông báo toast nếu có
+	      if (window.tms_toast) {
+	        tms_toast(d.message || 'Cập nhật thành công, đang khởi động lại...', 'success');
+	      }
+	      
+	      // Đợi 8 giây để dịch vụ PHP-CGI và Nginx khởi động lại hoàn toàn trên Termux
+	      setTimeout(function() {
+	        window.location.href = '/dashboard?updated=1';
+	      }, 8000);
+	    } else {
+	      btn.disabled = false;
+	      btn.textContent = 'Cập nhật ngay';
+	      alert('Lỗi: ' + (d.error || 'Không thể áp dụng cập nhật.'));
+	    }
+	  }).catch(function(e) {
+	    // Nếu bị lỗi kết nối (thường do PHP bị kill ngay lập tức), vẫn đợi rồi reload
+	    btn.textContent = 'Đang khởi động lại...';
+	    setTimeout(function() {
+	      window.location.href = '/dashboard?updated=1';
+	    }, 8000);
+	  });
+	});
+	</script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

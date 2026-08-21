@@ -462,19 +462,23 @@ final class UpdateService
             file_put_contents($configPath, $configContent);
         }
 
-        // 8. Tự động gọi script khởi động lại để giải phóng tiến trình PHP cũ đang kẹt code cũ trong RAM
-        // Chúng ta gọi ngầm để không làm gián đoạn response hiện tại quá sớm
+        // 8. Hoàn tất xử lý file và dọn dẹp
+        @unlink($this->stateFile);
+
+        // 9. Chuẩn bị khởi động lại bất đồng bộ
+        // Chúng ta cần đảm bảo response được gửi về trình duyệt TRƯỚC khi kill tiến trình PHP
         $restartScript = $this->target . '/scripts/start-tms.sh';
         if (is_file($restartScript)) {
-            exec("nohup bash " . escapeshellarg($restartScript) . " > /dev/null 2>&1 &");
+            // Sử dụng lệnh sleep để tạo khoảng trễ nhỏ, giúp PHP kịp gửi dữ liệu về Cloudflare trước khi bị kill
+            $cmd = "sleep 2 && bash " . escapeshellarg($restartScript);
+            exec("nohup $cmd > /dev/null 2>&1 &");
         }
 
-        // 9. Hoàn tất
-        @unlink($this->stateFile);
         return [
             'ok' => true,
             'backup' => $backupDir,
-            'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đã tự động khởi động lại dịch vụ để nhận diện code mới.',
+            'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đang khởi động lại dịch vụ (mất khoảng 5-10 giây), vui lòng đợi...',
+            'restarting' => true
         ];
     }
 

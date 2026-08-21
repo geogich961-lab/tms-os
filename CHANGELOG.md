@@ -1,3 +1,8 @@
+## V16.0.14 (2026-08-22)
+- **Fix Bad Gateway 502**: Chuyển sang cơ chế khởi động lại bất đồng bộ (Asynchronous Restart). Hệ thống sẽ gửi phản hồi thành công trước khi restart dịch vụ, tránh việc Cloudflare ngắt kết nối đột ngột.
+- **Smart Restart UI**: Giao diện Update Center tự động hiển thị trạng thái "Đang khởi động lại..." và chờ 8 giây để các dịch vụ Nginx/PHP-CGI trên Termux lên lại hoàn toàn trước khi reload trang.
+- **AJAX Update**: Sử dụng fetch API để áp dụng cập nhật, giúp trải nghiệm mượt mà và không bị gián đoạn trang.
+
 ## V16.0.13 (2026-08-22)
 - **Atomic Config Overwrite**: Nâng cấp cơ chế ghi đè file cấu hình để vượt qua mọi sự khóa file của hệ điều hành, đảm bảo số phiên bản được cập nhật tuyệt đối.
 - **Force Port Liberation**: Tích hợp `psmisc` (lệnh `fuser`) vào bộ cài để cưỡng bức giải phóng cổng 8888/9000 bị treo.
