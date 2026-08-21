@@ -1,3 +1,9 @@
+## V16.0.13 (2026-08-22)
+- **Atomic Config Overwrite**: Nâng cấp cơ chế ghi đè file cấu hình để vượt qua mọi sự khóa file của hệ điều hành, đảm bảo số phiên bản được cập nhật tuyệt đối.
+- **Force Port Liberation**: Tích hợp `psmisc` (lệnh `fuser`) vào bộ cài để cưỡng bức giải phóng cổng 8888/9000 bị treo.
+- **OPcache Purge**: Ép PHP nạp lại toàn bộ mã nguồn mới từ đĩa ngay lập tức sau khi cập nhật.
+- **System Sync Fix**: Sửa lỗi hiển thị sai phiên bản (V16.0.6) dù giao diện đã đổi mới.
+
 ## V16.0.12 (2026-08-21)
 - **Process Killer (Thiết quân luật)**: Nâng cấp `start-tms.sh` với lệnh `fuser -k` và `pkill -9` để giải phóng cổng 8888/9000 cưỡng bức, tránh lỗi "Address already in use".
 - **Auto-Restart Engine**: Bộ cập nhật tự động gọi script khởi động lại ngay sau khi swap code để ép PHP-CGI cũ phải thoát và nạp code mới từ RAM.

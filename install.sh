@@ -103,7 +103,7 @@ trap 'rm -rf "$WORK"' EXIT
 echo 'Bước 3/7: Cập nhật kho gói Termux và cài đặt các thành phần (PHP, Nginx, MariaDB, OpenSSH)...'
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y -q
-pkg install -y php nginx mariadb curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl diffutils termux-api >/dev/null
+pkg install -y php nginx mariadb curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl diffutils termux-api psmisc >/dev/null
 for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd; do
   command -v "$c" >/dev/null || { echo "[LỖI] Thiếu lệnh sau cài: $c"; exit 1; }
 done

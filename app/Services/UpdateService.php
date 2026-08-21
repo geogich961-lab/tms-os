@@ -383,10 +383,19 @@ final class UpdateService
             if (is_dir($src)) {
                 $dst = $this->target . '/' . $part;
                 // Sử dụng cp -af (archive & force) để ghi đè cưỡng bức các file đang bị khóa
-                // Đồng thời chép đè thay vì xóa sạch để giữ các file không nằm trong ZIP (nếu có)
+                @mkdir($dst, 0700, true);
+                // Thực hiện 2 lần: xóa trước (nếu có thể) và chép đè cưỡng bức
+                exec("rm -rf " . escapeshellarg($dst) . " 2>/dev/null || true");
                 @mkdir($dst, 0700, true);
                 exec("cp -af " . escapeshellarg($src . '/.') . " " . escapeshellarg($dst));
             }
+        }
+        
+        // Cưỡng bức chép đè file config/app.php riêng biệt để đảm bảo số version thay đổi
+        $configSrc = $staging . '/config/app.php';
+        $configDst = $this->target . '/config/app.php';
+        if (is_file($configSrc)) {
+            exec("cp -f " . escapeshellarg($configSrc) . " " . escapeshellarg($configDst));
         }
         
         // Cố gắng xóa OPcache của PHP nếu có thể để nhận diện file config mới ngay lập tức
