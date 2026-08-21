@@ -21,85 +21,84 @@
         .landing-container {
             width: 100%;
             max-width: 500px;
-            padding: 30px 20px;
+            padding: 40px 24px;
             text-align: center;
             display: flex;
             flex-direction: column;
-            gap: 25px;
+            gap: 28px;
         }
         .brand-section {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: center;
             gap: 20px;
             text-align: left;
+            margin-bottom: 10px;
         }
         .brand-logo-large {
-            width: 120px;
-            height: 120px;
-            background: #fff;
-            border-radius: 24px;
-            padding: 10px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+            filter: drop-shadow(0 8px 20px rgba(0,0,0,0.2));
         }
-        .brand-info h1 {
-            margin: 0;
-            font-size: 2.2rem;
-            font-weight: 900;
-            line-height: 1.1;
-        }
-        .brand-info p {
-            margin: 8px 0 0;
+        .brand-info {
+            color: #fef16d; /* Màu vàng sáng Bright Yellow */
+            font-weight: 600;
             font-size: 1.05rem;
             line-height: 1.4;
-            opacity: 0.95;
+        }
+        .brand-info p {
+            margin: 6px 0;
         }
         .version-tag {
             display: inline-block;
-            margin-top: 10px;
             font-weight: 700;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            margin-top: 4px;
         }
         .intro-box {
             background: linear-gradient(45deg, #fcb12b, #fef16d, #fdbc69);
-            color: #8b5e00;
-            padding: 24px;
-            border-radius: 20px;
+            color: #a70e13; /* Màu đỏ đậm để nổi bật trên nền vàng */
+            padding: 28px;
+            border-radius: 22px;
             text-align: left;
-            font-size: 0.98rem;
+            font-size: 1rem;
             line-height: 1.6;
-            font-weight: 500;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
         .btn-landing {
             background: linear-gradient(45deg, #fcb12b, #fef16d, #fdbc69);
-            color: #8b5e00;
-            padding: 20px;
-            border-radius: 20px;
-            font-size: 1.4rem;
-            font-weight: 800;
+            color: #a70e13; /* Màu đỏ đậm */
+            padding: 22px;
+            border-radius: 22px;
+            font-size: 1.5rem;
+            font-weight: 900;
             text-decoration: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             transition: transform 0.2s, box-shadow 0.2s;
             display: block;
+            text-align: center;
         }
         .btn-landing:active {
             transform: scale(0.97);
         }
         .btn-install {
             background: linear-gradient(45deg, #fcb12b, #fef16d, #fdbc69);
-            color: #8b5e00;
+            color: #a70e13; /* Màu đỏ đậm */
             padding: 20px;
-            border-radius: 20px;
-            font-size: 1.2rem;
-            font-weight: 800;
+            border-radius: 22px;
+            font-size: 1.25rem;
+            font-weight: 900;
             text-decoration: none;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             display: block;
+            text-align: center;
+            line-height: 1.3;
         }
         @media (min-width: 768px) {
             .landing-container {
-                max-width: 600px;
+                max-width: 580px;
             }
         }
     </style>
@@ -107,7 +106,7 @@
 <body>
     <div class="landing-container">
         <div class="brand-section">
-            <img src="<?=tms_h(tms_brand_icon('logo'))?>" alt="TMS OS" class="brand-logo-large">
+            <img src="/assets/logo-landing.png" alt="TMS OS" class="brand-logo-large">
             <div class="brand-info">
                 <p>• Bạn đang sử dụng TMS OS Tận dụng thiết bị Android cũ thành một mini VPS để chạy Webserver.</p>
                 <p>• Phiên bản hiện tại<br><span class="version-tag">V <?=tms_h(preg_replace('/^Platform /','',$build))?></span></p>

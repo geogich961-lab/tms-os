@@ -1,3 +1,16 @@
+## V16.0.8 (2026-08-21)
+- **Landing Page Perfecting**: Tinh chỉnh giao diện Landing Page khớp 100% thiết kế mẫu.
+  - Sử dụng logo `tms-os.png` mới (loại bỏ viền trắng và khung).
+  - Màu chữ vàng sáng (Bright Yellow) cho phần giới thiệu trên nền đỏ.
+  - Màu chữ đỏ đậm (Red) cho nội dung bên trong các khung vàng và nút bấm.
+  - Tối ưu hóa bố cục, khoảng cách và font chữ theo hình mẫu `install-success.webp`.
+
+## V16.0.7 (2026-08-21)
+- **Bug Fixes**: 
+  - Fix lỗi **Error 520 (Unknown Error)** khi upload logo bằng cách tối ưu hóa bộ nhớ PHP GD (giải phóng tài nguyên ngay sau khi xử lý).
+  - Sửa lỗi hiển thị preview logo trong **Brand Center** (loại bỏ hoàn toàn viền đỏ và nền trắng).
+- **UI Polish**: Đồng bộ kích thước các nút trong **Update Center** (Kiểm tra/Khôi phục) để giao diện cân đối hơn.
+
 ## V16.0.6 (2026-08-21)
 - **Landing Page**: Thêm trang giới thiệu công khai với thiết kế Gradient Red/Yellow chuẩn.
 - **UI/UX Polish**: 
