@@ -1,24 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.42,
+  "internal_version": 15.43,
   "build": "20260821-1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.2",
-  "version": "15.4.2",
-  "notes": "V15.4.2: Giao dien chuan hoa — xoa hoan toan cac nhan version loi thoi (TMS OS V14/V15 trong page-head, Unified Core V13.0.1, Kien truc V11, Package Guard); toast \"Da sao chep\" chuyen sang he thong toast chuan; sua loi console trang Database (addEventListener null); Service Worker nang cache len v15-4-2 va danh sach asset dung v=15.4.1 de nguoi dung PWA tu dong nhan ban moi.",
+  "name": "TMS OS V15.4.3",
+  "version": "15.4.3",
+  "notes": "V15.4.3: Resource Monitor hoan chinh cho Android/Termux - hien thi dung hien trang Pin (Termux:API, kem progress bar, suc khoe, dong dien), Nhiet do CPU (fallback shell khi SELinux chan), Network RX/TX byte that, Tien trinh, Uptime thiet bi, thong tin thiet bi (model, Android version, kernel); fallback CLI (cat/shell_exec) khi khong doc duoc truc tiep /proc.",
   "features": [
-    "Xóa nhãn version lỗi thời trong toàn bộ giao diện (chỉ giữ tên module)",
-    "Toast \"Đã sao chép\" chuẩn hệ thống cho mọi thao tác copy",
-    "Trang Database không còn lỗi console",
-    "Service Worker cập nhật cache tự động cho người dùng PWA"
+    "Resource Monitor hiển thị đầy đủ: Pin (Termux:API + thanh tiến trình), Nhiệt độ CPU, Network RX/TX thật, Tiến trình, Uptime thiết bị",
+    "Thông tin thiết bị: model, phiên bản Android, kiến trúc, kernel",
+    "Fallback CLI (cat/shell_exec) khi SELinux Android chặn đọc /proc, /sys trực tiếp"
   ],
-  "checksum_sha256": "efaaf5d92417f1cae5003fb8e7ccc07c34308cf43fbf6760dfd78444d06c1e98",
+  "checksum_sha256": "5a533942d375f7a1841cf4ddf1d07e4579b5b9723fb90fbabe44a7374aa1f6fe",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.2",
-  "changelog": "V15.4.2: Xoa cac nhan version loi thoi trong UI (V10-V15); bo khoi chu thua (Unified Core V13.0.1, Kien truc V11, Package Guard); toast copy dung he thong toast chuan; guard null trang Database; bump Service Worker v15-4-2.",
+  "version_display": "TMS OS V15.4.3",
+  "changelog": "V15.4.3: Nang cap Resource Monitor - device info (getprop model/Android/kernel), pin termux-battery-status kem current/temperature/health + progress bar, nhiet do CPU doc bang cat (avoid SELinux block), network/statistics qua cat, process count fallback ls /proc, uptime_seconds moi.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }
