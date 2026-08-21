@@ -14,6 +14,6 @@
     "Header mobile dung position: fixed + tinh padding an toan (safe-area-inset-top) cho dien thoai notch",
     "Service Worker tms-os-v15-3-4: cap nhat cache CSS moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "61ab9de473d4d12a5dc0a978712d80e69aaa18041b3bfdbb525fcc8d4883456e",
   "build_date": "2026-08-21"
 }
