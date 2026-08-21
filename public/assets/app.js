@@ -233,8 +233,8 @@ window.tmsToast=(msg,type,ms)=>{
   });
 })();
 
-// TMS OS 4.0 copy helpers
-(()=>{let toast=document.querySelector('.copy-toast');if(!toast){toast=document.createElement('div');toast.className='copy-toast';toast.textContent='Đã sao chép';document.body.appendChild(toast);}document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',async()=>{const value=btn.getAttribute('data-copy')||'';try{await navigator.clipboard.writeText(value);}catch(e){const area=document.createElement('textarea');area.value=value;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();}toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1400);}));})();
+// Copy helpers → toast hệ thống (không tạo div riêng)
+(() => {window.tmsCopy=value=>{const v=String(value??'');navigator.clipboard.writeText(v).catch(()=>{const area=document.createElement('textarea');area.value=v;document.body.appendChild(area);area.select();document.execCommand('copy');area.remove();});tmsToast('Đã sao chép vào clipboard.','success',1500);};document.querySelectorAll('[data-copy]').forEach(btn=>btn.addEventListener('click',()=>tmsCopy(btn.getAttribute('data-copy')||'')));})();
 
 // ===== TMS OS 6.0 PWA =====
 let tmsDeferredInstallPrompt = null;
@@ -337,7 +337,7 @@ if(document.querySelector('[data-service-alert]')){
 // In-page splash removed: navigation between modules is now immediate.
 
 
-// ===== TMS OS Platform Stable V10 · Appearance Center =====
+// ===== Appearance Center =====
 (()=>{
   const form=document.getElementById('appearance-form');
   if(!form) return;
@@ -406,7 +406,7 @@ if(document.querySelector('[data-service-alert]')){
   dialog?.addEventListener('close',()=>{clearInterval(logTimer);currentLog=''});
 })();
 
-// ===== TMS OS V15 · Cloudflare Hosting (tên miền riêng chính chủ) =====
+// ===== Cloudflare Hosting (tên miền riêng chính chủ) =====
 (()=>{
   const endpoint=window.TMS_CF_DOMAIN_STATUS_URL;
   if(!endpoint) return;
@@ -826,6 +826,7 @@ if(document.querySelector('[data-service-alert]')){
   const tabs=document.querySelectorAll('.sql-tab');
   const tabData=$('tab-data');const tabSql=$('tab-sql');const tabStruct=$('tab-structure');
   const tableSelect=$('sql-tables');const structSelect=$('sql-struct-tables');
+  if(!tableSelect)return;
   const dataWrap=$('sql-data-wrap');const countEl=$('sql-count');const tableEmpty=$('sql-table-empty');
   const input=$('sql-input');const resultWrap=$('sql-result-wrap');const resultMeta=$('sql-result-meta');
   const structWrap=$('sql-struct-wrap');const structEmpty=$('sql-struct-empty');

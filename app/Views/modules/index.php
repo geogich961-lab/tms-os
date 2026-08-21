@@ -1,5 +1,5 @@
 <?php $title='Module Center · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
-<div class="page-head"><div><p class="eyebrow">TMS OS · MODULE CENTER</p><h1>Module Center</h1><p>Registry trung tâm cho kiến trúc module độc lập, có kiểm tra manifest, phụ thuộc và trạng thái hoạt động.</p></div><form method="post" action="/modules/repair"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-secondary">Đồng bộ registry</button></form></div>
+<div class="page-head"><div><p class="eyebrow">Module Center</p><h1>Module Center</h1><p>Registry trung tâm cho kiến trúc module độc lập, có kiểm tra manifest, phụ thuộc và trạng thái hoạt động.</p></div><form method="post" action="/modules/repair"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-secondary">Đồng bộ registry</button></form></div>
 <?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=tms_h($flash['message']??'')?></div><?php endif;?>
 <div class="module-summary-grid">
 <div class="stat-card"><span>Tổng module</span><strong><?=tms_h((string)$summary['total'])?></strong></div><div class="stat-card"><span>Đang bật</span><strong><?=tms_h((string)$summary['enabled'])?></strong></div><div class="stat-card"><span>Module lõi</span><strong><?=tms_h((string)$summary['core'])?></strong></div><div class="stat-card"><span>Khỏe mạnh</span><strong><?=tms_h((string)$summary['healthy'])?></strong></div>
@@ -16,5 +16,4 @@
 <form method="post" action="/modules/toggle"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="id" value="<?=tms_h((string)$module['id'])?>"><input type="hidden" name="enabled" value="<?=$module['enabled']?'0':'1'?>"><button class="btn <?=$module['enabled']?'btn-secondary':'btn-primary'?> btn-block" <?=!empty($module['core'])?'disabled':''?>><?=!empty($module['core'])?'Module lõi được bảo vệ':($module['enabled']?'Tắt module':'Bật module')?></button></form>
 </article>
 <?php endforeach;?></div>
-<section class="panel-card"><h2>Kiến trúc V11</h2><p>Mỗi module có manifest riêng trong <code>app/Modules/&lt;module-id&gt;/module.json</code>. Registry không thực thi mã tùy ý từ manifest; các route và service vẫn được nạp qua lõi đã kiểm soát để tránh làm hỏng hệ thống.</p></section>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

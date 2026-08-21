@@ -44,6 +44,7 @@
 
   // ===== Object Explorer =====
   const dbListEl=$('navdb-db-list');
+  if(!dbListEl)return;
   const renderExplorer=()=>{
     const mng=state.dbs.filter(d=>d.source==='managed'||(!d.site&&!d.source));
     const web=state.dbs.filter(d=>d.source==='website'&&d.site);

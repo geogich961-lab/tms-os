@@ -2,7 +2,7 @@
 $title='Cloudflare Hosting · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';
 $csrf=tms_csrf_token();
 ?>
-<div class="page-head"><div><p class="eyebrow">TMS OS V15 · CLOUDFLARE HOSTING</p><h1>Cloudflare Hosting</h1><p class="muted">Kết nối TMS OS với Cloudflare để đưa website lên Internet bằng <strong>tên miền riêng</strong>, như một hosting thực thụ. Không còn tunnel tạm thời — website của bạn luôn online tại tên miền bạn chọn.</p></div><span id="cfd-status-pill" class="status-pill stopped" data-cfd-status-pill>Chưa cấu hình</span></div>
+<div class="page-head"><div><p class="eyebrow">Cloudflare Hosting</p><h1>Cloudflare Hosting</h1><p class="muted">Kết nối TMS OS với Cloudflare để đưa website lên Internet bằng <strong>tên miền riêng</strong>, như một hosting thực thụ. Không còn tunnel tạm thời — website của bạn luôn online tại tên miền bạn chọn.</p></div><span id="cfd-status-pill" class="status-pill stopped" data-cfd-status-pill>Chưa cấu hình</span></div>
 <div id="cfd-alert" class="alert alert-error" hidden></div>
 
 <!-- ========== BƯỚC 1 · TÀI KHOẢN ========== -->

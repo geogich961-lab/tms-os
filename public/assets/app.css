@@ -1189,8 +1189,6 @@ body.sheet-open { overflow: hidden; }
 .diagnostic-icon.ok { background: var(--success-soft); color: var(--success); }
 .diagnostic-icon.bad { background: var(--danger-soft); color: var(--danger); }
 .diagnostic-repair { margin-top: 16px; }
-
-.copy-toast {
   position: fixed;
   left: 50%;
   bottom: calc(26px + env(safe-area-inset-bottom));
@@ -1207,8 +1205,6 @@ body.sheet-open { overflow: hidden; }
   transition: 0.2s;
   box-shadow: var(--shadow-lg);
 }
-.copy-toast.show { opacity: 1; transform: translate(-50%, 0); }
-
 /* ==========================================================================
    TMS OS V15.3.6 — Toast notification (stack, fixed bottom-right)
    ========================================================================== */
