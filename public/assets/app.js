@@ -509,13 +509,38 @@ if(document.querySelector('[data-service-alert]')){
       </div>
     </div>`;
     }).join('');
-    listEl.innerHTML='<div class="cfd-hostnames-head"><h3>Tên miền đang hoạt động ('+hostnames.length+')</h3></div>'+rows;
+    const missingCount=hostnames.filter(h=>h.route_status==='missing').length;
+    let syncRow='';
+    if(missingCount){
+      syncRow='<div class="cfd-sync-note">Có <b>'+missingCount+'</b> tên miền chưa có route trên tunnel Cloudflare — truy cập sẽ báo lỗi 404. <button type="button" class="btn btn-primary btn-small cfd-sync-routes">Kiểm tra & đồng bộ route</button></div>';
+    }
+    listEl.innerHTML='<div class="cfd-hostnames-head"><h3>Tên miền đang hoạt động ('+hostnames.length+')</h3></div>'+syncRow+rows;
     listEl.querySelectorAll('.cfd-copy-host').forEach(b=>{b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);}catch(e){}const old=b.textContent;b.textContent='Đã sao chép';setTimeout(()=>b.textContent=old,1200);};});
     listEl.querySelectorAll('.cfd-detach-host').forEach(b=>{b.onclick=async()=>{
       const hn=b.dataset.hostname;
       if(!confirm('Tách tên host "'+hn+'" khỏi tunnel? Record DNS của tên host này sẽ bị xóa, các tên host khác không bị ảnh hưởng.')) return;
       const old=b.textContent;b.disabled=true;b.textContent='Đang tách...';
       try{const res=await post('/api/cloudflare-domain/detach',{csrf:csrf(),hostname:hn});showAlert(res.message||'Đã tách tên host.');tmsToast(res.message||'Đã tách tên host.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
+      b.disabled=false;b.textContent=old;
+    };});
+    // V15.3.9: nút kiểm tra & đồng bộ route tự động
+    listEl.querySelectorAll('.cfd-sync-routes').forEach(b=>{b.onclick=async()=>{
+      const old=b.textContent;b.disabled=true;b.textContent='Đang đồng bộ...';
+      try{
+        const res=await post('/api/cloudflare-domain/sync-routes',{csrf:csrf()});
+        const fixed=Array.isArray(res?.fixed)?res.fixed:[];
+        const missingDns=Array.isArray(res?.missing_dns)?res.missing_dns:[];
+        const errs=Array.isArray(res?.errors)?res.errors:[];
+        const parts=[];
+        if(fixed.length) parts.push('Đã thêm '+fixed.length+' route còn thiếu'+(fixed[0]?.hostname?' ('+fixed.map(f=>f.hostname).join(', ')+')':''));
+        if(missingDns.length) parts.push(missingDns.length+' tên miền cần kiểm tra DNS (không trỏ về tunnel): '+missingDns.join(', '));
+        if(errs.length) parts.push('Lỗi: '+errs.join(' · '));
+        if(!fixed.length&&!missingDns.length&&!errs.length) parts.push('Mọi route đã đồng bộ đầy đủ.');
+        const msg=parts.join('. ');
+        showAlert(msg);
+        tmsToast(msg,(fixed.length||missingDns.length||errs.length)?'warning':'success');
+        setTimeout(renderStatus,1500);
+      }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
       b.disabled=false;b.textContent=old;
     };});
   };

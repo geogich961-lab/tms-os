@@ -1,22 +1,21 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.3.8",
+  "internal_version": "15.3.9",
   "build": "20260821-3",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.3.8",
-  "version": "15.3.8",
+  "name": "TMS OS V15.3.9",
+  "version": "15.3.9",
   "notes": "V15.3.8: Sua loi gan ten mien Cloudflare Hosting khong them route vao tunnel (giao dien bao 'hoat dong' nhung truy cap 404). Giam tinh route that tren Cloudflare va hien trang thai route (Route OK / Chua co route) trong panel.",
-  "features": [
-    "attachHostname: sau khi PUT cau hinh tunnel tren Cloudflare, he thong doc lai de XAC NHAN route da ton that. Neu chua co, thu lai 1 lan sau 1.5s; van khong co se rollback DNS vua tao va bao loi ro rang",
-    "Trang thai route that: status() doc ingress thuc te tren Cloudflare, moi ten mien trong 'Ten mien dang hoat dong' hien badge 'Route OK' (xanh) hoac 'Chua co route' (cam) kem giai thich",
-    "Dashboard bao ro: route chua co tren tunnel nghia la truy cap se 404, khong de nguoi dung nghi ten mien da hoat dong"
-  ],
-  "checksum_sha256": "71045f14940920b2c6aaa311ea29e9b060942f2bad2c554fdfeb5151f071f253",
+  "features": "Tự động kiểm tra và đồng bộ route Cloudflare Hosting: phát hiện route thiếu hoặc DNS sai trên tunnel, tự sửa bằng 1 cú bấm, kết quả hiển thị dạng toast notification.",
+  "checksum_sha256": "",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.8",
-  "changelog": "V15.3.8: fix gan ten mien Cloudflare khong them route vao tunnel; hien trang thai route that (Route OK / Chua co route).",
-  "download_url": "https://github.com/geogich961-lab/tms-os/releases/download/v15.3.8/TMS_OS_V15.3.8.zip"
+  "changelog": [
+    "Tự động kiểm tra & đồng bộ route Cloudflare: API sync-routes tự thêm route còn thiếu trên tunnel, cảnh báo DNS sai/thiếu",
+    "Banner + nút \"Kiểm tra & đồng bộ route\" trên trang Cloudflare Hosting khi phát hiện route thiếu, kết quả hiển thị toast"
+  ],
+  "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip"
 }

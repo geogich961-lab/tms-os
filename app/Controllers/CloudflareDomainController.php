@@ -251,6 +251,18 @@ final class CloudflareDomainController
         $this->json(['success' => true, 'enabled' => $enabled]);
     }
 
+    /** POST /api/cloudflare-domain/sync-routes — tự động kiểm tra & đồng bộ route Cloudflare (V15.3.9) */
+    public function syncRoutes(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        try {
+            $this->json(array_merge(['success' => true], $this->cfDomain->syncRoutes()));
+        } catch (Throwable $e) {
+            $this->jsonError($e);
+        }
+    }
+
     /** POST /api/cloudflare-domain/perf-optimize — bật tối ưu Nginx + PHP */
     public function perfOptimize(): void
     {

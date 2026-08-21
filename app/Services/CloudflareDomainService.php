@@ -609,6 +609,110 @@ final class CloudflareDomainService
         }
     }
 
+    /**
+     * V15.3.9 — Tự động kiểm tra & đồng bộ route: so ingress thật trên Cloudflare
+     * với danh sách tên miền đã gắn (config local) và tự sửa route còn thiếu.
+     * @return array{fixed: list<array{hostname, service, action}>, missing_dns: list<string>, errors: list<string>}
+     */
+    public function syncRoutes(): array
+    {
+        $info = $this->cf();
+        $cfg = $info['cfg'];
+        $tunnelId = (string)($cfg['tunnel_id'] ?? '');
+        $accountId = (string)($info['account_id'] ?? '');
+        $fixed = [];
+        $missingDns = [];
+        $errors = [];
+        if ($tunnelId === '') { return ['fixed' => [], 'missing_dns' => [], 'errors' => ['Chưa có tunnel.']]; }
+        // 1. Đọc ingress THẬT trên Cloudflare
+        $ingressReal = [];
+        try {
+            $ingCfg = $this->api('GET', '/accounts/' . $accountId . '/cfd_tunnel/' . $tunnelId . '/configurations');
+            foreach ((array)(($ingCfg['config'] ?? [])['ingress'] ?? []) as $rule) {
+                $hn = (string)($rule['hostname'] ?? '');
+                if ($hn !== '') { $ingressReal[strtolower($hn)] = (string)($rule['service'] ?? ''); }
+            }
+        } catch (Throwable $e) {
+            return ['fixed' => [], 'missing_dns' => [], 'errors' => ['Không đọc được cấu hình tunnel: ' . $e->getMessage()]];
+        }
+        $hostnames = (array)($cfg['hostnames'] ?? []);
+        // 2. Tên miền đã gắn nhưng CHƯA có route → thêm route tự động (giữ nguyên rule cũ — multi-site)
+        $changed = false;
+        $ingressToPut = null;
+        foreach ($hostnames as $h) {
+            $hn = strtolower((string)($h['hostname'] ?? ''));
+            if ($hn === '' || isset($ingressReal[$hn])) { continue; }
+            try {
+                $current = $this->api('GET', '/accounts/' . $accountId . '/cfd_tunnel/' . $tunnelId . '/configurations');
+            } catch (Throwable $e) {
+                $current = ['config' => ['ingress' => [['service' => 'http_status:404']]]];
+            }
+            $ingress = (array)(($current['config'] ?? [])['ingress'] ?? []);
+            $already = false;
+            foreach ($ingress as $rule) {
+                if (strcasecmp((string)($rule['hostname'] ?? ''), $hn) === 0) { $already = true; break; }
+            }
+            if ($already) { $ingressReal[$hn] = ''; continue; }
+            $ingress = array_values(array_filter($ingress, static function ($rule) { return isset($rule['hostname']); }));
+            $ingress[] = ['hostname' => $h['hostname'] ?? $hn, 'service' => (string)($h['service'] ?? ''), 'originRequest' => (object)[
+                'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                'httpHostHeader' => $h['hostname'] ?? $hn,
+            ]];
+            $ingress[] = ['service' => 'http_status:404'];
+            try {
+                $this->api('PUT', '/accounts/' . $accountId . '/cfd_tunnel/' . $tunnelId . '/configurations', ['config' => ['ingress' => $ingress]]);
+                $fixed[] = ['hostname' => (string)($h['hostname'] ?? $hn), 'service' => (string)($h['service'] ?? ''), 'action' => 'Đã thêm route còn thiếu'];
+                $ingressReal[$hn] = (string)($h['service'] ?? '');
+                $changed = true;
+            } catch (Throwable $e) {
+                $errors[] = $h['hostname'] . ': không thể thêm route — ' . $e->getMessage();
+            }
+        }
+        // 3. Nếu ingress được lấy lại từ Cloudflare ngay trước đó (thay vì PUT vừa xong), dùng luôn
+        if (!$changed && $ingressToPut !== null) {
+            // không cần hành động
+        }
+        // 4. Cảnh báo record DNS: tên miền đã gắn nhưng DNS không trỏ về tunnel
+        $expectedCname = strtolower($tunnelId) . '.cfargotunnel.com';
+        foreach ($hostnames as $h) {
+            $hn = (string)($h['hostname'] ?? '');
+            $zoneId = (string)($h['zone_id'] ?? '');
+            if ($hn === '' || $zoneId === '') { continue; }
+            if (isset($ingressReal[strtolower($hn)]) && $ingressReal[strtolower($hn)] === '') { continue; }
+            try {
+                $records = $this->dnsRecords($zoneId);
+                $ok = false;
+                foreach ($records as $r) {
+                    if (strcasecmp($r['name'], $hn) === 0 && strcasecmp($r['type'], 'CNAME') === 0
+                        && rtrim(strtolower((string)$r['content']), '.') === $expectedCname) {
+                        $ok = true; break;
+                    }
+                }
+                if (!$ok) { $missingDns[] = $hn; }
+            } catch (Throwable $e) { /* bỏ qua — không bắt buộc */ }
+        }
+        // 5. Đồng bộ danh sách hostnames local nếu record_id trống (tái tạo lần đầu khi sync)
+        if ($changed) {
+            foreach ($hostnames as &$h) {
+                $hn = strtolower((string)($h['hostname'] ?? ''));
+                if ($hn !== '' && isset($ingressReal[$hn]) && ($h['record_id'] ?? '') === '') {
+                    $records = $this->dnsRecords((string)($h['zone_id'] ?? ''));
+                    foreach ($records as $r) {
+                        if (strcasecmp($r['name'], $hn) === 0) {
+                            $h['record_id'] = $r['id'];
+                            break;
+                        }
+                    }
+                }
+            }
+            unset($h);
+            $cfg['hostnames'] = $hostnames;
+            $this->writeJson($this->configFile, $cfg);
+            @chmod($this->configFile, 0600);
+        }
+        return ['fixed' => $fixed, 'missing_dns' => $missingDns, 'errors' => $errors];
+    }
+
     public function saveApiToken(array $input): void
     {
         $cfg = $this->readJson($this->configFile);

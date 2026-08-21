@@ -1,3 +1,9 @@
+# V15.3.9 — Tự động kiểm tra & đồng bộ route Cloudflare
+- API mới `POST /api/cloudflare-domain/sync-routes`: đọc cấu hình tunnel THẬT trên Cloudflare, so sánh với danh sách tên miền đã gắn; tự động THÊM route còn thiếu vào tunnel (giữ nguyên các route cũ — an toàn cho multi-site, kèm `originRequest.httpHostHeader` đúng hostname).
+- Cảnh báo tên miền có record DNS không trỏ về tunnel (thiếu/sai CNAME) kèm tên miền cụ thể.
+- Trang Cloudflare Hosting: khi phát hiện tên miền "Chưa có route", hiển thị banner cam "Có N tên miền chưa có route... " kèm nút **Kiểm tra & đồng bộ route** — bấm 1 lần để tự sửa, kết quả hiện dạng toast (bao nhiêu route đã thêm, bao nhiêu DNS cần kiểm tra).
+- Kết quả đồng bộ: toast xanh khi mọi route đã đồng bộ đầy đủ; toast cảnh báo khi có tên miền cần kiểm tra DNS; hiển thị lỗi cụ thể nếu không thêm được route.
+
 # V15.3.8 — Fix Cloudflare Hosting gắn tên miền không thêm route vào tunnel (lỗi 404)
 - Gắn tên miền/subdomain (Gắn tên miền & tạo record DNS): sau khi gửi cấu hình tunnel lên Cloudflare, hệ thống ĐỌC LẠI cấu hình để xác nhận route thực sự đã tồn tại trên tunnel (retry 1 lần sau 1.5s nếu chưa thấy). Nếu vẫn không có route, hệ thống báo lỗi rõ ràng thay vì vẫn hiển thị "hoạt động" — tránh trường hợp tên miền báo hoạt động nhưng truy cập 404.
 - Trang "Tên miền đang hoạt động" giờ hiển thị trạng thái route THẬT trên Cloudflare: badge xanh "Route OK" (route tồn tại trên tunnel) hoặc cam "Chưa có route" (route chưa có — truy cập sẽ 404, kèm hướng dẫn thử lại hoặc thêm route thủ công trong dashboard).
