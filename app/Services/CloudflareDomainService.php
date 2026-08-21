@@ -41,8 +41,20 @@ final class CloudflareDomainService
         return ['token' => $token, 'account_id' => trim((string)($cfg['account_id'] ?? '')), 'cfg' => $cfg];
     }
 
+    /** V15.4.0 — cache in-process cho các GET đọc trạng thái (60 giây) */
+    private static array $apiCache = [];
+    private static array $apiCacheAt = [];
+
     private function api(string $method, string $path, ?array $json = null): array
     {
+        // V15.4.0: cache kết quả GET đọc trạng thái — giảm gấp nhiều lần số lần gọi API
+        if ($method === 'GET' && $json === null && $this->isCacheablePath($path)) {
+            $key = $method . '|' . $path;
+            $at = (float)($this::$apiCacheAt[$key] ?? 0);
+            if (($at > 0) && (microtime(true) - $at) < 60.0 && isset($this::$apiCache[$key])) {
+                return $this::$apiCache[$key];
+            }
+        }
         $info = $this->cf();
         $token = $info['token'];
         $cmd = 'curl -L -sS --connect-timeout 10 --max-time 25 -X ' . escapeshellarg($method)
@@ -57,14 +69,46 @@ final class CloudflareDomainService
         }
         if (empty($data['success'])) {
             $msg = '';
+            $rateLimited = false;
             foreach (($data['errors'] ?? []) as $e) {
                 $m = trim((string)($e['message'] ?? ''));
                 if ($m !== '') { $msg .= ($msg !== '' ? ' · ' : '') . $m; }
+                if (stripos($m, 'rate limit') !== false || stripos($m, 'throttl') !== false || stripos($m, '429') !== false || (($e['code'] ?? '') === 10121)) {
+                    $rateLimited = true;
+                }
             }
             if ($msg === '') { $msg = 'Cloudflare trả về lỗi (success=false).'; }
+            // V15.4.0: retry 1 lần sau 5s khi bị rate limit
+            if ($rateLimited) {
+                usleep(5_000_000);
+                $out2 = trim((string)shell_exec($cmd));
+                $data2 = json_decode($out2, true);
+                if (is_array($data2) && !empty($data2['success'])) {
+                    $result = (array)($data2['result'] ?? []);
+                    $this->cachePut($method, $path, $result);
+                    return $result;
+                }
+                throw new RuntimeException('Cloudflare đang giới hạn tốc độ truy cập (rate limit). Vui lòng đợi khoảng 60 giây rồi thử lại. (' . $msg . ')');
+            }
             throw new RuntimeException($msg);
         }
-        return (array)($data['result'] ?? []);
+        $result = (array)($data['result'] ?? []);
+        $this->cachePut($method, $path, $result);
+        return $result;
+    }
+
+    private function isCacheablePath(string $path): bool
+    {
+        return (bool)preg_match('#^/(accounts/[^/]+/cfd_tunnel/[^/]+/configurations|zones(?:/[^/]+/dns_records)?|user/memberships|accounts)$#', $path);
+    }
+
+    private function cachePut(string $method, string $path, array $result): void
+    {
+        if ($method === 'GET' && $this->isCacheablePath($path)) {
+            $key = $method . '|' . $path;
+            $this::$apiCache[$key] = $result;
+            $this::$apiCacheAt[$key] = microtime(true);
+        }
     }
 
     /**
@@ -523,13 +567,16 @@ final class CloudflareDomainService
         $cfg = $this->readJson($this->configFile);
         $running = $this->running();
         $zones = [];
+        $zoneWarn = '';
         if (trim((string)($cfg['api_token'] ?? '')) !== '') {
             try {
                 $raw = $this->api('GET', '/zones');
                 foreach ((array)$raw as $z) {
                     $zones[] = ['id' => (string)($z['id'] ?? ''), 'name' => (string)($z['name'] ?? '')];
                 }
-            } catch (Throwable $e) { /* danh sách zone không bắt buộc cho trạng thái */ }
+            } catch (Throwable $e) {
+                $zoneWarn = $e->getMessage(); /* V15.4.0: truyền lỗi zone về UI thay vì im lặng */
+            }
         }
         $health = ['status' => 'unconfigured', 'connections' => 0, 'running' => $running];
         try { $health = $this->tunnelHealth(); } catch (Throwable $e) { /* giữ giá trị mặc định */ }
@@ -584,6 +631,7 @@ final class CloudflareDomainService
             'url' => $defaultUrl,
             'hostnames' => $hostnamesOut,
             'zones' => $zones,
+            'zone_warn' => $zoneWarn,
             'log' => $log,
         ];
     }

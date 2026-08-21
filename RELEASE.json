@@ -1,21 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.3.9",
+  "internal_version": 15.4,
   "build": "20260821-3",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.3.9",
-  "version": "15.3.9",
+  "name": "TMS OS V15.4.0",
+  "version": "15.4.0",
   "notes": "V15.3.8: Sua loi gan ten mien Cloudflare Hosting khong them route vao tunnel (giao dien bao 'hoat dong' nhung truy cap 404). Giam tinh route that tren Cloudflare va hien trang thai route (Route OK / Chua co route) trong panel.",
-  "features": "Tự động kiểm tra và đồng bộ route Cloudflare Hosting: phát hiện route thiếu hoặc DNS sai trên tunnel, tự sửa bằng 1 cú bấm, kết quả hiển thị dạng toast notification.",
-  "checksum_sha256": "e33f02c7d8b8a733c3052c04185cbc9d90170bd9355d8ed7c44ac3a21c6d5daa",
+  "features": [
+    "API cache 60s cho các GET trạng thái",
+    "Retry tự động 1 lần sau 5s khi bị rate limit",
+    "Toast cảnh báo rate limit rõ ràng",
+    "zone_warn truyền về UI khi không lấy được danh sách domain"
+  ],
+  "checksum_sha256": "",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.8",
-  "changelog": [
-    "Tự động kiểm tra & đồng bộ route Cloudflare: API sync-routes tự thêm route còn thiếu trên tunnel, cảnh báo DNS sai/thiếu",
-    "Banner + nút \"Kiểm tra & đồng bộ route\" trên trang Cloudflare Hosting khi phát hiện route thiếu, kết quả hiển thị toast"
-  ],
+  "changelog": "V15.4.0: Fix lỗi Rate limited Cloudflare API — thêm cache API 60s, retry tự động khi bị rate limit, thông báo lỗi rõ ràng thay vì im lặng; Zones không còn hiển thị \"—\" vô nghĩa",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip"
 }

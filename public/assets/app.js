@@ -550,6 +550,15 @@ if(document.querySelector('[data-service-alert]')){
       const r=await fetch(endpoint,{cache:'no-store',headers:{Accept:'application/json'}});
       if(!r.ok) return;
       const d=await r.json();
+      if(!d.success){
+        const em=String(d.error||'');
+        // V15.4.0: thông báo rate limit rõ ràng thay vì im lặng
+        if(/rate limit|giới hạn tốc độ|throttl/i.test(em)){
+          if(!window.__cf_rl_warned){ window.__cf_rl_warned=true; tmsToast(em||'Cloudflare đang giới hạn tốc độ — thử lại sau 60 giây.','warn'); setTimeout(()=>{window.__cf_rl_warned=false;},60000); }
+          return;
+        }
+        return;
+      }
       const healthy=!!d.running&&d.health?.status==='healthy';
       await autoRestart(d);
       const anyConfig=!!d.configured||!!d.tunnel_id;
@@ -566,6 +575,10 @@ if(document.querySelector('[data-service-alert]')){
         if(zoneSelect&&zoneSelect.options.length<=1){
           zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+zones.map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
         }
+      }else if(d.zone_warn){
+        // V15.4.0: giải thích vì sao zones trống thay vì hiện im lặng "—"
+        const em=String(d.zone_warn);
+        if(!window.__cf_rl_warned){ window.__cf_rl_warned=true; tmsToast(em||'Không lấy được danh sách domain — thử lại sau ít phút.','warn'); setTimeout(()=>{window.__cf_rl_warned=false;},60000); }
       }
       const url=d.url||'';
       if(urlCard) urlCard.hidden=!url;

@@ -1,3 +1,10 @@
+# V15.4.0 — Fix lỗi Rate limited Cloudflare API
+
+- **Cache API 60 giây** cho các lệnh GET đọc trạng thái (danh sách zone, cấu hình tunnel/ingress, DNS records) — giảm đáng kể số lần gọi Cloudflare API, tránh chạm rate limit
+- **Retry tự động** 1 lần sau 5 giây khi API trả lỗi rate limit/throttling
+- **Thông báo lỗi rõ ràng** qua toast thay vì im lặng: zone không còn hiển thị "—" khi không lấy được danh sách
+- Nhận diện lỗi rate limit chính xác (message + HTTP code 10121)
+
 # V15.3.9 — Tự động kiểm tra & đồng bộ route Cloudflare
 - API mới `POST /api/cloudflare-domain/sync-routes`: đọc cấu hình tunnel THẬT trên Cloudflare, so sánh với danh sách tên miền đã gắn; tự động THÊM route còn thiếu vào tunnel (giữ nguyên các route cũ — an toàn cho multi-site, kèm `originRequest.httpHostHeader` đúng hostname).
 - Cảnh báo tên miền có record DNS không trỏ về tunnel (thiếu/sai CNAME) kèm tên miền cụ thể.
