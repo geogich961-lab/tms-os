@@ -1,23 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.47,
-  "build": "20260821-5",
+  "internal_version": 15.48,
+  "build": "20260821-6",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.7",
-  "version": "15.4.7",
-  "notes": "V15.4.7: Hoàn thiện Resource Monitor - Network multi-card + Thermal zones. Tự động phát hiện card mạng đang hoạt động (wlan0, rmnet, eth0...); Fix nhiệt độ CPU quét đa thermal zones; Tối ưu SystemService timeout fallback cho /proc reads.",
+  "name": "TMS OS V15.4.8",
+  "version": "15.4.8",
+  "notes": "V15.4.8: Hotfix - Khôi phục thông báo Toast notification bị mất trong bản V15.4.7. Sửa lỗi cú pháp JavaScript và đồng bộ Service Worker version mới.",
   "features": [
-    "Network Monitor: Tự động phát hiện và tính toán lưu lượng trên mọi card mạng",
-    "CPU Temperature: Hỗ trợ quét đa cảm biến nhiệt độ (Thermal Zones)",
-    "Hệ thống ổn định: Timeout fallback cho các truy vấn hệ thống /proc tránh treo PHP-CGI"
+    "Hotfix Toast: Khôi phục hoàn toàn hệ thống thông báo Toast notification",
+    "Frontend Sync: Đồng bộ Service Worker và Asset version mới nhất"
   ],
-  "checksum_sha256": "0537b09db58c04120ed804af0dff5375606a315d115f8d657dcff234754c9176",
+  "checksum_sha256": "4274ed83a1f75a4aad8ad41c155d57c2e652186b67cfbb68186738b1453e6f32",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.7",
-  "changelog": "V15.4.7: Hoàn thiện Resource Monitor: Network multi-card detection; Thermal zones scanning; SystemService timeout fallback; Fix bug 0/0 network.",
+  "version_display": "TMS OS V15.4.8",
+  "changelog": "V15.4.8: Fix bug toast notification không hiển thị; Cập nhật app.js cleanup; Bump SW version.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

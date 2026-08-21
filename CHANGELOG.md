@@ -1,3 +1,7 @@
+## V15.4.8 (2026-08-21)
+- **Hotfix Toast Notification**: Khôi phục hệ thống thông báo toast bị mất do lỗi cú pháp JavaScript khi gộp code V15.4.7.
+- **Frontend Sync**: Đồng bộ Service Worker và Asset version mới nhất để đảm bảo trình duyệt tải lại code JS/CSS đã sửa.
+
 ## V15.4.7 (2026-08-21)
 - **Hoàn thiện Resource Monitor**: Fix lỗi Network RX/TX hiển thị 0/0 bằng cách tự động quét và tính toán lưu lượng trên mọi card mạng đang hoạt động (wlan0, rmnet, eth0, tun0...).
 - **CPU Temperature**: Hỗ trợ quét đa cảm biến nhiệt độ (Thermal Zones), tự động fallback sang nhiệt độ pin nếu không đọc được cảm biến trực tiếp.
