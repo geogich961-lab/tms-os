@@ -14,7 +14,7 @@
     "Header mobile dung position: fixed + tinh padding an toan (safe-area-inset-top) cho dien thoai notch",
     "Service Worker tms-os-v15-3-4: cap nhat cache CSS moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "b4e0df0d8597db48442e211f89c4f8c61c5fa53fe9d686c7e7ca21065740f61d",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.5",
   "changelog": "Giao dien Cloudflare Hosting moi: ho tro nhieu website/subdomain tren cung tunnel (multi-site), subdomain chips tao nhanh, sua nut/chu bi dinh o giao dien mobile.",
