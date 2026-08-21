@@ -26,7 +26,9 @@ start_inner(){
     [ -n "$(master_pid)" ]
   else
     if [ -f "$PID" ] && kill -0 "$(cat "$PID" 2>/dev/null)" 2>/dev/null; then return 0; fi
-    pkill -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+    # V16.0.15: Cưỡng bức kill triệt để để giải phóng file config trong RAM
+    pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+    fuser -k 9000/tcp 2>/dev/null || true
     nohup php-cgi -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
     echo $! > "$PID"
     sleep 0.7
@@ -43,8 +45,9 @@ stop_inner(){
     pgrep -f 'php-fpm: master process' >/dev/null 2>&1 && pkill -KILL -f 'php-fpm: master process' 2>/dev/null || true
     rm -f "$PREFIX/var/run/php-fpm.pid" "$PREFIX/var/run/php-fpm.sock"
   else
-    [ -f "$PID" ] && kill "$(cat "$PID" 2>/dev/null)" 2>/dev/null || true
-    pkill -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+    [ -f "$PID" ] && kill -9 "$(cat "$PID" 2>/dev/null)" 2>/dev/null || true
+    pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+    fuser -k 9000/tcp 2>/dev/null || true
     rm -f "$PID"
   fi
 }

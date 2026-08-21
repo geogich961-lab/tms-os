@@ -1,21 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.04,
-  "build": "20260821-37",
+  "internal_version": 16.015,
+  "build": "20260821-2331",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V16.0.4",
-  "version": "16.0.4",
-  "notes": "V16.0.4: Loại bỏ khung thông báo thừa trong Cài đặt.",
+  "name": "TMS OS V16.0.15",
+  "version": "16.0.15",
+  "notes": "V16.0.15: Nuclear Update Engine - rm-rf+cp-af, unlink config, pkill-9 async restart.",
   "features": [
-    "UI Cleanup: Xóa khung thông báo màu xanh không đồng bộ trong trang Cài đặt."
+    "Nuclear Update Engine: Cơ chế xóa sạch-chép mới bẻ gãy mọi sự chiếm giữ file.",
+    "Force Kill Engine: pkill -9 cưỡng bức php-cgi và nginx.",
+    "Async Restart: Phản hồi HTTP trước, restart sau để tránh lỗi 502/520.",
+    "Smart Delay: Trễ 2s để đóng kết nối an toàn trước khi restart."
   ],
-  "checksum_sha256": "9f7ee261a57c6071e67d5c67412c8e0c6679d9670518c0d7015d52628beaabd8",
+  "checksum_sha256": "1f5965fae27e2bc72bfffa64dbcee8de27fcfd3f242c61669dc93166f5660862",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V16.0.4",
-  "changelog": "V16.0.4: Removed redundant alert box in settings page.",
+  "version_display": "TMS OS V16.0.15",
+  "changelog": "V16.0.15: Implemented Nuclear Update Engine with rm-rf+cp-af mechanism, force kill processes, and asynchronous restart logic to fix version stuck issue.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

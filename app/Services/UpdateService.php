@@ -364,7 +364,6 @@ final class UpdateService
         file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT));
 
         // 5. Swap: target → target.previous, staging → target
-        // Sử dụng lệnh shell cp -rf thay vì rename của PHP để đảm bảo ghi đè file an toàn trên Termux
         $previous = $this->target . '.previous';
         $this->rmdir($previous);
         @mkdir($previous, 0700, true);
@@ -373,34 +372,39 @@ final class UpdateService
         foreach ($parts as $part) {
             $src = $this->target . '/' . $part;
             if (is_dir($src)) {
-                exec("cp -rf " . escapeshellarg($src) . " " . escapeshellarg($previous . '/' . $part));
+                // Sao lưu bản cũ sang .previous
+                exec("cp -af " . escapeshellarg($src) . " " . escapeshellarg($previous . '/'));
             }
         }
         
-        // Áp dụng code mới từ staging vào target
+        // Áp dụng code mới từ staging vào target bằng cơ chế "Xóa sạch - Chép mới"
+        // Điều này giúp bẻ gãy mọi sự chiếm giữ file của PHP-CGI cũ
         foreach ($parts as $part) {
             $src = $staging . '/' . $part;
             if (is_dir($src)) {
                 $dst = $this->target . '/' . $part;
-                // Sử dụng cp -af (archive & force) để ghi đè cưỡng bức các file đang bị khóa
-                @mkdir($dst, 0700, true);
-                // Thực hiện 2 lần: xóa trước (nếu có thể) và chép đè cưỡng bức
-                exec("rm -rf " . escapeshellarg($dst) . " 2>/dev/null || true");
-                @mkdir($dst, 0700, true);
-                exec("cp -af " . escapeshellarg($src . '/.') . " " . escapeshellarg($dst));
+                // Cưỡng bức xóa thư mục cũ
+                exec("rm -rf " . escapeshellarg($dst));
+                // Chép thư mục mới vào
+                exec("cp -af " . escapeshellarg($src) . " " . escapeshellarg($this->target . '/'));
             }
         }
         
-        // Cưỡng bức chép đè file config/app.php riêng biệt để đảm bảo số version thay đổi
+        // Đảm bảo file config/app.php được ghi đè tuyệt đối
         $configSrc = $staging . '/config/app.php';
         $configDst = $this->target . '/config/app.php';
         if (is_file($configSrc)) {
-            exec("cp -f " . escapeshellarg($configSrc) . " " . escapeshellarg($configDst));
+            @unlink($configDst); // Xóa hẳn file cũ
+            exec("cp -af " . escapeshellarg($configSrc) . " " . escapeshellarg($configDst));
+            @chmod($configDst, 0644);
         }
         
-        // Cố gắng xóa OPcache của PHP nếu có thể để nhận diện file config mới ngay lập tức
+        // Cố gắng xóa OPcache của PHP cưỡng bức
         if (function_exists('opcache_reset')) {
             @opcache_reset();
+        }
+        if (function_exists('clearstatcache')) {
+            clearstatcache(true);
         }
         
         // Dọn dẹp staging
@@ -469,9 +473,12 @@ final class UpdateService
         // Chúng ta cần đảm bảo response được gửi về trình duyệt TRƯỚC khi kill tiến trình PHP
         $restartScript = $this->target . '/scripts/start-tms.sh';
         if (is_file($restartScript)) {
-            // Sử dụng lệnh sleep để tạo khoảng trễ nhỏ, giúp PHP kịp gửi dữ liệu về Cloudflare trước khi bị kill
-            $cmd = "sleep 2 && bash " . escapeshellarg($restartScript);
-            exec("nohup $cmd > /dev/null 2>&1 &");
+            // Sử dụng cơ chế "Sát thủ tiến trình" mạnh mẽ hơn:
+            // 1. Gửi phản hồi HTTP về Cloudflare trước
+            // 2. Chờ 2 giây để kết nối đóng an toàn
+            // 3. Force kill mọi tiến trình Nginx/PHP cũ và khởi động lại
+            $cmd = "sleep 2 && (pkill -9 -f php-cgi; pkill -9 -f nginx; bash " . escapeshellarg($restartScript) . ")";
+            exec("nohup bash -c " . escapeshellarg($cmd) . " > /dev/null 2>&1 &");
         }
 
         return [
