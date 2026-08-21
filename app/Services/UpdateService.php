@@ -422,12 +422,17 @@ final class UpdateService
             throw new RuntimeException('Cập nhật thất bại khi kiểm tra sức khỏe — đã tự động khôi phục bản trước.');
         }
 
-        // 7. Hoàn tất
+        // 7. Tự động xóa cache và tăng asset version để trình duyệt nhận diện code mới ngay lập tức
+        if (function_exists('tms_clear_cache')) {
+            tms_clear_cache();
+        }
+
+        // 8. Hoàn tất
         @unlink($this->stateFile);
         return [
             'ok' => true,
             'backup' => $backupDir,
-            'message' => 'Đã áp dụng cập nhật thành công. Vui lòng reload trang panel.',
+            'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đã tự động làm mới cache và phiên bản giao diện.',
         ];
     }
 

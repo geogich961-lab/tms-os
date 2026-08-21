@@ -1,3 +1,8 @@
+## V15.5.1 (2026-08-21)
+- **Fix Cập nhật 2 lần**: Tích hợp `tms_clear_cache()` vào cuối quy trình cập nhật, giúp hệ thống tự động làm mới Asset Version ngay sau khi swap code thành công.
+- **Toast Force Top**: Sử dụng JavaScript Inline Style để ép thông báo hiển thị ở phía trên (Top), bỏ qua hoàn toàn các quy tắc CSS bị cache trong trình duyệt.
+- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.5.1.
+
 ## V15.5.0 (2026-08-21)
 - **Toast Position Fix**: Ép vị trí thông báo toast lên phía trên cùng (Top) bằng quy tắc `!important` và `bottom: auto`, đảm bảo thông báo không bao giờ bị dính ở chân trang trên bất kỳ dòng Android nào.
 - **Z-Index Fix**: Nâng z-index của thông báo lên mức cao nhất để không bị các thành phần khác che khuất.

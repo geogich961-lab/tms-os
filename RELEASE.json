@@ -1,22 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.5,
-  "build": "20260821-8",
+  "internal_version": 15.51,
+  "build": "20260821-9",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.5.0",
-  "version": "15.5.0",
-  "notes": "V15.5.0: Fix triệt để vị trí Toast Notification - Ép thông báo hiển thị ở phía trên cùng (Top) trên mọi thiết bị và giao diện, khắc phục lỗi bị dính ở cuối trang.",
+  "name": "TMS OS V15.5.1",
+  "version": "15.5.1",
+  "notes": "V15.5.1: Sửa lỗi cập nhật 2 lần bằng cách tự động xóa cache sau khi update; Ép Toast lên Top bằng Inline Style trong JavaScript để bỏ qua cache CSS.",
   "features": [
-    "Toast Fix: Ép vị trí Top !important trên toàn hệ thống",
-    "Z-Index Fix: Tăng mức độ ưu tiên hiển thị cao nhất cho thông báo"
+    "Auto Cache Clear: Tự động xóa cache và tăng asset version sau khi cập nhật thành công",
+    "Toast Force Top: Sử dụng Inline Style để ép thông báo hiển thị ở phía trên (Top)"
   ],
-  "checksum_sha256": "36642da1b26d58b08e483d8f4d8544c9834ea3bcd456518effd75dfde680704d",
+  "checksum_sha256": "3469da42b4dab4c8932f8fd5553078269240543414a1a60920eb38797de9630c",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.5.0",
-  "changelog": "V15.5.0: Final fix for toast position (Top !important); Sync SW V15.5.0.",
+  "version_display": "TMS OS V15.5.1",
+  "changelog": "V15.5.1: Fix double-update bug; Force toast to top via JS inline styles; Sync SW V15.5.1.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

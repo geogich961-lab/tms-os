@@ -11,7 +11,13 @@ window.tmsToast=(msg,type,ms)=>{
   if(!box){
     box=document.createElement('div');
     box.id='tms-toast-container';
-    // Đảm bảo box luôn nằm trực tiếp dưới body để tránh lỗi vị trí fixed do transform ở thẻ cha
+    // Ép vị trí Top bằng inline style để bỏ qua cache CSS
+    box.style.cssText = 'position:fixed!important;top:calc(12px + env(safe-area-inset-top))!important;right:12px!important;left:12px!important;z-index:9999999!important;display:flex;flex-direction:column;gap:10px;pointer-events:none;bottom:auto!important;';
+    if(window.innerWidth > 760) {
+        box.style.left = 'auto';
+        box.style.right = '20px';
+        box.style.maxWidth = '380px';
+    }
     document.body.appendChild(box);
   }
   const t=document.createElement('div');t.className='tms-toast tms-toast-'+type;
