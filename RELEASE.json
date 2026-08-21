@@ -1,23 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.02,
-  "build": "20260821-35",
+  "internal_version": 16.03,
+  "build": "20260821-36",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V16.0.2",
-  "version": "16.0.2",
-  "notes": "V16.0.2: Triển khai bộ nhận diện thương hiệu chính thức (Red Gradient) và Logo mới từ người dùng.",
+  "name": "TMS OS V16.0.3",
+  "version": "16.0.3",
+  "notes": "V16.0.3: Tinh chỉnh giao diện trang đăng nhập (Logo, Viền, Nội dung).",
   "features": [
-    "Official Logo: Thay thế logo mới theo yêu cầu người dùng.",
-    "Red Gradient Theme: Áp dụng tông màu đỏ gradient (A70E13, ED1D24) đồng bộ toàn hệ thống.",
-    "Simplified Settings: Loại bỏ tính năng đổi màu để đảm bảo tính nhất quán của thương hiệu."
+    "Login UI Polish: Bo góc logo mềm mại, chuẩn hóa viền đỏ khung đăng nhập.",
+    "Brand Tagline: Cập nhật dòng giới thiệu \"Mini Android VPS by THCGaming\" với màu đỏ nổi bật."
   ],
-  "checksum_sha256": "6dfe6c55d40e80e0cf4297c521765723d2cfe4a9fdfb7c09673e9292a9810cfb",
+  "checksum_sha256": "22a3a6c90c3962ae56e16d40fa9a66db3c56d814b57c8f248e93a6a0c306f92c",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V16.0.2",
-  "changelog": "V16.0.2: Official branding update - New logo and fixed red gradient theme.",
+  "version_display": "TMS OS V16.0.3",
+  "changelog": "V16.0.3: Login UI polish and brand tagline update.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

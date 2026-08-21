@@ -441,7 +441,6 @@ input:focus, select:focus, textarea:focus {
   background: var(--surface);
   padding: 32px 30px;
   border: 1px solid var(--border);
-  border-top: 5px solid var(--primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
   position: relative;
@@ -455,10 +454,11 @@ input:focus, select:focus, textarea:focus {
   z-index: 10;
 }
 .login-card h1 { margin: 6px 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
+.brand-tagline { font-size: 0.95rem; color: #ed1d24; font-weight: 600; text-align: center; margin-bottom: 24px; display: block; }
 .brand-logo { display: block; object-fit: contain; }
 .brand-logo.small { width: 44px; height: 44px; border-radius: 12px; box-shadow: none; background: transparent; }
 .brand-preview-img { width: 64px; height: 64px; border-radius: 16px; object-fit: cover; position: relative; z-index: 1; }
-.login-logo { width: 112px; height: 112px; margin: 0 auto 14px; }
+.login-logo { width: 100px; height: 100px; margin: 0 auto 16px; border-radius: 20px; box-shadow: var(--shadow-sm); }
 .os-brand .brand-logo.small { width: 40px; height: 40px; flex: 0 0 40px; }
 
 /* ---------- 10. Explorer ---------- */

@@ -1,3 +1,10 @@
+## V16.0.3 (2026-08-21)
+- **Login UI Polish**:
+  - Bo tròn 4 góc cho logo trang đăng nhập (20px) để giao diện mềm mại hơn.
+  - Chuẩn hóa viền đỏ phía trên khung đăng nhập thành một đường gradient duy nhất (4px).
+  - Cập nhật dòng giới thiệu thành "Mini Android VPS by THCGaming", chuyển sang màu đỏ (#ed1d24) và căn giữa.
+  - Tăng kích thước logo trang đăng nhập lên 100x100px để cân đối hơn.
+
 ## V16.0.2 (2026-08-21)
 - **Official Branding Update**:
   - Triển khai Logo chính thức mới theo thiết kế của người dùng.
