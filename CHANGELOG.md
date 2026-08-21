@@ -1,3 +1,12 @@
+## V16.0.0 (2026-08-21)
+- **TMS Explorer Đại tu**:
+  - Hỗ trợ chọn nhiều mục (Multi-select) bằng checkbox hoặc nhấn giữ (long press) trên điện thoại.
+  - Thanh công cụ ngữ cảnh (Context Toolbar) thông minh xuất hiện khi chọn mục để thực hiện thao tác hàng loạt.
+  - Thao tác hàng loạt (Batch Operations): Xóa, Sao chép, Di chuyển, Nén ZIP, Phân quyền cho nhiều mục cùng lúc.
+  - Tối ưu hóa giao diện di động: Icon lớn hơn, khoảng cách chạm rộng hơn, mượt mà và chuyên nghiệp như ứng dụng quản lý file gốc.
+- **Backend Batch Support**: Nâng cấp `FileManagerController` và `FileManagerService` để xử lý các mảng dữ liệu file hàng loạt.
+- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V16.0.0.
+
 ## V15.5.2 (2026-08-21)
 - **Termux:API Enhanced**: Tăng thời gian chờ (timeout) cho các lệnh API lên 3 giây, giúp hệ thống ổn định hơn trên các dòng máy phản hồi chậm.
 - **Diagnostic Messages**: Hiển thị thông báo chi tiết khi API không phản hồi (thường do chưa cấp quyền Android hoặc chưa cài ứng dụng APK) thay vì chỉ báo "Chưa cài".

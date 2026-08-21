@@ -126,6 +126,48 @@ window.tmsToast=(msg,type,ms)=>{
   const extractForm=document.getElementById('sheet-extract-form');
   const deleteForm=document.getElementById('sheet-delete-form');
   const chmodForm=document.getElementById('sheet-chmod-form');
+  const contextToolbar=document.getElementById('explorer-context-toolbar');
+  const selectedCountEl=document.getElementById('selected-count');
+  const fab=document.querySelector('.explorer-fab');
+
+  let selectedItems=new Set();
+  const updateSelectionUI=()=>{
+    const count=selectedItems.size;
+    if(count>0){
+      contextToolbar?.removeAttribute('hidden');
+      if(selectedCountEl) selectedCountEl.textContent=count;
+      fab?.classList.add('has-toolbar');
+    }else{
+      contextToolbar?.setAttribute('hidden','');
+      fab?.classList.remove('has-toolbar');
+    }
+    document.querySelectorAll('[data-explorer-item]').forEach(item=>{
+      const rel=item.dataset.relative;
+      const isSelected=selectedItems.has(rel);
+      item.classList.toggle('selected',isSelected);
+      const cb=item.querySelector('[data-select-item]');
+      if(cb) cb.checked=isSelected;
+    });
+  };
+  document.querySelectorAll('[data-select-item]').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      if(cb.checked) selectedItems.add(cb.value); else selectedItems.delete(cb.value);
+      updateSelectionUI();
+    });
+  });
+  document.querySelectorAll('[data-explorer-item]').forEach(item=>{
+    let timer;
+    item.addEventListener('touchstart',()=>{
+      timer=setTimeout(()=>{
+        const rel=item.dataset.relative;
+        if(selectedItems.has(rel)) selectedItems.delete(rel); else selectedItems.add(rel);
+        updateSelectionUI();
+        if(window.navigator.vibrate) window.navigator.vibrate(50);
+      },600);
+    });
+    item.addEventListener('touchend',()=>clearTimeout(timer));
+    item.addEventListener('touchmove',()=>clearTimeout(timer));
+  });
 
   const setRelative=(form,value)=>{
     const input=form?.querySelector('input[name="relative"]');
@@ -163,6 +205,9 @@ window.tmsToast=(msg,type,ms)=>{
     extractForm?.classList.toggle('sheet-hidden',!isZip);
     if(deleteForm) deleteForm.dataset.confirm=`Xóa ${name}?`;
 
+    document.querySelectorAll('[data-file-actions]').forEach(b=>b.classList.remove('sheet-active'));
+    button.classList.add('sheet-active');
+
     sheet.classList.add('show');
     sheet.setAttribute('aria-hidden','false');
     document.body.classList.add('sheet-open');
@@ -170,65 +215,76 @@ window.tmsToast=(msg,type,ms)=>{
 
   document.querySelectorAll('[data-file-actions]').forEach(button=>button.addEventListener('click',()=>openSheet(button)));
   document.querySelectorAll('[data-action-sheet-close]').forEach(button=>button.addEventListener('click',closeSheet));
-  const chmodApplyForm=document.getElementById('chmod-apply-form');
-  const chmodInput=chmodApplyForm?.querySelector('[data-chmod-input]');
-  const chmodRecursiveCb=chmodApplyForm?.querySelector('[data-chmod-recursive-cb]');
-  const chmodRecursiveInput=chmodApplyForm?.querySelector('[data-chmod-recursive]');
-  const chmodTargetName=chmodApplyForm?.querySelector('[data-chmod-target-name]');
-  const copyForm=document.getElementById('copy-apply-form');
-  const moveForm=document.getElementById('move-apply-form');
-  const sheetCopyForm=document.getElementById('sheet-copy-form');
-  const sheetMoveForm=document.getElementById('sheet-move-form');
+  const chmodApplyForm=document.getElementById('chmod-modal')?.querySelector('form');
+  const chmodInput=document.getElementById('chmod-modal')?.querySelector('input[name="mode"]');
+  const chmodRecursiveCb=document.getElementById('chmod-modal')?.querySelector('input[type="checkbox"]');
+  const copyForm=document.getElementById('copy-modal')?.querySelector('form');
+  const moveForm=document.getElementById('move-modal')?.querySelector('form');
 
-  const setRelativeAll=(relative)=>{setRelative(sheetCopyForm,relative);setRelative(sheetMoveForm,relative);};
+  const submitBatch=(action,extraParams={})=>{
+    if(selectedItems.size===0) return;
+    const form=document.createElement('form'); form.method='POST'; form.action=`/files/${action}`;
+    const add=(n,v)=>{const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);};
+    add('csrf',document.querySelector('meta[name="csrf-token"]')?.content||'');
+    add('root',new URLSearchParams(window.location.search).get('root')||'websites');
+    selectedItems.forEach(rel=>{const i=document.createElement('input');i.type='hidden';i.name='relatives[]';i.value=rel;form.appendChild(i);});
+    Object.keys(extraParams).forEach(k=>add(k,extraParams[k]));
+    document.body.appendChild(form); form.submit();
+  };
+  document.getElementById('batch-clear')?.addEventListener('click',()=>{selectedItems.clear();updateSelectionUI();});
+  document.getElementById('batch-delete')?.addEventListener('click',()=>{if(confirm(`Xóa ${selectedItems.size} mục?`)) submitBatch('delete');});
+  document.getElementById('batch-archive')?.addEventListener('click',()=>submitBatch('archive'));
+  document.getElementById('batch-chmod')?.addEventListener('click',()=>{const m=prompt("Quyền (vd 0755):","0755");if(m)submitBatch('chmod',{mode:m,recursive:'1'});});
+  const startBatchOp=(type)=>{
+    const root=new URLSearchParams(window.location.search).get('root')||'websites';
+    localStorage.setItem('tms_explorer_batch_op',JSON.stringify({type,root,relatives:Array.from(selectedItems)}));
+    tmsToast(`Đã chọn ${selectedItems.size} mục để ${type==='copy'?'sao chép':'di chuyển'}.`);
+    selectedItems.clear(); updateSelectionUI();
+  };
+  document.getElementById('batch-copy')?.addEventListener('click',()=>startBatchOp('copy'));
+  document.getElementById('batch-move')?.addEventListener('click',()=>startBatchOp('move'));
 
-  document.querySelector('[data-chmod-open]')?.addEventListener('click',()=>{
-    const name=document.querySelector('[data-file-actions].sheet-active')?.dataset.name||sheetTitle?.textContent||'Tệp';
-    if(chmodApplyForm){
-      setRelative(chmodApplyForm,chmodApplyForm.querySelector('[data-chmod-relative]').value);
-      if(chmodTargetName) chmodTargetName.textContent='Mục: '+name;
-    }
-    closeSheet();
-    openModal('chmod-modal');
-  });
-  chmodApplyForm?.querySelectorAll('[data-chmod-preset]').forEach(button=>button.addEventListener('click',()=>{
-    if(chmodInput) chmodInput.value=button.dataset.chmodPreset;
-  }));
-  chmodRecursiveCb?.addEventListener('change',()=>{if(chmodRecursiveInput)chmodRecursiveInput.value=chmodRecursiveCb.checked?'1':'0';});
+  const useHereBtn=document.getElementById('explorer-use-here');
+  const activeBatchOp=localStorage.getItem('tms_explorer_batch_op');
+  const activeSingleOp=localStorage.getItem('tms_explorer_op');
+  if((activeBatchOp||activeSingleOp)&&useHereBtn){
+    const op=activeBatchOp?JSON.parse(activeBatchOp):JSON.parse(activeSingleOp);
+    useHereBtn.style.display='block'; useHereBtn.textContent=`📥 ${op.type==='copy'?'Sao chép':'Di chuyển'} vào đây`;
+    useHereBtn.addEventListener('click',()=>{
+      const form=document.createElement('form'); form.method='POST'; form.action=`/files/${op.type}`;
+      const add=(n,v)=>{const i=document.createElement('input');i.type='hidden';i.name=n;i.value=v;form.appendChild(i);};
+      add('csrf',document.querySelector('meta[name="csrf-token"]')?.content||'');
+      add('root',op.root); add('target_path',new URLSearchParams(window.location.search).get('path')||'');
+      if(op.relatives) op.relatives.forEach(rel=>{const i=document.createElement('input');i.type='hidden';i.name='relatives[]';i.value=rel;form.appendChild(i);});
+      else add('relative',op.relative);
+      document.body.appendChild(form); localStorage.removeItem('tms_explorer_batch_op'); localStorage.removeItem('tms_explorer_op'); form.submit();
+    });
+  }
+
+  const setRelativeAll=(relative)=>{
+    const c=document.getElementById('copy-modal')?.querySelector('input[name="relative"]'); if(c)c.value=relative;
+    const m=document.getElementById('move-modal')?.querySelector('input[name="relative"]'); if(m)m.value=relative;
+  };
 
   const openCopyMove=(mode)=>{
     const button=document.querySelector('[data-file-actions].sheet-active');
     const relative=button?.dataset.relative||'';
-    const targetInput=document.getElementById(mode==='copy'?'copy-apply-form':'move-apply-form')?.querySelector(`[data-${mode}-target-input]`);
-    const targetDisplay=document.getElementById(mode==='copy'?'copy-apply-form':'move-apply-form')?.querySelector(`[data-${mode}-target-display]`);
-    const applyForm=document.getElementById(mode+'-apply-form');
-    const relativeInput=applyForm?.querySelector(`[data-${mode}-relative]`);
-    if(relativeInput) relativeInput.value=relative;
+    const modal=document.getElementById(mode+'-modal');
+    const relInp=modal?.querySelector('input[name="relative"]'); if(relInp)relInp.value=relative;
+    const targetInp=modal?.querySelector(`[data-${mode}-target-input]`);
     const currentPath=new URL(location).searchParams.get('path')||'';
-    if(targetInput) targetInput.value=currentPath;
-    if(targetDisplay) targetDisplay.textContent=currentPath==='⌂'?'thư mục gốc':(currentPath||'thư mục gốc');
-    closeSheet();
-    openModal(mode+'-modal');
+    if(targetInp) targetInp.value=currentPath;
+    closeSheet(); openModal(mode+'-modal');
   };
   document.querySelector('[data-copy-open]')?.addEventListener('click',()=>openCopyMove('copy'));
   document.querySelector('[data-move-open]')?.addEventListener('click',()=>openCopyMove('move'));
 
-  document.querySelector('[data-use-here]')?.addEventListener('click',()=>{
-    const targetPath=new URL(location).searchParams.get('path')||'';
-    if(copyForm){const inp=copyForm.querySelector('[data-copy-target-input]');if(inp)inp.value=targetPath;const disp=copyForm.querySelector('[data-copy-target-display]');if(disp)disp.textContent=targetPath==='⌂'?'thư mục gốc':(targetPath||'thư mục gốc');openModal('copy-modal');}
-    if(moveForm){const inp=moveForm.querySelector('[data-move-target-input]');if(inp)inp.value=targetPath;const disp=moveForm.querySelector('[data-move-target-display]');if(disp)disp.textContent=targetPath==='⌂'?'thư mục gốc':(targetPath||'thư mục gốc');openModal('move-modal');}
+  document.querySelector('[data-chmod-open]')?.addEventListener('click',()=>{
+    const rel=document.querySelector('[data-file-actions].sheet-active')?.dataset.relative||'';
+    const modal=document.getElementById('chmod-modal');
+    const relInp=modal?.querySelector('input[name="relative"]'); if(relInp)relInp.value=rel;
+    closeSheet(); openModal('chmod-modal');
   });
-
-  document.querySelectorAll('[data-copy-open],[data-move-open],[data-chmod-open]').forEach(button=>button.addEventListener('click',()=>{
-    document.querySelectorAll('[data-file-actions]').forEach(b=>b.classList.remove('sheet-active'));
-    button.closest('.explorer-item')?.querySelector('[data-file-actions]')?.classList.add('sheet-active');
-  }));
-
-  document.querySelectorAll('[data-file-actions]').forEach(button=>button.addEventListener('click',()=>{
-    const rel=button.dataset.relative||'';
-    const applyC=copyForm?.querySelector('[data-copy-relative]');if(applyC)applyC.value=rel;
-    const applyM=moveForm?.querySelector('[data-move-relative]');if(applyM)applyM.value=rel;
-  }));
 
   renameButton?.addEventListener('click',()=>{
     const relative=document.getElementById('rename-relative');

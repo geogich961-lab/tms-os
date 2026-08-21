@@ -58,11 +58,26 @@ final class FileManagerService
         if(strlen($content)>2*1024*1024)throw new RuntimeException('Nội dung vượt 2 MB.');
         $tmp=$path.'.tms.tmp'; if(file_put_contents($tmp,$content,LOCK_EX)===false)throw new RuntimeException('Không thể ghi tệp.'); chmod($tmp,0600); if(!rename($tmp,$path))throw new RuntimeException('Không thể thay thế tệp.');
     }
-    public function archive(string $rootKey,string $relative): string
+    public function archive(string $rootKey,string $relative): string { return $this->archiveBatch($rootKey,[$relative]); }
+    public function archiveBatch(string $rootKey,array $relatives): string
     {
-        [$path]=$this->resolveExisting($rootKey,$relative); $zipPath=$path.'.zip'; if(file_exists($zipPath))throw new RuntimeException('Tệp ZIP đã tồn tại.');
+        if(empty($relatives)) throw new RuntimeException('Chưa chọn mục để nén.');
+        $base=$this->basePath($rootKey);
+        $firstPath=$this->resolveExisting($rootKey,$relatives[0])[0];
+        $zipName=(count($relatives)>1?'Archive_'.date('Ymd_His'):basename($firstPath)).'.zip';
+        $zipPath=dirname($firstPath).'/'.$zipName;
+        if(file_exists($zipPath)) $zipPath=dirname($firstPath).'/Archive_'.time().'.zip';
+        
         $zip=new ZipArchive(); if($zip->open($zipPath,ZipArchive::CREATE)!==true)throw new RuntimeException('Không thể tạo ZIP.');
-        if(is_file($path)) $zip->addFile($path,basename($path)); else { $baseLen=strlen(dirname($path))+1; $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path,FilesystemIterator::SKIP_DOTS)); foreach($it as $f){ if($f->isLink())continue; $zip->addFile($f->getPathname(),substr($f->getPathname(),$baseLen)); } }
+        foreach($relatives as $rel){
+            [$path]=$this->resolveExisting($rootKey,$rel);
+            if(is_file($path)) $zip->addFile($path,basename($path));
+            else {
+                $baseLen=strlen(dirname($path))+1;
+                $it=new RecursiveIteratorIterator(new RecursiveDirectoryIterator($path,FilesystemIterator::SKIP_DOTS));
+                foreach($it as $f){ if(!$f->isLink()) $zip->addFile($f->getPathname(),substr($f->getPathname(),$baseLen)); }
+            }
+        }
         $zip->close(); chmod($zipPath,0600); return basename($zipPath);
     }
     public function extract(string $rootKey,string $relative): void

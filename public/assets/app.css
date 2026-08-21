@@ -1033,7 +1033,73 @@ body.sheet-open { overflow: hidden; }
   color: #fff;
   font-size: 1.9rem;
   box-shadow: 0 12px 28px rgba(47, 95, 232, 0.4);
+  transition: transform 0.2s;
 }
+.explorer-fab.has-toolbar { transform: translateY(-75px); }
+
+.explorer-context-toolbar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  background: #111827;
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 500;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.4);
+  animation: explorerToolbarSlide 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.explorer-context-toolbar[hidden] { display: none; }
+.toolbar-info { display: flex; align-items: baseline; gap: 6px; }
+.toolbar-count { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
+.toolbar-label { font-size: 0.82rem; color: #9ca3af; }
+.toolbar-actions { display: flex; gap: 12px; }
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  padding: 4px;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+.btn-icon:active { transform: scale(0.9); }
+.btn-icon.danger { filter: none; }
+
+.explorer-item-select {
+  padding: 0 4px 0 12px;
+  display: flex;
+  align-items: center;
+}
+.tms-checkbox {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  cursor: pointer;
+  appearance: none;
+  position: relative;
+  transition: 0.2s;
+}
+.tms-checkbox:checked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.tms-checkbox:checked::after {
+  content: '✓';
+  position: absolute;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 900;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.explorer-item.selected { background: var(--primary-soft) !important; }
+@keyframes explorerToolbarSlide { from { transform: translateY(100px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 .explorer-fab:hover { background: var(--primary-hover); }
 
 /* Action sheet */
@@ -2138,10 +2204,16 @@ html[data-theme="dark"] .cfd-sync-note b { color: #f0b94a; }
   .explorer-upload { display: grid; grid-template-columns: minmax(0, 1fr) auto; }
   .explorer-file-picker { max-width: none; min-width: 0; }
   .explorer-item-open, .explorer-back { padding: 13px 11px; }
-  .explorer-item-icon { width: 40px; height: 40px; }
-  .explorer-item-main small { white-space: normal; flex-wrap: wrap; }
+  .explorer-item-icon { width: 40px; height: 40px; border-radius: 12px; }
+  .explorer-item-main strong { font-size: 0.95rem; margin-bottom: 2px; }
+  .explorer-item-main small { white-space: normal; flex-wrap: wrap; font-size: 0.78rem; }
   .explorer-more { margin-right: 6px; }
   .explorer-fab { display: grid; place-items: center; }
+  .explorer-item-select { padding-left: 8px; }
+  .tms-checkbox { width: 22px; height: 22px; }
+  .explorer-context-toolbar { left: 10px; right: 10px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 10px 16px; }
+  .toolbar-actions { gap: 16px; }
+  .btn-icon { font-size: 1.4rem; }
   .explorer-page-head h1 { font-size: 1.35rem; }
 }
 @media (max-width: 430px) {

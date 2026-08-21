@@ -64,7 +64,7 @@ $path = (string)$listing['relative'];
             </form>
         </div>
 
-        <div class="explorer-list">
+        <div class="explorer-list" id="explorer-list-container">
             <?php if ($path !== ''): ?>
                 <a class="explorer-item explorer-back" href="<?= tms_url('/files', ['root' => $root, 'path' => dirname($path) === '.' ? '' : dirname($path)]) ?>">
                     <span class="explorer-item-icon">↰</span>
@@ -85,7 +85,10 @@ $path = (string)$listing['relative'];
                         ? tms_url('/files/editor', ['root' => $root, 'file' => $item['relative']])
                         : tms_url('/files/download', ['root' => $root, 'file' => $item['relative']]));
                 ?>
-                <div class="explorer-item">
+                <div class="explorer-item" data-explorer-item data-relative="<?= tms_h($item['relative']) ?>" data-name="<?= tms_h($item['name']) ?>" data-is-dir="<?= $item['is_dir'] ? '1' : '0' ?>" data-is-zip="<?= $isZip ? '1' : '0' ?>">
+                    <div class="explorer-item-select">
+                        <input type="checkbox" class="tms-checkbox" data-select-item value="<?= tms_h($item['relative']) ?>">
+                    </div>
                     <a class="explorer-item-open" href="<?= $primaryUrl ?>">
                         <span class="explorer-item-icon <?= $item['is_dir'] ? 'folder' : 'file' ?>"><?= $item['is_dir'] ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' : ($isZip ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/><line x1="4" y1="12" x2="20" y2="12"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>') ?></span>
                         <span class="explorer-item-main">
@@ -125,6 +128,22 @@ $path = (string)$listing['relative'];
 
 <button type="button" class="explorer-fab" data-modal-open="create-modal" aria-label="Tạo mới">＋</button>
 <button type="button" class="explorer-use-here" id="explorer-use-here" data-use-here>📥 Dùng thư mục này</button>
+
+<!-- Contextual Toolbar for Batch Operations -->
+<div class="explorer-context-toolbar" id="explorer-context-toolbar" hidden>
+    <div class="toolbar-info">
+        <span class="toolbar-count" id="selected-count">0</span>
+        <span class="toolbar-label">mục đã chọn</span>
+    </div>
+    <div class="toolbar-actions">
+        <button type="button" class="btn-icon" id="batch-copy" title="Sao chép">📋</button>
+        <button type="button" class="btn-icon" id="batch-move" title="Di chuyển">➡️</button>
+        <button type="button" class="btn-icon" id="batch-archive" title="Nén ZIP">📦</button>
+        <button type="button" class="btn-icon" id="batch-chmod" title="Phân quyền">🔐</button>
+        <button type="button" class="btn-icon danger" id="batch-delete" title="Xóa">🗑️</button>
+        <button type="button" class="btn-icon" id="batch-clear" title="Bỏ chọn">✕</button>
+    </div>
+</div>
 
 <div class="action-sheet" id="file-action-sheet" aria-hidden="true">
     <button type="button" class="action-sheet-backdrop" data-action-sheet-close aria-label="Đóng"></button>

@@ -1,22 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.52,
-  "build": "20260821-10",
+  "internal_version": 16.0,
+  "build": "20260821-20",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.5.2",
-  "version": "15.5.2",
-  "notes": "V15.5.2: Cải thiện khả năng nhận diện Termux:API - Tăng timeout và thêm các thông báo lỗi chi tiết khi API không phản hồi (do thiếu quyền Android hoặc thiếu ứng dụng APK).",
+  "name": "TMS OS V16.0.0",
+  "version": "16.0.0",
+  "notes": "V16.0.0: Đại tu TMS Explorer - Hỗ trợ chọn nhiều mục (Multi-select), thanh công cụ ngữ cảnh (Context Toolbar) và tối ưu hóa hoàn toàn giao diện quản lý tệp cho thiết bị di động.",
   "features": [
-    "Termux:API Enhanced: Tăng timeout lên 3s và xử lý ngoại lệ khi API treo",
-    "Diagnostic Messages: Hiển thị lỗi cụ thể nếu API không phản hồi hoặc sai định dạng"
+    "Multi-select: Chọn nhiều file/thư mục bằng checkbox hoặc nhấn giữ (long press)",
+    "Context Toolbar: Thanh công cụ thông minh xuất hiện khi chọn mục để thực hiện thao tác hàng loạt",
+    "Batch Operations: Sao chép, di chuyển, xóa, nén ZIP và phân quyền hàng loạt",
+    "Mobile Optimized UI: Giao diện Explorer mượt mà, chuyên nghiệp như ứng dụng quản lý file gốc"
   ],
-  "checksum_sha256": "9aed9ce04d9830ff25b365d9f782987f800253ffae1a64483b804bb6866e53e1",
+  "checksum_sha256": "54bd5c9bfbf9ee279f9e58cc6f698e9f5d7076a04b9b3431dec907534f1e9220",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.5.2",
-  "changelog": "V15.5.2: Improve Termux:API detection and error reporting; Sync SW V15.5.2.",
+  "version_display": "TMS OS V16.0.0",
+  "changelog": "V16.0.0: Major upgrade for TMS Explorer - Multi-select, Context Toolbar, Batch Operations, and Mobile UX overhaul.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }
