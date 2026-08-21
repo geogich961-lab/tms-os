@@ -14,7 +14,7 @@
     "Thông tin thiết bị: model (getprop), phiên bản Android, kiến trúc, kernel",
     "Chống crash & chống SELinux: không dùng proc_open, mọi hàm đọc dữ liệu try/catch riêng, fallback cat/getprop toàn diện"
   ],
-  "checksum_sha256": "2b0f966afd9a24c0874063b04ccf7ad8e3e7362f6a4671c03b6ae9e6a4bcf1a8",
+  "checksum_sha256": "e7858e4e549c96ee6de691bb8631039eed44a002b444f7a84a76871031050369",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.4.4",
   "changelog": "V15.4.4: Fix trang Resource Monitor hien 0/0 toan bo va API 502 Bad Gateway: khong dung proc_open/pcntl (nguyen nhan crash/killed tren Android), dung file_get_contents + shell_exec; cache invalid khi version doi; device info qua getprop; temperature/network/process/uptime doc file API roi fallback cat; bat ky nguon nao loi khong lam sap toan trang.",
