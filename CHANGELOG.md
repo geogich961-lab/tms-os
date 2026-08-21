@@ -1,3 +1,8 @@
+## V16.0.12 (2026-08-21)
+- **Process Killer (Thiết quân luật)**: Nâng cấp `start-tms.sh` với lệnh `fuser -k` và `pkill -9` để giải phóng cổng 8888/9000 cưỡng bức, tránh lỗi "Address already in use".
+- **Auto-Restart Engine**: Bộ cập nhật tự động gọi script khởi động lại ngay sau khi swap code để ép PHP-CGI cũ phải thoát và nạp code mới từ RAM.
+- **Port Conflict Fix**: Tự động phát hiện và xử lý kẹt cổng Nginx khi khởi động.
+
 ## V16.0.11 (2026-08-21)
 - **Force Overwrite Mechanism**: Sử dụng `cp -af` để ghi đè cưỡng bức các file cấu hình đang bị PHP khóa trên Termux.
 - **OPcache Reset**: Tự động xóa bộ nhớ đệm PHP ngay sau khi cập nhật để đảm bảo số phiên bản mới được nhận diện lập tức.

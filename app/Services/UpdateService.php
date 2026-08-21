@@ -453,12 +453,19 @@ final class UpdateService
             file_put_contents($configPath, $configContent);
         }
 
-        // 8. Hoàn tất
+        // 8. Tự động gọi script khởi động lại để giải phóng tiến trình PHP cũ đang kẹt code cũ trong RAM
+        // Chúng ta gọi ngầm để không làm gián đoạn response hiện tại quá sớm
+        $restartScript = $this->target . '/scripts/start-tms.sh';
+        if (is_file($restartScript)) {
+            exec("nohup bash " . escapeshellarg($restartScript) . " > /dev/null 2>&1 &");
+        }
+
+        // 9. Hoàn tất
         @unlink($this->stateFile);
         return [
             'ok' => true,
             'backup' => $backupDir,
-            'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đã tự động làm mới cache và phiên bản giao diện.',
+            'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đã tự động khởi động lại dịch vụ để nhận diện code mới.',
         ];
     }
 
