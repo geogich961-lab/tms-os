@@ -1,22 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.48,
-  "build": "20260821-6",
+  "internal_version": 15.49,
+  "build": "20260821-7",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.8",
-  "version": "15.4.8",
-  "notes": "V15.4.8: Hotfix - Khôi phục thông báo Toast notification bị mất trong bản V15.4.7. Sửa lỗi cú pháp JavaScript và đồng bộ Service Worker version mới.",
+  "name": "TMS OS V15.4.9",
+  "version": "15.4.9",
+  "notes": "V15.4.9: Nâng cấp Toast Notification - Chuyển vị trí thông báo lên phía trên (Top); Thêm cài đặt tùy chỉnh thời gian hiển thị thông báo trong trang Cài đặt.",
   "features": [
-    "Hotfix Toast: Khôi phục hoàn toàn hệ thống thông báo Toast notification",
-    "Frontend Sync: Đồng bộ Service Worker và Asset version mới nhất"
+    "Toast Position: Chuyển thông báo lên đầu trang (Top) để dễ quan sát",
+    "Custom Duration: Tùy chỉnh thời gian hiển thị thông báo (1-60 giây)"
   ],
-  "checksum_sha256": "4274ed83a1f75a4aad8ad41c155d57c2e652186b67cfbb68186738b1453e6f32",
+  "checksum_sha256": "f4e55e691fe7e2819afb9ee476cf6db1fa7f7871917f66473bd51647d8171dbc",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.8",
-  "changelog": "V15.4.8: Fix bug toast notification không hiển thị; Cập nhật app.js cleanup; Bump SW version.",
+  "version_display": "TMS OS V15.4.9",
+  "changelog": "V15.4.9: Move toast to top; Add toast_duration setting; Sync SW V15.4.9.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

@@ -1,3 +1,8 @@
+## V15.4.9 (2026-08-21)
+- **Toast Position**: Chuyển vị trí thông báo toast lên phía trên cùng (Top) để người dùng dễ quan sát, không bị che khuất bởi nội dung cuối trang.
+- **Toast Settings**: Thêm tùy chọn "Thời gian hiển thị thông báo" trong Cài đặt (cho phép chỉnh từ 1 đến 60 giây).
+- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.4.9.
+
 ## V15.4.8 (2026-08-21)
 - **Hotfix Toast Notification**: Khôi phục hệ thống thông báo toast bị mất do lỗi cú pháp JavaScript khi gộp code V15.4.7.
 - **Frontend Sync**: Đồng bộ Service Worker và Asset version mới nhất để đảm bảo trình duyệt tải lại code JS/CSS đã sửa.

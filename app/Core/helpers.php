@@ -110,6 +110,7 @@ function tms_ui_defaults(): array
         'accent_secondary' => '#6b4dea',
         'pwa_background' => '#0a1220',
         'default_theme' => 'light',
+        'toast_duration' => 5,
     ];
 }
 

@@ -44,6 +44,7 @@ final class SettingsController
         $secondary=tms_valid_hex_color($_POST['accent_secondary']??'', $defaults['accent_secondary']);
         $background=tms_valid_hex_color($_POST['pwa_background']??'', $defaults['pwa_background']);
         $theme=in_array($_POST['default_theme']??'', ['light','dark'], true)?(string)$_POST['default_theme']:'light';
+        $toastDuration = max(1, min(60, (int)($_POST['toast_duration'] ?? 5)));
         $home=getenv('HOME')?:'/data/data/com.termux/files/home';
         $dir=$home.'/.tms-os';
         @mkdir($dir,0700,true);
@@ -53,6 +54,7 @@ final class SettingsController
             'accent_secondary'=>$secondary,
             'pwa_background'=>$background,
             'default_theme'=>$theme,
+            'toast_duration'=>$toastDuration,
         ];
         if(file_put_contents($file,json_encode($payload,JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES),LOCK_EX)===false){
             tms_flash('error','Không thể lưu cấu hình giao diện.');

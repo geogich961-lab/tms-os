@@ -3,7 +3,10 @@
 window.tmsToast=(msg,type,ms)=>{
   const text=String(msg==null?'':msg);if(!text)return;
   type=['success','error','warn','info'].includes(type)?type:'info';
-  ms=Number.isFinite(ms)&&ms>0?ms:(type==='error'?5500:3500);
+  if(!ms){
+    const d=document.currentScript?.dataset.toastDuration || document.querySelector('script[data-toast-duration]')?.dataset.toastDuration;
+    ms = d ? parseInt(d)*1000 : (type==='error'?5500:3500);
+  }
   let box=document.getElementById('tms-toast-container');
   if(!box){box=document.createElement('div');box.id='tms-toast-container';document.body.appendChild(box);}
   const t=document.createElement('div');t.className='tms-toast tms-toast-'+type;

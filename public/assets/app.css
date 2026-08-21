@@ -1211,7 +1211,7 @@ body.sheet-open { overflow: hidden; }
 #tms-toast-container {
   position: fixed;
   right: 16px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  top: calc(20px + env(safe-area-inset-top));
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -1243,7 +1243,7 @@ body.sheet-open { overflow: hidden; }
 .tms-toast-warn   { border-left-color: #f59e0b; }
 .tms-toast-info   { border-left-color: #315ee8; }
 .tms-toast-in     { transform: none; opacity: 1; }
-.tms-toast-out    { transform: translateY(-10px); opacity: 0; }
+.tms-toast-out    { transform: translateY(10px); opacity: 0; }
 .tms-toast-icon {
   font-weight: 800;
   font-size: 0.95rem;
@@ -1924,7 +1924,7 @@ html[data-theme="dark"] .cfd-sync-note b { color: #f0b94a; }
 @media (max-width: 760px) {
 
 /* Toast full-width trên mobile */
-#tms-toast-container { right: 12px; left: 12px; max-width: none; bottom: calc(16px + env(safe-area-inset-bottom)); }
+#tms-toast-container { right: 12px; left: 12px; max-width: none; top: calc(16px + env(safe-area-inset-top)); }
 .tms-toast { font-size: 0.86rem; }
   .os-sidebar {
     width: min(88vw, 300px);

@@ -20,6 +20,7 @@
       <label><span>Nền splash PWA</span><div class="color-input"><input type="color" name="pwa_background" value="<?=tms_h($ui['pwa_background'])?>" data-pwa-background><code><?=tms_h($ui['pwa_background'])?></code></div></label>
     </div>
     <label><span>Chế độ mặc định</span><select name="default_theme"><option value="light" <?=$ui['default_theme']==='light'?'selected':''?>>Sáng</option><option value="dark" <?=$ui['default_theme']==='dark'?'selected':''?>>Tối</option></select></label>
+    <label><span>Thời gian hiển thị thông báo (giây)</span><input type="number" name="toast_duration" value="<?=tms_h($ui['toast_duration'])?>" min="1" max="60"></label>
     <div class="row-actions"><button class="btn btn-primary">Lưu giao diện</button><button type="button" class="btn btn-secondary" data-reset-colors>Khôi phục màu TMS</button></div>
   </form>
   <p class="security-note">Sau khi đổi màu PWA, nên xóa biểu tượng cũ khỏi màn hình chính và cài lại để Android cập nhật splash hoàn toàn.</p>
