@@ -6,9 +6,14 @@
 <p>Bản đang chạy: <strong><?=tms_h($status['current']??'unknown')?></strong>
 <?php if(!empty($status['previous_exists'])):?><span class="status-pill running">Có bản sao lưu gần đây</span><?php endif;?>
 </p>
-<div class="update-btn-group">
-<button class="btn btn-secondary" id="check-update-btn">Kiểm tra cập nhật</button>
-<?php if(!empty($status['previous_exists'])):?><form method="post" action="/updates/rollback" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-danger-soft">Khôi phục bản trước</button></form><?php endif;?>
+	<div class="update-btn-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
+    <button class="btn btn-secondary" id="check-update-btn" style="flex: 1; min-width: 160px;">Kiểm tra cập nhật</button>
+    <?php if(!empty($status['previous_exists'])):?>
+    <form method="post" action="/updates/rollback" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');" style="flex: 1; min-width: 160px; margin: 0;">
+        <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+        <button class="btn btn-danger-soft" style="width: 100%;">Khôi phục bản trước</button>
+    </form>
+    <?php endif;?>
 </div>
 <p class="muted" id="check-result"></p></section>
 

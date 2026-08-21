@@ -82,79 +82,72 @@ final class SettingsController
             tms_flash('error','Không thể tạo thư mục lưu logo.');
             tms_redirect('/settings');
         }
-        $raw=@file_get_contents($upload['tmp_name']);
-        if($raw===false){
-            tms_flash('error','Không thể đọc tệp đã tải lên.');
+        // 1. Đọc và giải mã ảnh tiết kiệm bộ nhớ
+        $src = null;
+        $mime = $check['type'];
+        if ($mime === IMAGETYPE_PNG) $src = @imagecreatefrompng($upload['tmp_name']);
+        elseif ($mime === IMAGETYPE_JPEG) $src = @imagecreatefromjpeg($upload['tmp_name']);
+        elseif ($mime === IMAGETYPE_WEBP) $src = @imagecreatefromwebp($upload['tmp_name']);
+        
+        if(!$src){
+            tms_flash('error','Không thể đọc định dạng hình ảnh.');
             tms_redirect('/settings');
         }
-        $src=imagecreatefromstring($raw);
-        if($src===false){
-            tms_flash('error','Không thể đọc hình ảnh đã tải lên.');
-            tms_redirect('/settings');
-        }
-        $w=imagesx($src);
-        $h=imagesy($src);
+        
+        // 2. Cắt vuông
+        $w=imagesx($src); $h=imagesy($src);
         $side=min($w,$h);
         $square=imagecreatetruecolor($side,$side);
+        imagealphablending($square, false);
+        imagesavealpha($square, true);
         imagecopy($square,$src,0,0,(int)(($w-$side)/2),(int)(($h-$side)/2),$side,$side);
+        imagedestroy($src); // Giải phóng ngay ảnh gốc
+
         $public=dirname(__DIR__,2).'/public/assets';
         $icons=$public.'/icons';
+        @mkdir($icons, 0755, true);
+
+        // 3. Render các loại icon
+        // Standard icons
         foreach(['logo-tms-os.png'=>512,'icon-512.png'=>512,'icon-192.png'=>192,'logo-splash.png'=>192] as $dest=>$size){
             $canvas=imagecreatetruecolor($size,$size);
+            imagealphablending($canvas, false);
+            imagesavealpha($canvas, true);
             imagecopyresampled($canvas,$square,0,0,0,0,$size,$size,$side,$side);
             imagepng($canvas,$brandDir.'/'.$dest);
-            if(is_dir($icons)){
-                imagepng($canvas,$icons.'/'.$dest);
-                @chmod($icons.'/'.$dest,0644);
-            }
-            @chmod($brandDir.'/'.$dest,0644);
+            if(is_dir($icons)) imagepng($canvas,$icons.'/'.$dest);
+            // Đặc biệt: copy logo-tms-os.png ra ngoài assets/ để header.php dùng trực tiếp
+            if($dest === 'logo-tms-os.png') imagepng($canvas, $public.'/logo-tms-os.png');
             imagedestroy($canvas);
         }
+
+        // Maskable (có viền an toàn cho Android/iOS)
         $maskSize=512;
         $safe=(int)round($maskSize*0.66);
         $mask=imagecreatetruecolor($maskSize,$maskSize);
         imagealphablending($mask,false);
+        imagesavealpha($mask,true);
         $transparent=imagecolorallocatealpha($mask,0,0,0,127);
         imagefill($mask,0,0,$transparent);
         imagecopyresampled($mask,$square,(int)(($maskSize-$safe)/2),(int)(($maskSize-$safe)/2),0,0,$safe,$safe,$side,$side);
-        imagesavealpha($mask,true);
         imagepng($mask,$brandDir.'/icon-maskable-512.png');
-        if(is_dir($icons)){
-            imagepng($mask,$icons.'/icon-maskable-512.png');
-            @chmod($icons.'/icon-maskable-512.png',0644);
-        }
-        @chmod($brandDir.'/icon-maskable-512.png',0644);
+        if(is_dir($icons)) imagepng($mask,$icons.'/icon-maskable-512.png');
         imagedestroy($mask);
-        // Icon solid: logo chiếm đầy icon (không viền trắng, không trong suốt) — dùng làm PWA icon
+
+        // Solid (không trong suốt, cho PWA splash/icon)
         foreach(['icon-192-solid.png'=>192,'icon-512-solid.png'=>512] as $dest=>$size){
             $canvas=imagecreatetruecolor($size,$size);
             imagecopyresampled($canvas,$square,0,0,0,0,$size,$size,$side,$side);
             imagepng($canvas,$brandDir.'/'.$dest);
-            if(is_dir($icons)){
-                imagepng($canvas,$icons.'/'.$dest);
-                @chmod($icons.'/'.$dest,0644);
-            }
-            @chmod($brandDir.'/'.$dest,0644);
+            if(is_dir($icons)) imagepng($canvas,$icons.'/'.$dest);
             imagedestroy($canvas);
         }
-        // Maskable solid: nền trong suốt với logo giữa (Android adaptive icon)
-        $maskSize=512;
-        $safe=(int)round($maskSize*0.66);
-        $mask=imagecreatetruecolor($maskSize,$maskSize);
-        imagealphablending($mask,false);
-        $transparent=imagecolorallocatealpha($mask,0,0,0,127);
-        imagefill($mask,0,0,$transparent);
-        imagecopyresampled($mask,$square,(int)(($maskSize-$safe)/2),(int)(($maskSize-$safe)/2),0,0,$safe,$safe,$side,$side);
-        imagesavealpha($mask,true);
-        imagepng($mask,$brandDir.'/icon-maskable-solid-512.png');
-        if(is_dir($icons)){
-            imagepng($mask,$icons.'/icon-maskable-solid-512.png');
-            @chmod($icons.'/icon-maskable-solid-512.png',0644);
-        }
-        @chmod($brandDir.'/icon-maskable-solid-512.png',0644);
-        imagedestroy($mask);
+
+        // Clean up
         imagedestroy($square);
-        imagedestroy($src);
+        
+        // Cập nhật asset version để trình duyệt load lại ngay
+        tms_clear_cache();
         tms_flash('success','Đã cập nhật logo. Hãy xóa biểu tượng cũ khỏi màn hình chính rồi bấm Cài TMS OS để biểu tượng mới có hiệu lực hoàn toàn.');
         tms_redirect('/settings');
     }
