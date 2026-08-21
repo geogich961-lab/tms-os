@@ -6,8 +6,8 @@
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.3.6",
-  "version": "15.3.6",
+  "name": "TMS OS V15.3.7",
+  "version": "15.3.7",
   "notes": "V15.3.6: He thong thong bao toast notification cho tat ca thao tac trong panel. Moi thao tac (Cloudflare, SQL Editor, Cai dat, File, Backup, dich vu...) bay gio hien trang thai dang toast noi tai vi tri thao tac, khong can cuon len dau trang xem nua.",
   "features": [
     "Toast notification toan panel: success/error/warn/info voi icon rieng va mau rieng (xanh do/cam/xanh duong)",
@@ -18,7 +18,7 @@
     "CSS toast responsive: desktop 380px bottom-right, mobile full-width 12px le",
     "Service Worker tms-os-v15-3-6: cap nhat cache moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "29e06198372c0c323ba20a997de6e8fad096ad707d01559693aea2fe5b5fca56",
+  "checksum_sha256": "",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V15.3.6",
   "changelog": "Toast notification cho TAT CA thao tac panel: trang thai duoc hien dang toast noi tai vi tri thao tac, khong can cuon len dau trang xem nua.",

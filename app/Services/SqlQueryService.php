@@ -255,7 +255,7 @@ final class SqlQueryService
         }
         $readOnlyMode = $readOnly ? ' -readonly' : '';
         $cmd = 'sqlite3 -json' . $readOnlyMode . ' -header -separator "\t" '
-            . escapeshellarg($file) . ' ' . escapeshellarg($sql) . ' 2>&1';
+            . escapeshellarg($file) . ' ' . escapeshellarg($sql);
         $out = $this->runWithTimeout($cmd);
         $time = round(microtime(true) - $start, 3);
         if ($out['timed_out']) {
@@ -263,8 +263,8 @@ final class SqlQueryService
         }
         $stderr = trim($out['stderr']);
         $stdout = trim($out['stdout']);
-        if ($out['code'] !== 0 && $stdout === '' && $stderr !== '') {
-            throw new RuntimeException($stderr);
+        if ($out['code'] !== 0) {
+            throw new RuntimeException($stderr ?: 'SQLite trả về lỗi (exit ' . $out['code'] . ').');
         }
         if (stripos($stderr, 'Error') !== false && $stdout === '') {
             throw new RuntimeException($stderr);
@@ -311,7 +311,7 @@ final class SqlQueryService
         $readOnlyMode = $readOnly ? ' --skip-column-names' : '';
         $cmd = 'mariadb --defaults-extra-file=' . escapeshellarg($this->clientConfig)
             . $jsonMode . ' --database=' . escapeshellarg($db)
-            . ' -e ' . escapeshellarg($sql) . ' 2>&1';
+            . ' -e ' . escapeshellarg($sql);
         $out = $this->runWithTimeout($cmd);
         $time = round(microtime(true) - $start, 3);
         if ($out['timed_out']) {
@@ -350,7 +350,7 @@ final class SqlQueryService
     {
         $cmd = 'mariadb --defaults-extra-file=' . escapeshellarg($this->clientConfig)
             . ' --json=full --database=' . escapeshellarg($db)
-            . ' -e ' . escapeshellarg($sql) . ' 2>&1';
+            . ' -e ' . escapeshellarg($sql);
         $out = $this->runWithTimeout($cmd);
         if ($out['code'] !== 0) {
             throw new RuntimeException(trim($out['stdout'] . "\n" . $out['stderr']) ?: 'MariaDB lỗi.');
@@ -365,7 +365,7 @@ final class SqlQueryService
     private function mariaQueryLines(string $sql): array
     {
         $cmd = 'mariadb --defaults-extra-file=' . escapeshellarg($this->clientConfig)
-            . ' --batch --skip-column-names -e ' . escapeshellarg($sql) . ' 2>&1';
+            . ' --batch --skip-column-names -e ' . escapeshellarg($sql);
         $out = $this->runWithTimeout($cmd);
         if ($out['code'] !== 0) {
             throw new RuntimeException(trim($out['stdout'] . "\n" . $out['stderr']) ?: 'MariaDB lỗi.');

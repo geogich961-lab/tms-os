@@ -1,27 +1,100 @@
 <?php $title='Database · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
-<div class="page-head"><div><p class="eyebrow">Database Manager · <?=tms_h(($driver ?? 'MariaDB'))?></p><h1>Database</h1></div><?php if($driver==='SQLite'):?><button class="btn btn-primary" data-modal-open="db-modal">+ Tạo database</button><?php endif;?></div><?php if($flash):?><div class="alert <?=$flash['type']==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=$flash['type']==='success'?'success':'error'?>" hidden><?=nl2br(tms_h((string)$flash['message']))?></div><?php endif;?><?php if($error):?><div class="alert alert-error"><?=tms_h($error)?></div><?php endif;?><?php
-$managed=[];$website=[];
-foreach($databases as $d){if(($d['source'] ?? 'managed')==='website'){$website[]=$d;}else{$managed[]=$d;}}
-?><?php if($driver==='SQLite'):?><div class="db-groups">
-<section class="table-card"><div class="simple-table head"><span>Database TMS OS</span><span>Thao tác</span></div><?php foreach($managed as $db):?><?php $size=tms_format_bytes($db['size'] ?? 0);?>
-<div class="simple-table"><div><strong><?=tms_h($db['name'])?></strong><br><span class="muted" style="font-size:.8em"><?=tms_h($size)?></span></div><div class="table-actions"><form method="post" action="/databases/export"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><button class="btn btn-secondary">Xuất SQL</button></form><form method="post" action="/databases/import" enctype="multipart/form-data" class="import-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><label class="btn btn-secondary"><input type="file" name="sql" accept=".sql" hidden required>Nhập SQL</label><button class="btn btn-secondary">Chạy</button></form><form method="post" action="/databases/drop" data-confirm="Xóa database <?=tms_h($db['name'])?>?"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><button class="btn btn-danger-soft">Xóa</button></form></div></div><?php endforeach;?><?php if(!$managed):?><div class="empty-state">Chưa có database TMS OS. Bấm "+ Tạo database" để tạo.</div><?php endif;?></section>
-<section class="table-card"><div class="simple-table head"><span>Database trong website <span class="muted" style="font-weight:400;font-size:.85em">(Typecho, ứng dụng người dùng)</span></span><span>Thao tác</span></div><?php foreach($website as $db):?><?php $size=tms_format_bytes($db['size'] ?? 0);?>
-<div class="simple-table"><div><strong><?=tms_h($db['name'])?> <span style="display:inline-flex;align-items:center;gap:6px;padding:2px 10px;border-radius:999px;background:rgba(var(--primary-rgb),.12);color:var(--primary);font-weight:800;font-size:.72rem" title="Website: <?=tms_h($db['site'])?>"><?=tms_h($db['site'])?></span></strong><br><span class="muted" style="font-size:.8em"><?=tms_h($db['size'] ? $size . ' · ' . tms_h(str_replace((getenv('HOME') ?: '/data/data/com.termux/files/home') . '/', '', $db['path'])) : $size)?></span></div><div class="table-actions"><form method="post" action="/databases/export"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="path" value="<?=tms_h($db['path'])?>"><button class="btn btn-secondary">Xuất SQL</button></form><form method="post" action="/databases/adopt" data-confirm="Mang database này về thư mục quản lý của TMS OS? File gốc trong website vẫn được giữ nguyên."><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="path" value="<?=tms_h($db['path'])?>"><button class="btn btn-secondary">Mang về quản lý</button></form></div></div><?php endforeach;?><?php if(!$website):?><div class="empty-state">Chưa tìm thấy file database trong các website. Hệ thống tự động phát hiện file SQLite (*.sqlite3, *.sqlite, *.db) trong thư mục website.</div><?php endif;?></section>
+<div class="page-head"><div><p class="eyebrow">Database Manager · <?=tms_h(($driver ?? 'SQLite'))?></p><h1>Database</h1></div><?php if($driver==='SQLite'):?><button class="btn btn-primary" data-modal-open="db-modal">+ Tạo database</button><?php endif;?></div>
+<?php if($flash):?><div data-flash-toast="<?=$flash['type']==='success'?'success':'error'?>" hidden><?=nl2br(tms_h((string)$flash['message']))?></div><?php endif;?>
+<?php if($error):?><div class="alert alert-error"><?=tms_h($error)?></div><?php endif;?>
+
+<div class="navdb-layout">
+  <!-- Sidebar: Object Explorer -->
+  <aside class="navdb-sidebar table-card" id="navdb-sidebar">
+    <div class="navdb-sidebar-head"><span>Danh sách database</span><button type="button" class="btn btn-ghost btn-small" id="navdb-refresh-sb" title="Làm mới danh sách">↻</button></div>
+    <div class="navdb-db-list" id="navdb-db-list"></div>
+    <div class="navdb-db-actions">
+      <button type="button" class="btn btn-secondary btn-block" id="navdb-create-db-btn" style="display:none">+ Tạo database</button>
+    </div>
+  </aside>
+
+  <!-- Workspace -->
+  <section class="navdb-workspace">
+    <div class="navdb-empty" id="navdb-empty">
+      <div class="navdb-empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+      <p><strong>Chưa có bảng nào được mở</strong></p>
+      <p class="muted">Chọn một database bên trái, sau đó bấm vào bảng để duyệt và chỉnh sửa dữ liệu trực tiếp.</p>
+    </div>
+
+    <div class="navdb-panel" id="navdb-panel" hidden>
+      <div class="navdb-toolbar">
+        <div class="navdb-breadcrumb" id="navdb-breadcrumb"></div>
+        <div class="navdb-tabs" role="tablist">
+          <button class="navdb-tab active" data-tab="browse" type="button">Dữ liệu</button>
+          <button class="navdb-tab" data-tab="sql" type="button">SQL</button>
+          <button class="navdb-tab" data-tab="structure" type="button">Cấu trúc</button>
+        </div>
+      </div>
+
+      <!-- Tab Dữ liệu -->
+      <div class="navdb-pane" id="navdb-pane-browse">
+        <div class="navdb-tools">
+          <div class="navdb-tools-row">
+            <button class="btn btn-ghost btn-small" id="navdb-browse-refresh" type="button" title="Làm mới">↻ Làm mới</button>
+            <label class="navdb-readonly-wrap" title="Bật để chỉ xem, tắt để chỉnh sửa dữ liệu"><input type="checkbox" id="navdb-readonly" checked> Chỉ đọc</label>
+            <span class="navdb-count" id="navdb-count"></span>
+            <span class="navdb-pageinfo" id="navdb-pageinfo"></span>
+          </div>
+          <div class="navdb-tools-row navdb-tools-right">
+            <input class="navdb-search" id="navdb-search" type="text" placeholder="Tìm trong bảng... (Ctrl+F)">
+            <button class="btn btn-secondary btn-small" id="navdb-insert-btn" type="button" disabled>+ Thêm dòng</button>
+            <form method="post" action="/databases/export" id="navdb-export-form" style="display:none"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" id="navdb-export-name" value=""></form>
+          </div>
+        </div>
+        <div class="navdb-filterbar hidden" id="navdb-filterbar">
+          <label><select id="navdb-filter-col" class="navdb-select"></select></label>
+          <select id="navdb-filter-op" class="navdb-select" style="max-width:120px"><option value="LIKE">% chứa %</option><option value="=">= chính xác</option><option value="!=">≠ khác</option><option value="&gt;">&gt; lớn hơn</option><option value="&lt;">&lt; nhỏ hơn</option><option value="&gt;=">≥ lớn hơn hoặc bằng</option><option value="&lt;=">≤ nhỏ hơn hoặc bằng</option><option value="IS NULL">IS NULL</option></select>
+          <input type="text" id="navdb-filter-val" class="navdb-input" placeholder="Giá trị">
+          <button class="btn btn-ghost btn-small" id="navdb-filter-apply" type="button">Lọc</button>
+          <button class="btn btn-ghost btn-small" id="navdb-filter-clear" type="button">Bỏ lọc</button>
+        </div>
+        <div class="navdb-sortbar" id="navdb-sortbar">
+          <span class="muted" style="font-size:.85em">Sắp xếp theo</span>
+          <select id="navdb-sort-col" class="navdb-select"></select>
+          <select id="navdb-sort-dir" class="navdb-select" style="max-width:110px"><option value="ASC">↑ Tăng dần</option><option value="DESC">↓ Giảm dần</option></select>
+        </div>
+        <div id="navdb-data-empty" class="navdb-msg" hidden>Chọn bảng để xem dữ liệu.</div>
+        <div class="navdb-table-wrap" id="navdb-data-wrap"></div>
+        <div class="navdb-pager">
+          <button class="btn btn-ghost btn-small" id="navdb-prev" type="button" disabled>← Trang trước</button>
+          <span class="muted" style="font-size:.85em" id="navdb-pager-text"></span>
+          <button class="btn btn-ghost btn-small" id="navdb-next" type="button" disabled>Trang sau →</button>
+        </div>
+      </div>
+
+      <!-- Tab SQL -->
+      <div class="navdb-pane" id="navdb-pane-sql" hidden>
+        <textarea id="navdb-sql-input" class="navdb-sql" placeholder="SELECT * FROM ... LIMIT 100" spellcheck="false"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-primary" id="navdb-run-btn" type="button">▶ Chạy (Ctrl+Enter)</button>
+          <label class="navdb-readonly-wrap" style="margin:0"><input type="checkbox" id="navdb-readonly2"> Chế độ chỉ đọc</label>
+          <span class="navdb-count" id="navdb-result-meta"></span>
+        </div>
+        <div class="navdb-table-wrap" id="navdb-result-wrap"></div>
+      </div>
+
+      <!-- Tab Cấu trúc -->
+      <div class="navdb-pane" id="navdb-pane-structure" hidden>
+        <div class="navdb-struct-head"><span id="navdb-struct-title" class="muted"></span><span id="navdb-struct-meta" class="muted"></span></div>
+        <div id="navdb-struct-empty" class="navdb-msg" hidden>Chọn bảng để xem cấu trúc.</div>
+        <div class="navdb-table-wrap" id="navdb-struct-wrap"></div>
+        <div class="navdb-tools" style="margin-top:12px"><button class="btn btn-ghost btn-small" id="navdb-struct-copyddl" type="button">⧉ Sao chép CREATE TABLE</button></div>
+      </div>
+    </div>
+  </section>
 </div>
-<section class="table-card" id="sql-editor"><div class="simple-table head"><span>SQL Editor <span class="muted" style="font-weight:400;font-size:.85em">(duyệt &amp; chỉnh sửa dữ liệu trực tiếp)</span></span><span><label style="font-size:.85em;font-weight:400"><input type="checkbox" id="sql-readonly" checked> Chỉ đọc</label> <button class="btn btn-ghost" id="sql-refresh-btn" type="button" disabled>↻ Làm mới</button></span></div>
-<div class="sql-main">
-<div class="sql-sidebar table-card" id="sql-db-list" style="padding:8px"><?php if($driver==='SQLite'):?><?php foreach($databases as $db):?><button type="button" class="sql-db-item btn btn-ghost" style="width:100%;text-align:left;font-size:.85em" data-db="<?=tms_h($db['db_key'])?>" title="<?=tms_h($db['site'] ? 'Website: '.$db['site'] : 'TMS OS')?>"><?=tms_h($db['name'])?></button><?php endforeach;?><?php if(!$databases):?><div class="sql-empty">Chưa có database nào.</div><?php endif;?><?php else:?><?php foreach($databases as $db):?><button type="button" class="sql-db-item btn btn-ghost" style="width:100%;text-align:left;font-size:.85em" data-db="<?=tms_h($db['db_key'])?>"><?=tms_h($db['name'])?></button><?php endforeach;?><?php if(!$databases):?><div class="sql-empty">Chưa có database nào.</div><?php endif;?><?php endif;?></div>
-<div class="sql-content">
-<div class="sql-tabs" role="tablist"><button class="sql-tab active" data-tab="data" type="button">Dữ liệu</button><button class="sql-tab" data-tab="sql" type="button">Chạy SQL</button><button class="sql-tab" data-tab="structure" type="button">Cấu trúc</button></div>
-<div id="sql-no-db" class="sql-empty">Chọn một database ở trên để bắt đầu.</div>
-<div id="sql-panel" hidden>
-<select id="sql-tables" class="sql-select"><option value="">— chọn bảng —</option></select>
-<div id="tab-data" class="sql-pane"><div id="sql-table-empty" class="sql-empty">Chọn bảng ở trên để xem dữ liệu.</div><div id="sql-data-wrap"></div><div class="sql-meta"><span id="sql-count"></span><button class="btn btn-secondary" id="sql-insert-btn" type="button" disabled>+ Thêm dòng</button></div></div>
-<div id="tab-sql" class="sql-pane" hidden><textarea id="sql-input" class="sql-input" placeholder="SELECT * FROM ..." spellcheck="false"></textarea><button class="btn btn-primary" id="sql-run-btn" type="button">▶ Chạy (Ctrl+Enter)</button><div id="sql-result-meta" class="sql-meta"></div><div id="sql-result-wrap"></div></div>
-<div id="tab-structure" class="sql-pane" hidden><select id="sql-struct-tables" class="sql-select"><option value="">— chọn bảng —</option></select><div id="sql-struct-empty" class="sql-empty">Chọn bảng để xem cấu trúc.</div><div id="sql-struct-wrap"></div></div></div></div></div></section>
-<style>.sql-main{display:grid;grid-template-columns:minmax(180px,240px) 1fr;gap:12px;align-items:start}.sql-content{min-width:0}.sql-tabs{display:flex;gap:8px;margin-bottom:12px;border-bottom:1px solid var(--border)}.sql-tab{background:none;border:0;border-bottom:2px solid transparent;padding:8px 4px;cursor:pointer;font-weight:700;color:var(--muted)}.sql-tab.active{border-bottom-color:var(--primary);color:var(--primary)}.sql-select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--bg2,var(--bg));font-size:.9em;margin-bottom:12px}.sql-input{width:100%;min-height:110px;padding:10px;border:1px solid var(--border);border-radius:10px;background:var(--bg2,var(--bg));font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.85em;resize:vertical;margin-bottom:10px}.sql-grid{width:100%;border-collapse:collapse;font-size:.82em}.sql-grid th,.sql-grid td{border:1px solid var(--border);padding:5px 8px;text-align:left;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sql-grid th{background:var(--bg2,var(--bg));position:sticky;top:0}.sql-null{color:var(--muted);font-style:italic}.cell-edit{cursor:pointer}.sql-cell-input{width:100%;padding:3px 5px;border:1px solid var(--primary);border-radius:6px;background:var(--bg);font-size:inherit}.sql-meta{display:flex;gap:10px;align-items:center;margin-top:10px;flex-wrap:wrap}.sql-result-error{color:var(--danger,#c0392b);padding:8px}.sql-result-ok{color:var(--success,#27ae60);padding:8px}.sql-action .del{background:none;border:0;cursor:pointer;color:var(--danger,#c0392b);font-weight:700}.sql-db-item.active{color:var(--primary);font-weight:800}@media(max-width:760px){.sql-main{grid-template-columns:1fr}}</style>
-<?php if($driver==='SQLite'):?>
-<script>window.TMS_SQL_EDITOR=1;window.TMS_SQL_DBS=<?=json_encode($databases, JSON_UNESCAPED_UNICODE)?>;</script>
-<?php endif; ?><?php else:?><section class="table-card"><div class="simple-table head"><span>Tên database</span><span>Thao tác</span></div><?php foreach($databases as $db):?><div class="simple-table"><strong><?=tms_h($db['name'])?></strong><div class="table-actions"><form method="post" action="/databases/export"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><button class="btn btn-secondary">Xuất SQL</button></form><form method="post" action="/databases/import" enctype="multipart/form-data" class="import-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><label class="btn btn-secondary"><input type="file" name="sql" accept=".sql" hidden required>Nhập SQL</label><button class="btn btn-secondary">Chạy</button></form><form method="post" action="/databases/drop" data-confirm="Xóa database <?=tms_h($db['name'])?>?"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($db['name'])?>"><button class="btn btn-danger-soft">Xóa</button></form></div></div><?php endforeach;?><?php if(!$databases):?><div class="empty-state">Chưa có database người dùng.</div><?php endif;?></section><?php endif;?>
-<div class="modal" id="sql-insert-modal"><div class="modal-card"><button class="modal-close" data-modal-close>×</button><h2>Thêm dòng vào <span id="sql-insert-table"></span></h2><form id="sql-insert-form" class="stack" style="max-height:60vh;overflow:auto"></form></div></div>
-<div class="modal" id="db-modal"><div class="modal-card"><button class="modal-close" data-modal-close>×</button><h2>Tạo database</h2><form method="post" action="/databases/create" class="stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><label><span>Tên database</span><input name="name" placeholder="project_db" required></label><button class="btn btn-primary">Tạo database</button></form></div></div><?php require dirname(__DIR__).'/layouts/footer.php';?>
+
+<!-- Modal Thêm dòng -->
+<div class="modal" id="navdb-insert-modal"><div class="modal-card"><button class="modal-close" data-modal-close>×</button><h2 id="navdb-insert-h">Thêm dòng vào bảng</h2><form id="navdb-insert-form" class="stack" style="max-height:62vh;overflow:auto"></form></div></div>
+<!-- Modal Tạo database -->
+<div class="modal" id="db-modal"><div class="modal-card"><button class="modal-close" data-modal-close>×</button><h2>Tạo database</h2><form method="post" action="/databases/create" class="stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><label><span>Tên database</span><input name="name" placeholder="project_db" required></label><button class="btn btn-primary">Tạo database</button></form></div></div>
+
+<link rel="stylesheet" href="/assets/navdb.css?v=<?=tms_asset_version()?>">
+<script>window.TMS_SQL_DBS=<?=json_encode($databases ?? [], JSON_UNESCAPED_UNICODE)?>;window.TMS_SQL_DRIVER=<?=json_encode($driver ?? 'SQLite')?>;</script>
+<script defer src="/assets/navdb.js?v=<?=tms_asset_version() ?>"></script>
+<?php require dirname(__DIR__).'/layouts/footer.php';?>

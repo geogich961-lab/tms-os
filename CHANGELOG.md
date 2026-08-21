@@ -1,3 +1,15 @@
+# V15.3.7 — Database Manager kiểu Navicat
+- Viết lại hoàn toàn trang Database theo phong cách Navicat: Object Explorer bên trái (nhóm database TMS OS / Website, mở rộng như cây thư mục, tìm bảng nhanh), vùng làm việc bên phải với 3 tab: Dữ liệu / SQL / Cấu trúc.
+- Tab Dữ liệu: grid bảng với chỉnh sửa trực tiếp (bấm vào ô để sửa, Enter lưu), thêm dòng bằng form tự sinh từ cấu trúc bảng, xóa dòng an toàn theo khóa chính, đánh dấu khóa chính (PK) và cột dài.
+- Tìm kiếm nhanh trong bảng (Ctrl+F làm nổi bật ô khớp), lọc theo cột + toán tử (chứa, =, ≠, >, <, IS NULL), sắp xếp bằng cách bấm vào header cột (tăng/giảm dần).
+- Phân trang tự động (50 dòng/trang) với đếm tổng số dòng — tải bảng lớn nhanh hơn hẳn.
+- Tab Cấu trúc: xem tên cột, kiểu dữ liệu, giá trị mặc định, NOT NULL, khóa chính + nút sao chép CREATE TABLE vào clipboard.
+- Tab SQL: trình soạn thảo với Chạy (Ctrl+Enter), chế độ chỉ đọc tùy chọn, kết quả dạng grid.
+- Toolbar: Làm mới, Xuất SQL (kế thừa tính năng cũ), bật/tắt thanh lọc, trạng thái Chỉ đọc.
+- File mới `public/assets/navdb.js` + `public/assets/navdb.css` (module riêng, không ảnh hưởng các trang khác).
+- Toast notification (V15.3.6) áp dụng cho mọi thao tác Database.
+- Service Worker bump lên `tms-os-v15-3-7`.
+---
 # V15.3.6 — Toast notification toàn panel
 - Hệ thống thông báo toast notification mới cho toàn bộ panel: mọi thao tác (Cloudflare Hosting, SQL Editor, Cài đặt, File, Backup, dịch vụ...) đều hiện trạng thái thành công/lỗi dạng toast nổi ngay tại vị trí người dùng thao tác — không cần cuộn lên đầu trang xem alert nữa.
 - 4 loại toast với icon và màu riêng: success (✓ xanh), error (✕ đỏ, tự động 5.5s), warn (! cam), info (i xanh dương). Toast xếp chồng bottom-right, tự động mờ dần và biến mất.

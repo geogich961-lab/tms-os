@@ -1,4 +1,4 @@
-const VERSION='tms-os-v15-3-6';
+const VERSION='tms-os-v15-3-7';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
   '/offline.html','/manifest.php?v=15.3.4',
@@ -21,8 +21,16 @@ self.addEventListener('fetch',event=>{
     return;
   }
   if(url.pathname.startsWith('/assets/') || url.pathname==='/manifest.webmanifest' || url.pathname==='/manifest.php'){
-    event.respondWith(caches.match(req).then(hit=>hit||fetch(req).then(res=>{
-      const copy=res.clone(); caches.open(STATIC_CACHE).then(c=>c.put(req,copy)); return res;
-    })));
+    if(url.search.includes('v=')){
+      event.respondWith(fetch(req).then(res=>{
+        const copy=res.clone();
+        caches.open(STATIC_CACHE).then(c=>c.put(req,copy)).catch(()=>{});
+        return res;
+      }).catch(()=>caches.match(req)));
+    }else{
+      event.respondWith(caches.match(req).then(hit=>hit||fetch(req).then(res=>{
+        const copy=res.clone(); caches.open(STATIC_CACHE).then(c=>c.put(req,copy)); return res;
+      })));
+    }
   }
 });
