@@ -308,11 +308,22 @@ const monitorCanvas=document.getElementById('monitor-chart');
 if(monitorCanvas){
   let rows=[];try{rows=JSON.parse(monitorCanvas.dataset.history||'[]')}catch{}
   drawMonitorChart(monitorCanvas,rows);
-  setInterval(async()=>{try{
-    const r=await fetch('/api/monitoring',{cache:'no-store'});if(!r.ok)return;const d=await r.json();
-    ['memory','storage','load'].forEach(k=>{const el=document.querySelector(`[data-monitor-value="${k}"]`);if(el)el.textContent=k==='load'?d.current[k]:`${d.current[k]}%`;const bar=document.querySelector(`[data-monitor-bar="${k}"]`);if(bar)bar.style.width=`${d.current[k]}%`;});
+  const $m=(s)=>document.querySelector(s);
+  const update=async()=>{try{
+    const r=await fetch('/api/monitoring?force=1',{cache:'no-store'});if(!r.ok)return;const d=await r.json();
+    const cur=d.current||{};const det=d.details||{};const dev=d.device||{};
+    ['memory','storage','load'].forEach(k=>{const el=$m(`[data-monitor-value="${k}"]`);if(el)el.textContent=k==='load'?cur[k]:`${cur[k]}%`;const bar=$m(`[data-monitor-bar="${k}"]`);if(bar)bar.style.width=`${cur[k]}%`;});
+    const map={'device_model':dev.model,'android_version':dev.android_version?('Android '+dev.android_version):'','architecture':det.architecture,'uptime':det.uptime,'memory_used_mb':det.memory_used_mb,'memory_total_mb':det.memory_total_mb,'storage_used_gb':det.storage_used_gb,'storage_total_gb':det.storage_total_gb,'processes':det.processes,'cpu_temp':det.temperature?`${det.temperature}°C`:'Không khả dụng','network_rx':det.network?.rx_mb,'network_tx':det.network?.tx_mb};
+    Object.entries(map).forEach(([k,v])=>{const el=$m(`[data-monitor-value="${k}"]`);if(el&&v!==undefined)el.textContent=String(v)});
+    const bat=det.battery||{};const pct=bat.percentage;const batLabel=(pct!==null)?(pct+'%'):(bat.status||'Không khả dụng');
+    const labelEl=$m('[data-monitor-value="battery_label"]');if(labelEl)labelEl.textContent=batLabel+(pct!==null&&bat.status?` · ${bat.status}`:'');
+    const hRow=document.getElementById('battery-health-row');if(hRow){hRow.style.display=pct!==null?'flex':'none';const hVal=$m('[data-monitor-value="battery_health"]');if(hVal)hVal.textContent=bat.health||'';}
+    const cRow=document.getElementById('battery-current-row');if(cRow){cRow.style.display=bat.current?'flex':'none';const cVal=$m('[data-monitor-value="battery_current"]');if(cVal)cVal.textContent=bat.current||'';}
+    const bRow=document.getElementById('battery-bar-row');if(bRow){bRow.style.display=pct!==null?'flex':'none';const bBar=$m('[data-monitor-bar="battery"]');if(bBar){bBar.style.width=pct+'%';bBar.style.background=pct<20?'var(--danger)':'';}const bPct=$m('[data-monitor-value="battery_percent"]');if(bPct)bPct.textContent=pct;}
+    const tRow=document.getElementById('battery-temp-row');if(tRow){tRow.style.display=bat.temperature?'flex':'none';const tVal=$m('[data-monitor-value="battery_temp"]');if(tVal)tVal.textContent=bat.temperature||'';}
     drawMonitorChart(monitorCanvas,d.history||[]);
-  }catch{}},30000);
+  }catch{}};
+  setInterval(update,15000);setTimeout(update,1000);
   window.addEventListener('resize',()=>drawMonitorChart(monitorCanvas,rows));
 }
 

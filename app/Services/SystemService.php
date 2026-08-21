@@ -42,9 +42,9 @@ final class SystemService
             'storage_used_gb' => round($used / 1073741824, 2),
             'storage_total_gb' => round($total / 1073741824, 2),
             'storage_percent' => $total > 0 ? (int)round(($used / $total) * 100) : 0,
-            'memory_used_mb' => $memory['used_mb'],
-            'memory_total_mb' => $memory['total_mb'],
-            'memory_percent' => $memory['percent'],
+            'memory_used_mb' => (int)($memory['used_mb'] ?? 0),
+            'memory_total_mb' => (int)($memory['total_mb'] ?? 0),
+            'memory_percent' => (int)($memory['percent'] ?? 0),
             'load_1m' => round($this->loadAverage(), 2),
             'php_version' => PHP_VERSION,
             'architecture' => php_uname('m'),
@@ -85,8 +85,14 @@ final class SystemService
     private function memoryInfo(): array
     {
         $text = @file_get_contents('/proc/meminfo') ?: '';
+        if (empty($text)) {
+            $text = @shell_exec('timeout 1s cat /proc/meminfo 2>/dev/null') ?: '';
+        }
         preg_match('/MemTotal:\s+(\d+)/', $text, $totalMatch);
         preg_match('/MemAvailable:\s+(\d+)/', $text, $availableMatch);
+        if (empty($availableMatch)) {
+            preg_match('/MemFree:\s+(\d+)/', $text, $availableMatch);
+        }
         $totalKb = (int)($totalMatch[1] ?? 0);
         $availableKb = (int)($availableMatch[1] ?? 0);
         $usedKb = max(0, $totalKb - $availableKb);

@@ -2,12 +2,7 @@
 declare(strict_types=1);
 
 /**
- * V15.4.5 — Resource Monitor siêu an toàn, chống treo PHP-CGI.
- *
- * Cải tiến:
- *  1. Dùng lệnh 'timeout' của Linux cho mọi shell_exec.
- *  2. Bỏ hoàn toàn pcntl/proc_open.
- *  3. Không dùng set_time_limit (tránh gây lỗi trên một số cấu hình PHP).
+ * V15.4.6 — Resource Monitor tối ưu hóa lấy thông tin thiết bị và đồng bộ UI.
  */
 final class MonitoringService
 {
@@ -26,6 +21,7 @@ final class MonitoringService
     {
         $maxAge = $force ? 0 : 12;
         $cached = $this->readFreshCache($maxAge);
+        // Nếu cache hợp lệ và có dữ liệu RAM thật, dùng cache
         if ($cached !== null && isset($cached['details']['memory_total_mb']) && (int)$cached['details']['memory_total_mb'] > 0) {
             return $cached;
         }
@@ -131,21 +127,31 @@ final class MonitoringService
     private function safeDeviceInfo(): array
     {
         try {
-            $device = ['model' => 'Không xác định', 'android_version' => '', 'kernel' => PHP_OS . ' ' . php_uname('r'), 'api' => ''];
+            $device = ['model' => 'Không xác định', 'android_version' => '', 'kernel' => php_uname('s') . ' ' . php_uname('r'), 'api' => ''];
             $getprop = static function (string $key): string {
                 $r = @shell_exec('timeout 1s getprop ' . escapeshellarg($key) . ' 2>/dev/null');
                 return is_string($r) ? trim($r) : '';
             };
-            $model = $getprop('ro.product.model') ?: $getprop('ro.product.brand');
+            
+            // Lấy model máy chính xác hơn
+            $model = $getprop('ro.product.model');
+            $brand = $getprop('ro.product.brand');
+            $manufacturer = $getprop('ro.product.manufacturer');
+            
+            $finalModel = '';
+            if ($brand !== '') $finalModel .= ucfirst($brand) . ' ';
+            if ($model !== '') $finalModel .= $model;
+            if ($finalModel === '' && $manufacturer !== '') $finalModel = ucfirst($manufacturer);
+            
             $android = $getprop('ro.build.version.release');
-            if ($model !== '') $device['model'] = $model;
+            if ($finalModel !== '') $device['model'] = trim($finalModel);
             if ($android !== '') {
                 $device['android_version'] = $android;
                 $device['api'] = $getprop('ro.build.version.sdk');
             }
             return $device;
         } catch (\Throwable) {
-            return ['model' => 'Không xác định', 'android_version' => '', 'kernel' => '', 'api' => ''];
+            return ['model' => 'Không xác định', 'android_version' => '', 'kernel' => php_uname('s') . ' ' . php_uname('r'), 'api' => ''];
         }
     }
 
@@ -161,9 +167,16 @@ final class MonitoringService
             if (!is_string($output) || trim($output) === '') return $unknown;
             $d = @json_decode($output, true);
             if (!is_array($d)) return $unknown;
+            
             $info = ['current' => '', 'temperature' => null];
-            if (isset($d['current'])) $info['current'] = rtrim((string)($d['current'] ?? ''), 'A') . ' mA';
+            if (isset($d['current'])) {
+                $c = (int)$d['current'];
+                // termux-battery-status trả về microAmperes, cần chia 1000 để ra mA
+                if (abs($c) > 10000) $c = (int)round($c / 1000);
+                $info['current'] = $c . ' mA';
+            }
             if (isset($d['temperature']) && is_numeric($d['temperature'])) $info['temperature'] = round((float)$d['temperature'], 1);
+            
             return array_merge($info, [
                 'percentage' => $d['percentage'] ?? null,
                 'status' => (string)($d['status'] ?? ''),

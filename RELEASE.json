@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.44,
-  "build": "20260821-2",
+  "internal_version": 15.46,
+  "build": "20260821-4",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.4.4",
-  "version": "15.4.4",
-  "notes": "V15.4.4: Fix Resource Monitor khong hien du lieu (0/0) va 502 Bad Gateway - viet lai MonitoringService khong dung proc_open (nguyen nhan crash tren Android), chi dung file_get_contents + shell_exec voi timeout; moi ham doc du lieu co try/catch rieng (khong lam sap trang); cache du lieu bi invalid khi version app doi (khong hien so 0 tu cache ban cu); fallback getprop cho thong tin thiet bi, cat cho nhiet do/network/processes khi SELinux chan.",
+  "name": "TMS OS V15.4.6",
+  "version": "15.4.6",
+  "notes": "V15.4.6: Fix loi hien thi 0/0 va dong bo du lieu Resource Monitor - dong bo hoa SystemService va MonitoringService; them data-monitor-value vao view de app.js cap nhat du lieu live; toi uu lay thong tin thiet bi (getprop/cat fallback) cho cac dong may Xiaomi/Redmi.",
   "features": [
-    "Resource Monitor hiển thị đầy đủ: Pin (Termux:API + thanh tiến trình), Nhiệt độ CPU, Network RX/TX thật, Tiến trình, Uptime thiết bị",
-    "Thông tin thiết bị: model (getprop), phiên bản Android, kiến trúc, kernel",
-    "Chống crash & chống SELinux: không dùng proc_open, mọi hàm đọc dữ liệu try/catch riêng, fallback cat/getprop toàn diện"
+    "Resource Monitor đồng bộ dữ liệu live: RAM, CPU, Pin, Mạng, Tiến trình, Uptime cập nhật ngay lập tức qua API",
+    "Thông tin thiết bị chính xác: tối ưu getprop cho Xiaomi/Redmi",
+    "View Resource Monitor mới: hiển thị chi tiết, đẹp mắt và an toàn tuyệt đối"
   ],
-  "checksum_sha256": "e7858e4e549c96ee6de691bb8631039eed44a002b444f7a84a76871031050369",
+  "checksum_sha256": "81a7821b17b46b606f5f6fc4fb762efcf6e775b9b474cd4fc67769a9fdeeaf01",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.4.4",
-  "changelog": "V15.4.4: Fix trang Resource Monitor hien 0/0 toan bo va API 502 Bad Gateway: khong dung proc_open/pcntl (nguyen nhan crash/killed tren Android), dung file_get_contents + shell_exec; cache invalid khi version doi; device info qua getprop; temperature/network/process/uptime doc file API roi fallback cat; bat ky nguon nao loi khong lam sap toan trang.",
+  "version_display": "TMS OS V15.4.6",
+  "changelog": "V15.4.6: Fix loi hien thi 0/0 va dong bo du lieu Resource Monitor: SystemService memoryInfo fallback shell_exec cat; View monitoring them data attributes; app.js polling cap nhat toan bo o chi tiet; device info qua getprop/cat fallback.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }
