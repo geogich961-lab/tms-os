@@ -272,7 +272,9 @@ location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param 
   }
   location ~ /\. { deny all; } }
 NGINX
-[ -f "$HOME/websites/default/public/index.php" ] || printf '<?php echo "<h1>TMS OS hoạt động thành công</h1><p>PHP ".PHP_VERSION."</p>";\n' > "$HOME/websites/default/public/index.php"
+if [ ! -f "$HOME/websites/default/public/index.php" ]; then
+  printf '%s' '<?php echo "<h1>TMS OS hoạt động thành công</h1><p>PHP ".PHP_VERSION."</p>";' > "$HOME/websites/default/public/index.php"
+fi
 printf '[4/7] Khởi tạo database (%s)...\n' "$DB_MODE"
 mkdir -p "$HOME/logs/services"
 
@@ -450,6 +452,16 @@ pgrep -f mariadbd >/dev/null 2>&1 || mariadbd-safe --datadir="$PREFIX/var/lib/my
 fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
 sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
+# ---------- Bước phụ: tự khởi động máy chủ khi mở phiên Termux (session hook) ----------
+# Mỗi lần bạn mở Termux, nếu Nginx hoặc PHP chưa chạy, hệ thống sẽ tự khởi động ngầm
+# (chỉ 1 lần cho mỗi phiên đăng nhập mỗi ngày, không làm chậm mở Termux).
+if [ -x "$TARGET/scripts/tms-session-autostart.sh" ]; then
+  chmod 700 "$TARGET/scripts/tms-session-autostart.sh"
+  if ! grep -q 'TMS OS session hook' "$HOME/.bashrc" 2>/dev/null; then
+    printf '%s\n' '# TMS OS: tự khởi động máy chủ khi mở Termux' '[ -x "$HOME/tms-os/scripts/tms-session-autostart.sh" ] && (bash "$HOME/tms-os/scripts/tms-session-autostart.sh" &)' '# /TMS OS session hook' >> "$HOME/.bashrc"
+    echo '[OK] Đã thêm hook tự khởi động khi mở Termux vào ~/.bashrc.'
+  fi
+fi
 printf '[7/7] Hoàn tất.\n'
 MODE="$(bash "$TARGET/scripts/tms-php-engine.sh" status)"
 echo '============================================'

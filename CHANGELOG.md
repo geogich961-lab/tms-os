@@ -1,3 +1,8 @@
+## V15.4.1 (2026-08-21)
+- **Tự khởi động máy chủ khi mở Termux**: thêm `tms-session-autostart.sh` + hook trong `~/.bashrc`. Mỗi lần mở Termux, nếu Nginx/PHP Engine/MariaDB chưa chạy sẽ tự khởi động ngầm (1 lần/ngày/phiên, không làm chậm mở app).
+- Khắc phục lỗi PWA "Không thể kết nối máy chủ" sau khi Android tắt ngầm Termux (tiết kiệm pin / khởi động lại máy).
+- Hook tự động được gắn vào `~/.bashrc` khi cài mới hoặc sửa chữa qua bộ cài.
+
 # V15.4.0 — Fix lỗi Rate limited Cloudflare API
 
 - **Cache API 60 giây** cho các lệnh GET đọc trạng thái (danh sách zone, cấu hình tunnel/ingress, DNS records) — giảm đáng kể số lần gọi Cloudflare API, tránh chạm rate limit
