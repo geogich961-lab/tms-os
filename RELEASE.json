@@ -1,22 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 15.51,
-  "build": "20260821-9",
+  "internal_version": 15.52,
+  "build": "20260821-10",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.5.1",
-  "version": "15.5.1",
-  "notes": "V15.5.1: Sửa lỗi cập nhật 2 lần bằng cách tự động xóa cache sau khi update; Ép Toast lên Top bằng Inline Style trong JavaScript để bỏ qua cache CSS.",
+  "name": "TMS OS V15.5.2",
+  "version": "15.5.2",
+  "notes": "V15.5.2: Cải thiện khả năng nhận diện Termux:API - Tăng timeout và thêm các thông báo lỗi chi tiết khi API không phản hồi (do thiếu quyền Android hoặc thiếu ứng dụng APK).",
   "features": [
-    "Auto Cache Clear: Tự động xóa cache và tăng asset version sau khi cập nhật thành công",
-    "Toast Force Top: Sử dụng Inline Style để ép thông báo hiển thị ở phía trên (Top)"
+    "Termux:API Enhanced: Tăng timeout lên 3s và xử lý ngoại lệ khi API treo",
+    "Diagnostic Messages: Hiển thị lỗi cụ thể nếu API không phản hồi hoặc sai định dạng"
   ],
-  "checksum_sha256": "3469da42b4dab4c8932f8fd5553078269240543414a1a60920eb38797de9630c",
+  "checksum_sha256": "9aed9ce04d9830ff25b365d9f782987f800253ffae1a64483b804bb6866e53e1",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.5.1",
-  "changelog": "V15.5.1: Fix double-update bug; Force toast to top via JS inline styles; Sync SW V15.5.1.",
+  "version_display": "TMS OS V15.5.2",
+  "changelog": "V15.5.2: Improve Termux:API detection and error reporting; Sync SW V15.5.2.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

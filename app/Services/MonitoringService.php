@@ -160,14 +160,25 @@ final class MonitoringService
     {
         $unknown = ['percentage' => null, 'status' => 'Không khả dụng', 'health' => '', 'temperature' => null, 'current' => ''];
         try {
-            $hasCmd = @shell_exec('timeout 1s command -v termux-battery-status 2>/dev/null');
+            // Kiểm tra lệnh tồn tại
+            $hasCmd = @shell_exec('command -v termux-battery-status 2>/dev/null');
             if (empty($hasCmd)) {
                 return ['percentage' => null, 'status' => 'Chưa cài Termux:API', 'health' => '', 'temperature' => null, 'current' => ''];
             }
-            $output = @shell_exec('timeout 2s termux-battery-status 2>/dev/null');
-            if (!is_string($output) || trim($output) === '') return $unknown;
+            
+            // Chạy lệnh với timeout 3s (tăng từ 2s vì Termux:API có thể phản hồi chậm)
+            $output = @shell_exec('timeout 3s termux-battery-status 2>/dev/null');
+            
+            // Nếu lệnh chạy nhưng không ra kết quả (có thể do chưa cấp quyền Android hoặc chưa cài app APK)
+            if (!is_string($output) || trim($output) === '') {
+                return ['percentage' => null, 'status' => 'API không phản hồi (Cần cấp quyền Android)', 'health' => '', 'temperature' => null, 'current' => ''];
+            }
+            
             $d = @json_decode($output, true);
-            if (!is_array($d)) return $unknown;
+            if (!is_array($d)) {
+                 // Nếu output không phải JSON (có thể là lỗi văn bản từ Termux)
+                 return ['percentage' => null, 'status' => 'Lỗi định dạng API', 'health' => '', 'temperature' => null, 'current' => ''];
+            }
             
             $info = ['current' => '', 'temperature' => null];
             if (isset($d['current'])) {

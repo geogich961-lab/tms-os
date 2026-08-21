@@ -1,3 +1,8 @@
+## V15.5.2 (2026-08-21)
+- **Termux:API Enhanced**: Tăng thời gian chờ (timeout) cho các lệnh API lên 3 giây, giúp hệ thống ổn định hơn trên các dòng máy phản hồi chậm.
+- **Diagnostic Messages**: Hiển thị thông báo chi tiết khi API không phản hồi (thường do chưa cấp quyền Android hoặc chưa cài ứng dụng APK) thay vì chỉ báo "Chưa cài".
+- **Frontend Sync**: Cập nhật Service Worker và Asset Version lên V15.5.2.
+
 ## V15.5.1 (2026-08-21)
 - **Fix Cập nhật 2 lần**: Tích hợp `tms_clear_cache()` vào cuối quy trình cập nhật, giúp hệ thống tự động làm mới Asset Version ngay sau khi swap code thành công.
 - **Toast Force Top**: Sử dụng JavaScript Inline Style để ép thông báo hiển thị ở phía trên (Top), bỏ qua hoàn toàn các quy tắc CSS bị cache trong trình duyệt.
