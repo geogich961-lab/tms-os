@@ -1,6 +1,6 @@
 <?php $title='App Installer · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head"><div><p class="eyebrow">ONE-CLICK DEPLOY</p><h1>App Installer</h1><p>Triển khai ứng dụng vào website riêng, kiểm tra kết nối và tự rollback khi lỗi.</p></div></div>
-<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><pre class="flash-pre"><?=tms_h($flash['message']??'')?></pre></div><?php endif;?>
+<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><pre class="flash-pre"><?=tms_h($flash['message']??'')?></pre></div><?php endif;?>
 <div class="plugin-grid"><?php foreach($catalog as $app):?>
 <article class="panel-card plugin-card"><div class="plugin-icon"><?=tms_h(strtoupper(substr($app['name'],0,2)))?></div><h2><?=tms_h($app['name'])?></h2><p><?=tms_h($app['description'])?></p><small><?=tms_h($app['requirements'])?></small><button class="btn btn-primary btn-block" data-app-select="<?=tms_h($app['id'])?>" data-app-db="<?=$app['database']?'1':'0'?>">Cài đặt</button></article>
 <?php endforeach;?></div>

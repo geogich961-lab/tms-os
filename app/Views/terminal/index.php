@@ -1,6 +1,6 @@
 <?php $title='Terminal an toàn · TMS OS 4.0';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head"><div><p class="eyebrow">Công cụ quản trị</p><h1>Terminal an toàn</h1></div></div>
-<div class="alert alert-success">Chỉ các lệnh chẩn đoán đã được kiểm soát mới được phép chạy. Module này không nhận lệnh tùy ý.</div>
+<div class="alert alert-success" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden>Chỉ các lệnh chẩn đoán đã được kiểm soát mới được phép chạy. Module này không nhận lệnh tùy ý.</div>
 <section class="two-grid terminal-grid"><article class="panel-card"><div class="card-title"><p class="eyebrow">Lệnh nhanh</p><h2>Chẩn đoán Termux</h2></div><form method="post" action="/terminal/run" class="terminal-command-list"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><?php foreach($commands as $key=>$item):?><button class="btn btn-secondary terminal-command" name="command" value="<?=tms_h($key)?>"><?=tms_h($item['label'])?></button><?php endforeach;?></form></article>
 <article class="panel-card terminal-output-card"><div class="card-title"><p class="eyebrow">Kết quả</p><h2><?=tms_h($result['label']??'Chưa chạy lệnh')?></h2></div><pre class="terminal-output"><?=tms_h($result['output']??'Chọn một lệnh ở bên trái để kiểm tra hệ thống.')?></pre></article></section>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

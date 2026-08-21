@@ -1,6 +1,6 @@
 <?php $title='Website Control Center · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head website-page-head"><div><p class="eyebrow">Website Control Center</p><h1>Website</h1><p class="page-subtitle">Quản lý, nhân bản và tạo snapshot an toàn cho từng website.</p></div><div class="row-actions head-actions"><a class="btn btn-secondary" href="/websites/hosts">Tải hosts LAN</a><button class="btn btn-secondary" data-dialog-open="clone-site">Nhân bản</button><button class="btn btn-primary" data-dialog-open="create-site">+ Tạo website</button></div></div>
-<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
+<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
 <section class="website-grid">
 <?php foreach($sites as $site):$status=$site['status']??'unknown';$label=['running'=>'Đang chạy','stopped'=>'Đã dừng','error'=>'Lỗi cấu hình','starting'=>'Đang khởi động'][$status]??'Không rõ';?>
 <article class="panel-card website-card">

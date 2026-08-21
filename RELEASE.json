@@ -1,22 +1,26 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "15.3.4",
-  "build": "20260821-1",
+  "internal_version": "15.3.6",
+  "build": "20260821-2",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V15.3.4",
-  "version": "15.3.5",
-  "notes": "V15.3.4: Sua loi thanh menu di dong bi cuon theo trang. Header mobile gio co dinh (fixed), khong bi cuon nua, noi dung khong bi che.",
+  "name": "TMS OS V15.3.6",
+  "version": "15.3.6",
+  "notes": "V15.3.6: He thong thong bao toast notification cho tat ca thao tac trong panel. Moi thao tac (Cloudflare, SQL Editor, Cai dat, File, Backup, dich vu...) bay gio hien trang thai dang toast noi tai vi tri thao tac, khong can cuon len dau trang xem nua.",
   "features": [
-    "Fix: Thanh menu header o dien thoai gio co dinh tren cung man hinh, khong cuon theo trang nua",
-    "Header mobile dung position: fixed + tinh padding an toan (safe-area-inset-top) cho dien thoai notch",
-    "Service Worker tms-os-v15-3-4: cap nhat cache CSS moi, tu dong xoa cache cu khi update"
+    "Toast notification toan panel: success/error/warn/info voi icon rieng va mau rieng (xanh do/cam/xanh duong)",
+    "Stack toast bottom-right, tu dong an sau 3.5-5.5s, ho tro nhieu toast cung luc",
+    "Flash message tu server (POST truyen thong) tu dong chuyen thanh toast khi trang load (data-flash-toast)",
+    "Tich hop toast: Cloudflare Hosting (luu token, tao/dung/tach tunnel, gan ten mien), SQL Editor (luu/xoa/them dong, chay SQL), Brand logo (kiem tra dung luong file), Clear cache, Thong bao PWA",
+    "Tat ca view (Dashboard, Files, Database, Services, Updates, Backups, Websites, Network, Apps, Modules, Plugins, Guardian, Diagnostics, Terminal, Logs, Notifications, SQLEditor, Settings) deu da chuan hoa flash message thanh toast",
+    "CSS toast responsive: desktop 380px bottom-right, mobile full-width 12px le",
+    "Service Worker tms-os-v15-3-6: cap nhat cache moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "b4e0df0d8597db48442e211f89c4f8c61c5fa53fe9d686c7e7ca21065740f61d",
+  "checksum_sha256": "",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V15.3.5",
-  "changelog": "Giao dien Cloudflare Hosting moi: ho tro nhieu website/subdomain tren cung tunnel (multi-site), subdomain chips tao nhanh, sua nut/chu bi dinh o giao dien mobile.",
-  "download_url": "https://github.com/geogich961-lab/tms-os/releases/download/v15.3.5/TMS_OS_V15.3.5.zip"
+  "version_display": "TMS OS V15.3.6",
+  "changelog": "Toast notification cho TAT CA thao tac panel: trang thai duoc hien dang toast noi tai vi tri thao tac, khong can cuon len dau trang xem nua.",
+  "download_url": "https://github.com/geogich961-lab/tms-os/releases/download/v15.3.6/TMS_OS_V15.3.6.zip"
 }

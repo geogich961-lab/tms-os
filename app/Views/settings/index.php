@@ -1,6 +1,6 @@
 <?php $title='Cài đặt · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head"><div><p class="eyebrow">System Settings</p><h1>Cài đặt</h1></div></div>
-<?php if($flash):?><div class="alert <?=$flash['type']==='success'?'alert-success':'alert-error'?>"><?=tms_h((string)$flash['message'])?></div><?php endif;?>
+<?php if($flash):?><div class="alert <?=$flash['type']==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=$flash['type']==='success'?'success':'error'?>" hidden><?=tms_h((string)$flash['message'])?></div><?php endif;?>
 <section class="settings-grid">
 <article class="panel-card appearance-card">
   <div class="section-title-row"><div><p class="eyebrow">Appearance Center</p><h2>Màu giao diện ứng dụng</h2></div><div class="appearance-preview" id="appearance-preview"><span></span><strong>TMS OS</strong></div></div>

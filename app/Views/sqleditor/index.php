@@ -1,6 +1,6 @@
 <?php $title='SQL Editor · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head"><div><p class="eyebrow">SQL Editor · <?=tms_h(($driver ?? 'SQLite'))?></p><h1>SQL Editor</h1></div></div>
-<?php if($error):?><div class="alert alert-error"><?=tms_h($error)?></div><?php endif;?>
+<?php if($error):?><div class="alert alert-error" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=tms_h($error)?></div><?php endif;?>
 <div class="sql-layout">
 <aside class="sql-sidebar table-card">
  <p class="eyebrow" style="margin:0 0 8px">Database</p>

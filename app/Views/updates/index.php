@@ -1,6 +1,6 @@
 <?php $title='Update Center · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
 <div class="page-head"><div><p class="eyebrow">SAFE UPDATE</p><h1>Update Center</h1><p>Kiểm tra, tải và áp dụng cập nhật an toàn — tự sao lưu và khôi phục nếu lỗi.</p></div></div>
-<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
+<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
 
 <section class="panel-card"><h2>Phiên bản hiện tại</h2>
 <p>Bản đang chạy: <strong><?=tms_h($status['current']??'unknown')?></strong>

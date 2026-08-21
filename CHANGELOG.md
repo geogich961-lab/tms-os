@@ -1,3 +1,11 @@
+# V15.3.6 — Toast notification toàn panel
+- Hệ thống thông báo toast notification mới cho toàn bộ panel: mọi thao tác (Cloudflare Hosting, SQL Editor, Cài đặt, File, Backup, dịch vụ...) đều hiện trạng thái thành công/lỗi dạng toast nổi ngay tại vị trí người dùng thao tác — không cần cuộn lên đầu trang xem alert nữa.
+- 4 loại toast với icon và màu riêng: success (✓ xanh), error (✕ đỏ, tự động 5.5s), warn (! cam), info (i xanh dương). Toast xếp chồng bottom-right, tự động mờ dần và biến mất.
+- Flash message truyền thống từ server (POST form) tự động được chuyển thành toast khi trang load — toàn bộ view (Dashboard, Files, Database, Services, Updates, Backups, Websites, Network, Apps, Modules, Plugins, Guardian, Diagnostics, Terminal, Logs, Notifications, SQLEditor, Settings) đều đã chuẩn hóa.
+- Mobile: toast phủ toàn chiều ngang màn hình với lề 12px, phù hợp thao tác một tay.
+- Service Worker bump lên `tms-os-v15-3-6`, cập nhật cache CSS mới và tự xóa cache cũ khi kích hoạt bản mới — người dùng PWA tự nhận toast system sau khi cập nhật.
+- Toast API dùng lại trong code: `tmsToast("Nội dung", "success|error|warn|info", ms)`.
+---
 # V15.3.5 — Cloudflare Hosting mới: nhiều website/subdomain trên cùng tunnel
 
 - Cloudflare Hosting được viết lại giao diện: bố cục dạng thẻ rõ ràng theo từng bước, label và ô nhập tách bạch, nút bấm có khoảng cách đều — không còn nút/chữ bị dính vào nhau trên điện thoại.

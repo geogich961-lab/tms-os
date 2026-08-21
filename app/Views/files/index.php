@@ -25,7 +25,7 @@ $path = (string)$listing['relative'];
 </form>
 
 <?php if (!empty($flash)): ?>
-    <div class="alert <?= ($flash['type'] ?? '') === 'success' ? 'alert-success' : 'alert-error' ?>">
+    <div class="alert <?= ($flash['type'] ?? '') === 'success' ? 'alert-success' : 'alert-error' ?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden>
         <?= tms_h((string)($flash['message'] ?? '')) ?>
     </div>
 <?php endif; ?>

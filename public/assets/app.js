@@ -1,3 +1,26 @@
+/* ===== Toast notification hệ thống (V15.3.6) — hiển thị trạng thái thao tác tại vị trí người dùng ===== */
+(()=>{
+window.tmsToast=(msg,type,ms)=>{
+  const text=String(msg==null?'':msg);if(!text)return;
+  type=['success','error','warn','info'].includes(type)?type:'info';
+  ms=Number.isFinite(ms)&&ms>0?ms:(type==='error'?5500:3500);
+  let box=document.getElementById('tms-toast-container');
+  if(!box){box=document.createElement('div');box.id='tms-toast-container';document.body.appendChild(box);}
+  const t=document.createElement('div');t.className='tms-toast tms-toast-'+type;
+  t.innerHTML='<span class="tms-toast-icon">'+({'success':'✓','error':'✕','warn':'!','info':'i'}[type])+'</span><span class="tms-toast-text"></span>';
+  t.querySelector('.tms-toast-text').textContent=text;
+  box.appendChild(t);
+  requestAnimationFrame(()=>t.classList.add('tms-toast-in'));
+  setTimeout(()=>{t.classList.add('tms-toast-out');setTimeout(()=>t.remove(),320);},ms);
+};
+})();
+
+// Auto-convert: flash message từ server (POST truyền thống) → toast notification
+(()=>{
+  const flash=document.querySelector('[data-flash-toast]');
+  if(flash){const text=flash.textContent.trim();if(text) tmsToast(text,flash.dataset.flashToast||'info',7000);flash.remove();}
+})();
+
 (()=>{
   const root=document.documentElement;
   const sidebar=document.getElementById('sidebar');
@@ -58,7 +81,8 @@
     const file=brandInput.files?.[0];
     if(brandApply) brandApply.disabled=!file;
     if(!file||!brandPreview) return;
-    if(file.size>2097152){brandApply.disabled=true;return;}
+    if(file.size>2097152){brandApply.disabled=true;tmsToast('Logo quá 2 MB. Chọn tệp nhỏ hơn.','error');return;}
+    tmsToast('Đã chọn logo: '+file.name,'info');
     const url=URL.createObjectURL(file);
     brandPreview.src=url;
   });
@@ -71,6 +95,7 @@
   }));
   document.querySelectorAll('[data-clear-cache]').forEach(button=>button.addEventListener('click',()=>{
     if(!confirm('Xóa cache ngay? Các session cũ và tệp tạm sẽ bị xóa, giao diện sẽ tải lại dữ liệu mới. Phiên đăng nhập hiện tại vẫn được giữ.')) return;
+    tmsToast('Đang xóa cache... giao diện sẽ tải lại dữ liệu mới.','info');
     button.closest('form')?.submit();
   }));
   document.querySelectorAll('[data-file-picker]').forEach(input=>input.addEventListener('change',()=>{
@@ -296,7 +321,7 @@ const notificationTest=document.querySelector('[data-notification-test]');
 const permissionText=document.getElementById('notification-permission-text');
 function updatePermissionText(){if(permissionText)permissionText.textContent=('Notification'in window)?`Trạng thái: ${Notification.permission}`:'Trình duyệt không hỗ trợ Notification API.'}
 updatePermissionText();
-notificationEnable?.addEventListener('click',async()=>{if('Notification'in window)await Notification.requestPermission();updatePermissionText();});
+notificationEnable?.addEventListener('click',async()=>{if('Notification'in window)await Notification.requestPermission();updatePermissionText();tmsToast(Notification.permission==='granted'?'Đã bật thông báo PWA.':'Quyền thông báo chưa được cấp.','success');});
 notificationTest?.addEventListener('click',()=>{if(Notification.permission==='granted')new Notification('TMS OS',{body:'Thông báo PWA đang hoạt động.',icon:'/assets/icons/icon-192.png'});});
 if(document.querySelector('[data-service-alert]')){
   let previous=null;
@@ -485,7 +510,7 @@ if(document.querySelector('[data-service-alert]')){
       const hn=b.dataset.hostname;
       if(!confirm('Tách tên host "'+hn+'" khỏi tunnel? Record DNS của tên host này sẽ bị xóa, các tên host khác không bị ảnh hưởng.')) return;
       const old=b.textContent;b.disabled=true;b.textContent='Đang tách...';
-      try{const res=await post('/api/cloudflare-domain/detach',{csrf:csrf(),hostname:hn});showAlert(res.message||'Đã tách tên host.');renderStatus();}catch(e){showAlert(String(e.message));}
+      try{const res=await post('/api/cloudflare-domain/detach',{csrf:csrf(),hostname:hn});showAlert(res.message||'Đã tách tên host.');tmsToast(res.message||'Đã tách tên host.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
       b.disabled=false;b.textContent=old;
     };});
   };
@@ -562,6 +587,7 @@ if(document.querySelector('[data-service-alert]')){
       if(accountIdEl) accountIdEl.textContent=accData.account_id||'—';
       if(accountBox) accountBox.hidden=!accData.account_id;
       if(zonesCountEl) zonesCountEl.textContent=`${(accData.zones||[]).length} domain`;
+      tmsToast('Đã lưu API Token. Tài khoản: '+(accData.account_id||'')+(accData.zones?' · '+accData.zones.length+' domain':''),'success');
       const zones=accData.zones||[];
       if(zoneSelect){
         zoneSelect.innerHTML='<option value="">— chọn domain —</option>'+zones.map(z=>`<option value="${esc(z.id)}">${esc(z.name)}</option>`).join('');
@@ -585,7 +611,7 @@ if(document.querySelector('[data-service-alert]')){
       }
       showAlert('');
       renderStatus();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Kiểm tra & lưu token';
   });
 
@@ -598,8 +624,9 @@ if(document.querySelector('[data-service-alert]')){
       const d=await post('/api/cloudflare-domain/create-tunnel',{csrf:csrf()});
       if(!d.success) throw new Error(d.error||'Tạo tunnel thất bại.');
       showAlert(`Đã tạo tunnel "${d.tunnel_name||''}". Tiếp theo: gắn tên miền ở Bước 3.`);
+      tmsToast(`Đã tạo tunnel "${d.tunnel_name||''}". Gắn tên miền ở Bước 3.`,'success');
       renderStatus();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Tạo Cloudflare Tunnel mới';
   });
 
@@ -618,8 +645,9 @@ if(document.querySelector('[data-service-alert]')){
       const d=await post('/api/cloudflare-domain/attach',{csrf:csrf(),hostname,zone_id:zoneId,target});
       if(!d.success) throw new Error(d.error||'Gắn tên miền thất bại.');
       showAlert('Đã tạo record DNS CNAME. Website sẽ online ngay khi tunnel chạy ở Bước Điều khiển.');
+      tmsToast('Đã tạo record DNS. Website online ngay khi tunnel chạy.','success');
       renderStatus();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Gắn tên miền & tạo record DNS';
   });
 
@@ -630,14 +658,15 @@ if(document.querySelector('[data-service-alert]')){
     try{
       const d=await post('/api/cloudflare-domain/start',{csrf:csrf()});
       if(!d.success) throw new Error(d.error);
+      tmsToast('Đang khởi động tunnel...','success');
       renderStatus();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='▶ Khởi động Tunnel';
   });
   $('cfd-stop')?.addEventListener('click',async()=>{
     showAlert('');
     const btn=$('cfd-stop');btn.disabled=true;btn.textContent='Đang dừng...';
-    try{await post('/api/cloudflare-domain/stop',{csrf:csrf()});renderStatus();}catch(e){showAlert(String(e.message));}
+    try{await post('/api/cloudflare-domain/stop',{csrf:csrf()});tmsToast('Đã dừng tunnel.','warn');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='■ Dừng Tunnel';
   });
   $('cfd-refresh')?.addEventListener('click',renderStatus);
@@ -645,21 +674,21 @@ if(document.querySelector('[data-service-alert]')){
     if(!confirm('Tách tên miền khỏi tunnel? Record DNS sẽ bị xóa nhưng tunnel vẫn giữ nguyên.')) return;
     showAlert('');
     const btn=$('cfd-detach');btn.disabled=true;btn.textContent='Đang tách...';
-    try{const d=await post('/api/cloudflare-domain/detach',{csrf:csrf()});showAlert(d.message||'Đã tách tên miền.');renderStatus();}catch(e){showAlert(String(e.message));}
+    try{const d=await post('/api/cloudflare-domain/detach',{csrf:csrf()});showAlert(d.message||'Đã tách tên miền.');tmsToast(d.message||'Đã tách tên miền.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Tách tên miền (giữ tunnel)';
   });
   $('cfd-delete-tunnel')?.addEventListener('click',async()=>{
     if(!confirm('Xóa tunnel khỏi tài khoản Cloudflare? Tunnel hiện tại sẽ ngừng ngay.')) return;
     showAlert('');
     const btn=$('cfd-delete-tunnel');btn.disabled=true;btn.textContent='Đang xóa...';
-    try{const d=await post('/api/cloudflare-domain/delete-tunnel',{csrf:csrf()});showAlert(d.message||'Đã xóa tunnel.');renderStatus();}catch(e){showAlert(String(e.message));}
+    try{const d=await post('/api/cloudflare-domain/delete-tunnel',{csrf:csrf()});showAlert(d.message||'Đã xóa tunnel.');tmsToast(d.message||'Đã xóa tunnel.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Xóa Tunnel khỏi Cloudflare';
   });
   $('cfd-uninstall')?.addEventListener('click',async()=>{
     if(!confirm('Xóa TOÀN BỘ cấu hình Cloudflare Hosting? Tunnel sẽ bị xóa khỏi tài khoản và mọi thiết lập sẽ mất.')) return;
     showAlert('');
     const btn=$('cfd-uninstall');btn.disabled=true;btn.textContent='Đang xóa...';
-    try{const d=await post('/api/cloudflare-domain/uninstall',{csrf:csrf()});showAlert(d.message||'Đã xóa toàn bộ cấu hình.');renderStatus();}catch(e){showAlert(String(e.message));}
+    try{const d=await post('/api/cloudflare-domain/uninstall',{csrf:csrf()});showAlert(d.message||'Đã xóa toàn bộ cấu hình.');tmsToast(d.message||'Đã xóa toàn bộ cấu hình.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Xóa toàn bộ cấu hình Cloudflare';
   });
 
@@ -675,15 +704,16 @@ if(document.querySelector('[data-service-alert]')){
       const d=await post('/api/cloudflare-domain/attach-panel',{csrf:csrf(),panel_hostname:panelHostname});
       if(!d.success) throw new Error(d.error||'Bật truy cập từ xa thất bại.');
       showAlert('Đã bật truy cập từ xa! Bạn có thể vào panel bằng '+d.url+' từ bất kỳ máy nào, không phụ thuộc WiFi/LAN.');
+      tmsToast('Đã bật truy cập từ xa tại '+d.url,'success');
       renderStatus();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='🔗 Bật truy cập từ xa';
   });
   $('cfd-remote-detach')?.addEventListener('click',async()=>{
     if(!confirm('Tắt truy cập panel từ xa? Subdomain panel sẽ ngừng hoạt động (tunnel và website không bị ảnh hưởng).')) return;
     showAlert('');
     const btn=$('cfd-remote-detach');btn.disabled=true;btn.textContent='Đang tắt...';
-    try{const d=await post('/api/cloudflare-domain/detach-panel',{csrf:csrf()});showAlert(d.message||'Đã tắt truy cập từ xa.');renderStatus();}catch(e){showAlert(String(e.message));}
+    try{const d=await post('/api/cloudflare-domain/detach-panel',{csrf:csrf()});showAlert(d.message||'Đã tắt truy cập từ xa.');tmsToast(d.message||'Đã tắt truy cập từ xa.','success');renderStatus();}catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='Tắt truy cập từ xa';
   });
 
@@ -704,8 +734,9 @@ if(document.querySelector('[data-service-alert]')){
       const d=await post('/api/cloudflare-domain/perf-optimize',{csrf:csrf()});
       if(!d.success) throw new Error(d.error||'Tối ưu thất bại.');
       showAlert((d.message||'Đã bật tối ưu hóa hiệu năng.')+' Hãy đợi 2-3 giây rồi tải lại trang.');
+      tmsToast(d.message||'Đã bật tối ưu hóa hiệu năng. Tải lại trang sau 2-3 giây.','success');
       renderPerf();
-    }catch(e){showAlert(String(e.message));}
+    }catch(e){showAlert(String(e.message));tmsToast(String(e.message),'error');}
     btn.disabled=false;btn.textContent='⚡ Bật tối ưu hóa hiệu năng';
   });
 
@@ -835,8 +866,8 @@ if(document.querySelector('[data-service-alert]')){
           td.innerHTML='<span class="sql-null" style="opacity:.6">⏳</span>';
           try{
             await post('/api/sql/save-cell',{csrf:csrf(),db_key:dbKey,table:currentTable,pk_columns:primaryKey,pk_values:primaryKey.map(k=>row[k]===null?'':String(row[k]??'')),column:col,value:newVal});
-            dataRows[ri][col]=newVal;renderDataGrid();
-          }catch(e){td.innerHTML=esc(val);alert(String(e.message));}
+            dataRows[ri][col]=newVal;renderDataGrid();tmsToast('Đã lưu ô dữ liệu.','success');
+          }catch(e){td.innerHTML=esc(val);alert(String(e.message));tmsToast(String(e.message),'error');}
         };
         inp.addEventListener('blur',()=>finish(inp.value));
         inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();inp.blur();}if(ev.key==='Escape'){inp.value=val;inp.blur();}});
@@ -850,7 +881,8 @@ if(document.querySelector('[data-service-alert]')){
       try{
         await post('/api/sql/delete-row',{csrf:csrf(),db_key:dbKey,table:currentTable,pk_columns:primaryKey,pk_values:primaryKey.map(k=>row[k]===null?'':String(row[k]??''))});
         dataRows.splice(ri,1);renderDataGrid();countEl.textContent=`${dataRows.length} dòng · đã xóa 1 dòng`;
-      }catch(e){alert(String(e.message));}
+        tmsToast('Đã xóa 1 dòng.','success');
+      }catch(e){alert(String(e.message));tmsToast(String(e.message),'error');}
     }));
   };
 
@@ -871,7 +903,8 @@ if(document.querySelector('[data-service-alert]')){
           await post('/api/sql/insert-row',{csrf:csrf(),db_key:dbKey,table:currentTable,values});
           insertModal.classList.remove('show');
           await loadTableData();
-        }catch(e){alert(String(e.message));}
+          tmsToast('Đã thêm dòng mới.','success');
+        }catch(e){alert(String(e.message));tmsToast(String(e.message),'error');}
       };
       insertModal.classList.add('show');
     }catch(e){alert(String(e.message));}
@@ -884,8 +917,8 @@ if(document.querySelector('[data-service-alert]')){
     resultWrap.innerHTML='';resultMeta.textContent='Đang thực thi...';
     try{
       const d=await post('/api/sql/query',{csrf:csrf(),db_key:dbKey,sql,readonly:readOnly?1:0});
-      if(d.error){resultMeta.innerHTML=`<div class="sql-result-error">${esc(d.error)}</div>`;return;}
-      if(d.message){resultMeta.innerHTML=`<div class="sql-result-ok">${esc(d.message)} (${d.time??0}s)</div>`;return;}
+      if(d.error){resultMeta.innerHTML=`<div class="sql-result-error">${esc(d.error)}</div>`;tmsToast(d.error,'error');return;}
+      if(d.message){resultMeta.innerHTML=`<div class="sql-result-ok">${esc(d.message)} (${d.time??0}s)</div>`;tmsToast(d.message,'success');return;}
       if(Array.isArray(d.columns)&&d.columns.length>0){
         const ths=d.columns.map(c=>`<th>${esc(c)}</th>`).join('');
         const rows=(d.rows||[]).map(r=>`<tr>${d.columns.map(c=>{const v=r[c];return `<td title="${esc(String(v??''))}">${v===null?'<span class="sql-null">NULL</span>':esc(String(v))}</td>`;}).join('')}</tr>`).join('');
@@ -893,6 +926,7 @@ if(document.querySelector('[data-service-alert]')){
         resultMeta.textContent=`${d.rowCount??0} dòng · ${d.time??0}s`;
       }else{
         resultMeta.innerHTML=`<div class="sql-result-ok">Thành công · ${d.time??0}s</div>`;
+        tmsToast('SQL thực thi thành công · '+(d.time??0)+'s','success');
       }
     }catch(e){resultMeta.innerHTML=`<div class="sql-result-error">${esc(String(e.message))}</div>`;}
   };

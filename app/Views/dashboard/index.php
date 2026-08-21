@@ -16,7 +16,7 @@ $lanIp = (string)($network['lan_ip'] ?? 'Không phát hiện');
 require dirname(__DIR__) . '/layouts/header.php';
 ?>
 <div class="page-head"><div><p class="eyebrow">Tổng quan hệ thống</p><h1>Dashboard</h1></div><span class="page-time"><?=tms_h($time)?></span></div>
-<?php if (!empty($flash)): ?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=nl2br(tms_h((string)($flash['message']??'')))?></div><?php endif; ?>
+<?php if (!empty($flash)): ?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=nl2br(tms_h((string)($flash['message']??'')))?></div><?php endif; ?>
 <section class="metric-grid">
  <article class="metric-card"><span>RAM</span><strong><?=$memoryPercent?>%</strong><div class="progress"><i style="width:<?=min(100,max(0,$memoryPercent))?>%"></i></div><small><?=$memoryUsed?> / <?=$memoryTotal?> MB</small></article>
  <article class="metric-card"><span>Dung lượng</span><strong><?=$storagePercent?>%</strong><div class="progress"><i style="width:<?=min(100,max(0,$storagePercent))?>%"></i></div><small><?=$storageUsed?> / <?=$storageTotal?> GB</small></article>

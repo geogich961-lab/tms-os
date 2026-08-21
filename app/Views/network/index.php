@@ -1,6 +1,6 @@
 <?php $title='Network Center · TMS OS 4.0';$showShell=true;require dirname(__DIR__).'/layouts/header.php'; ?>
 <div class="page-head"><div><p class="eyebrow">Kết nối máy chủ</p><h1>Network Center</h1></div><span class="page-time"><?=tms_h($network['hostname'])?></span></div>
-<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>"><?=tms_h($flash['message']??'')?></div><?php endif;?>
+<?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=tms_h($flash['message']??'')?></div><?php endif;?>
 <section class="metric-grid network-metrics">
  <article class="metric-card"><span>IPv4 trong Wi-Fi</span><strong class="metric-text" data-copy-value="<?=tms_h($network['lan_ip'])?>"><?=tms_h($network['lan_ip'])?></strong><button class="btn btn-secondary btn-small" data-copy="<?=tms_h($network['lan_ip'])?>">Sao chép</button></article>
  <article class="metric-card"><span>Bộ định tuyến</span><strong class="metric-text"><?=tms_h($network['gateway'])?></strong><small>Gateway mạng nội bộ</small></article>
