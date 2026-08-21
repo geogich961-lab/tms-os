@@ -21,13 +21,14 @@
   --border: #e2e7f2;
   --border-strong: #d0d8e8;
 
-  /* Brand */
-  --primary: #2f5fe8;
-  --primary-hover: #244fd0;
-  --primary-soft: rgba(47, 95, 232, 0.08);
-  --primary-soft-strong: rgba(47, 95, 232, 0.14);
-  --primary-rgb: 47, 95, 232;
-  --primary2: #5b6cf0;
+  /* Brand - Red Gradient (A70E13, ED1D24, A70E13) */
+  --primary: #ed1d24;
+  --primary-hover: #a70e13;
+  --primary-soft: rgba(237, 29, 36, 0.08);
+  --primary-soft-strong: rgba(237, 29, 36, 0.14);
+  --primary-rgb: 237, 29, 36;
+  --primary2: #a70e13;
+  --primary-gradient: linear-gradient(45deg, #a70e13, #ed1d24, #a70e13);
 
   /* Semantic */
   --danger: #d43b56;
@@ -70,12 +71,13 @@ html[data-theme="dark"] {
   --muted: #8d99b5;
   --border: #2a3550;
   --border-strong: #364466;
-  --primary: #6d96ff;
-  --primary-hover: #8fabff;
-  --primary-soft: rgba(109, 150, 255, 0.1);
-  --primary-soft-strong: rgba(109, 150, 255, 0.16);
-  --primary-rgb: 109, 150, 255;
-  --primary2: #9085ff;
+  --primary: #ed1d24;
+  --primary-hover: #ff4d4d;
+  --primary-soft: rgba(237, 29, 36, 0.12);
+  --primary-soft-strong: rgba(237, 29, 36, 0.2);
+  --primary-rgb: 237, 29, 36;
+  --primary2: #a70e13;
+  --primary-gradient: linear-gradient(45deg, #a70e13, #ed1d24, #a70e13);
   --danger: #ff7f92;
   --danger-soft: rgba(255, 127, 146, 0.1);
   --danger-soft-strong: rgba(255, 127, 146, 0.17);
@@ -258,8 +260,8 @@ code, pre { font-family: var(--font-mono); }
 .btn:hover { filter: brightness(0.96); }
 .btn:active { transform: scale(0.985); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--primary); color: #fff; box-shadow: var(--shadow-sm); }
-.btn-primary:hover { background: var(--primary-hover); }
+.btn-primary { background: var(--primary-gradient); color: #fff; box-shadow: var(--shadow-sm); border: none; }
+.btn-primary:hover { filter: brightness(1.1); box-shadow: 0 4px 12px rgba(237, 29, 36, 0.3); }
 .btn-secondary {
   background: var(--surface);
   color: var(--text);
@@ -333,7 +335,7 @@ code, pre { font-family: var(--font-mono); }
 .progress i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--primary), var(--primary2));
+  background: var(--primary-gradient);
   border-radius: inherit;
 }
 
@@ -439,8 +441,18 @@ input:focus, select:focus, textarea:focus {
   background: var(--surface);
   padding: 32px 30px;
   border: 1px solid var(--border);
+  border-top: 5px solid var(--primary);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-lg);
+  position: relative;
+  overflow: hidden;
+}
+.login-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 5px;
+  background: var(--primary-gradient);
+  z-index: 10;
 }
 .login-card h1 { margin: 6px 0; font-size: 1.45rem; font-weight: 800; letter-spacing: -0.01em; }
 .brand-logo { display: block; object-fit: contain; }

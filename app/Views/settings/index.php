@@ -3,28 +3,18 @@
 <?php if($flash):?><div class="alert <?=$flash['type']==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=$flash['type']==='success'?'success':'error'?>" hidden><?=tms_h((string)$flash['message'])?></div><?php endif;?>
 <section class="settings-grid">
 <article class="panel-card appearance-card">
-  <div class="section-title-row"><div><p class="eyebrow">Appearance Center</p><h2>Màu giao diện ứng dụng</h2></div><div class="appearance-preview" id="appearance-preview"><span></span><strong>TMS OS</strong></div></div>
-  <p class="muted">Màu được áp dụng cho nút, menu, thanh trạng thái PWA và màn hình khởi động Android.</p>
-  <form method="post" action="/settings/appearance" class="stack" id="appearance-form">
-    <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
-    <div class="color-presets" data-color-presets>
-      <?php foreach([
-        ['#315ee8','#6b4dea','Xanh TMS'],['#0f766e','#14b8a6','Xanh ngọc'],['#7c3aed','#a855f7','Tím'],['#d97706','#f59e0b','Cam'],['#be123c','#e11d48','Đỏ hồng'],['#334155','#64748b','Xám đậm']
-      ] as $preset):?>
-      <button type="button" class="color-preset" data-primary="<?=$preset[0]?>" data-secondary="<?=$preset[1]?>" title="<?=tms_h($preset[2])?>"><i style="--preset-a:<?=$preset[0]?>;--preset-b:<?=$preset[1]?>"></i><span><?=tms_h($preset[2])?></span></button>
-      <?php endforeach;?>
-    </div>
-    <div class="color-fields">
-      <label><span>Màu chính</span><div class="color-input"><input type="color" name="accent" value="<?=tms_h($ui['accent'])?>" data-accent><code><?=tms_h($ui['accent'])?></code></div></label>
-      <label><span>Màu phụ</span><div class="color-input"><input type="color" name="accent_secondary" value="<?=tms_h($ui['accent_secondary'])?>" data-accent-secondary><code><?=tms_h($ui['accent_secondary'])?></code></div></label>
-      <label><span>Nền splash PWA</span><div class="color-input"><input type="color" name="pwa_background" value="<?=tms_h($ui['pwa_background'])?>" data-pwa-background><code><?=tms_h($ui['pwa_background'])?></code></div></label>
-    </div>
-    <label><span>Chế độ mặc định</span><select name="default_theme"><option value="light" <?=$ui['default_theme']==='light'?'selected':''?>>Sáng</option><option value="dark" <?=$ui['default_theme']==='dark'?'selected':''?>>Tối</option></select></label>
-    <label><span>Thời gian hiển thị thông báo (giây)</span><input type="number" name="toast_duration" value="<?=tms_h($ui['toast_duration'])?>" min="1" max="60"></label>
-    <div class="row-actions"><button class="btn btn-primary">Lưu giao diện</button><button type="button" class="btn btn-secondary" data-reset-colors>Khôi phục màu TMS</button></div>
-  </form>
-  <p class="security-note">Sau khi đổi màu PWA, nên xóa biểu tượng cũ khỏi màn hình chính và cài lại để Android cập nhật splash hoàn toàn.</p>
-</article>
+	  <div class="section-title-row"><div><p class="eyebrow">Appearance Center</p><h2>Giao diện & Thông báo</h2></div><div class="appearance-preview" id="appearance-preview" style="background: linear-gradient(45deg, #a70e13, #ed1d24, #a70e13);"><span></span><strong>TMS OS</strong></div></div>
+	  <p class="muted">Cấu hình chế độ hiển thị và thông báo hệ thống.</p>
+	  <form method="post" action="/settings/appearance" class="stack" id="appearance-form">
+	    <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+	    <div class="alert alert-success" style="margin: 0; font-size: 0.85rem;">
+	      Hệ thống đang sử dụng bộ nhận diện <strong>Red Gradient</strong> mặc định. Tính năng đổi màu đã được vô hiệu hóa để đảm bảo tính đồng bộ.
+	    </div>
+	    <label><span>Chế độ mặc định</span><select name="default_theme"><option value="light" <?=$ui['default_theme']==='light'?'selected':''?>>Sáng</option><option value="dark" <?=$ui['default_theme']==='dark'?'selected':''?>>Tối</option></select></label>
+	    <label><span>Thời gian hiển thị thông báo (giây)</span><input type="number" name="toast_duration" value="<?=tms_h($ui['toast_duration'])?>" min="1" max="60"></label>
+	    <div class="row-actions"><button class="btn btn-primary">Lưu cài đặt</button></div>
+	  </form>
+	</article>
 <article class="panel-card appearance-card">
   <div class="section-title-row"><div><p class="eyebrow">Brand Center</p><h2>Logo &amp; Thương hiệu</h2></div><div class="appearance-preview" id="brand-preview"><span></span><img class="brand-preview-img" src="<?=tms_h(tms_brand_icon('192'))?>" alt="Logo" id="brand-preview-img"></div></div>
   <p class="muted">Đổi logo của TMS OS. Logo mới được áp dụng cho trang đăng nhập, menu, biểu tượng trên màn hình chính Android và iPhone/iPad.</p>

@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.01,
-  "build": "20260821-30",
+  "internal_version": 16.02,
+  "build": "20260821-35",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
-  "name": "TMS OS V16.0.1",
-  "version": "16.0.1",
-  "notes": "V16.0.1: Cập nhật bộ nhận diện thương hiệu mới - Logo và Icon hiện đại theo phong cách Tech-Minimalism.",
+  "name": "TMS OS V16.0.2",
+  "version": "16.0.2",
+  "notes": "V16.0.2: Triển khai bộ nhận diện thương hiệu chính thức (Red Gradient) và Logo mới từ người dùng.",
   "features": [
-    "New Branding: Logo mới kết hợp biểu tượng Smartphone và Server/Cloud hiện đại.",
-    "Modern Icons: Cập nhật bộ icon PWA (192x192, 512x512) và favicon mới.",
-    "UI Polish: Cải thiện hiển thị logo trên thanh Header và màn hình đăng nhập."
+    "Official Logo: Thay thế logo mới theo yêu cầu người dùng.",
+    "Red Gradient Theme: Áp dụng tông màu đỏ gradient (A70E13, ED1D24) đồng bộ toàn hệ thống.",
+    "Simplified Settings: Loại bỏ tính năng đổi màu để đảm bảo tính nhất quán của thương hiệu."
   ],
-  "checksum_sha256": "73e7380738b701550a3e51d9e88148b5e2cdf77fa67ea52ecc153710b7e05f09",
+  "checksum_sha256": "6dfe6c55d40e80e0cf4297c521765723d2cfe4a9fdfb7c09673e9292a9810cfb",
   "build_date": "2026-08-21",
-  "version_display": "TMS OS V16.0.1",
-  "changelog": "V16.0.1: Brand identity update - New modern logo and PWA icons.",
+  "version_display": "TMS OS V16.0.2",
+  "changelog": "V16.0.2: Official branding update - New logo and fixed red gradient theme.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-21"
 }

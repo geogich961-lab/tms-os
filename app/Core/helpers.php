@@ -106,9 +106,9 @@ function tms_format_bytes(int|float $bytes): string
 function tms_ui_defaults(): array
 {
     return [
-        'accent' => '#315ee8',
-        'accent_secondary' => '#6b4dea',
-        'pwa_background' => '#0a1220',
+        'accent' => '#ed1d24',
+        'accent_secondary' => '#a70e13',
+        'pwa_background' => '#a70e13',
         'default_theme' => 'light',
         'toast_duration' => 5,
     ];
