@@ -1,5 +1,5 @@
 <?php $title='Package Manager · TMS OS';$showShell=true;require dirname(__DIR__).'/layouts/header.php';?>
-<div class="page-head"><div><p class="eyebrow">TMS OS V14 · PACKAGE MANAGER</p><h1>Runtime Packages</h1><p>Cài, kiểm tra phiên bản và gỡ các gói Termux đã được kiểm duyệt.</p></div>
+<div class="page-head"><div><p class="eyebrow">TMS OS · PACKAGE MANAGER</p><h1>Runtime Packages</h1><p>Cài, kiểm tra phiên bản và gỡ các gói Termux đã được kiểm duyệt.</p></div>
 <form method="post" action="/packages/update"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button class="btn btn-secondary">Cập nhật kho gói</button></form></div>
 <?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><pre class="flash-pre"><?=tms_h($flash['message']??'')?></pre></div><?php endif;?>
 <div class="plugin-grid">

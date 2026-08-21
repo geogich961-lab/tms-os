@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# TMS OS V14.1.0 — Bộ cài chính (chạy trực tiếp, không qua pipe khi cần hỏi)
+# TMS OS V15.4.1 — Bộ cài chính (chạy trực tiếp, không qua pipe khi cần hỏi)
 # Luồng:
 #   1. Phát hiện cài cũ → hỏi Sửa chữa (giữ dữ liệu) / Cài mới (xóa sạch)
 #   2. Chọn engine database (SQLite/MariaDB)

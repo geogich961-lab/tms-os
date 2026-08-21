@@ -366,7 +366,7 @@ if(document.querySelector('[data-service-alert]')){
   scope?.addEventListener('change',sync);sync();
 })();
 
-// TMS OS V12 Guardian live status
+// Guardian live status
 (() => {
   const root = document.querySelector('[data-guardian-root]');
   if (!root) return;
@@ -383,7 +383,7 @@ if(document.querySelector('[data-service-alert]')){
   setInterval(refresh,15000);
 })();
 
-// ===== TMS OS V13.0.1 LAN Address Stability =====
+// ===== LAN Address Stability =====
 (()=>{
   const grid=document.querySelector('[data-service-grid]');
   if(!grid)return;
