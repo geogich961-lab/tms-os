@@ -12,7 +12,7 @@
   "features": [
     "UI Cleanup: Xóa khung thông báo màu xanh không đồng bộ trong trang Cài đặt."
   ],
-  "checksum_sha256": "23ba627f60ee4e0f74070a26840d45cbfee65e585ce7e821f3610c575cfc77c5",
+  "checksum_sha256": "7b7bc89f4160921e1423d6dbab8c979b07b4cd855e209c8626dd2c68e47e2298",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V16.0.4",
   "changelog": "V16.0.4: Removed redundant alert box in settings page.",

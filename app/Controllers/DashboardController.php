@@ -38,11 +38,11 @@ final class DashboardController
         $this->guard();
         if (!tms_verify_csrf($_POST['csrf'] ?? null)) {
             tms_flash('error', 'Phiên làm việc không hợp lệ.');
-            tms_redirect('/');
+            tms_redirect('/dashboard');
         }
         $result = $this->system->action((string)($_POST['action'] ?? ''));
         tms_flash($result['ok'] ? 'success' : 'error', $result['message']);
-        tms_redirect('/');
+        tms_redirect('/dashboard');
     }
 
     private function guard(): void

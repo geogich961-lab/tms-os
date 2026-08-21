@@ -428,6 +428,15 @@ final class UpdateService
         if (function_exists('tms_clear_cache')) {
             tms_clear_cache();
         }
+        
+        // Tăng asset version trong config để ép trình duyệt tải lại CSS/JS mới nhất (tránh lỗi 520 do cache cũ)
+        $configPath = $this->target . '/config/app.php';
+        if (is_file($configPath)) {
+            $configContent = file_get_contents($configPath);
+            $newVersion = date('Y.m.d.His');
+            $configContent = preg_replace("/'asset_version' => '.*'/", "'asset_version' => '{$newVersion}'", $configContent);
+            file_put_contents($configPath, $configContent);
+        }
 
         // 8. Hoàn tất
         @unlink($this->stateFile);

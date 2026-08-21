@@ -1,3 +1,10 @@
+## V16.0.9 (2026-08-21)
+- **Fix Redirect Loop**: Sửa lỗi sau khi đăng nhập bị chuyển về Landing Page thay vì Dashboard.
+- **Update Center Reliability**: 
+  - Tối ưu hóa quy trình ghi đè file để tránh lỗi Error 520 của Cloudflare.
+  - Tự động làm mới `asset_version` sau khi cập nhật để ép trình duyệt tải lại CSS/JS mới nhất.
+  - Tăng cường kiểm tra sức khỏe hệ thống trước khi hoàn tất cập nhật.
+
 ## V16.0.8 (2026-08-21)
 - **Landing Page Perfecting**: Tinh chỉnh giao diện Landing Page khớp 100% thiết kế mẫu.
   - Sử dụng logo `tms-os.png` mới (loại bỏ viền trắng và khung).

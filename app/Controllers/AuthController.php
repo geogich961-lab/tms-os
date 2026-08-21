@@ -10,7 +10,7 @@ final class AuthController
     public function loginForm(): void
     {
         if ($this->auth->check()) {
-            tms_redirect('/');
+            tms_redirect('/dashboard');
         }
 
         tms_view('auth.login', [
@@ -33,7 +33,7 @@ final class AuthController
         $password = (string)($_POST['password'] ?? '');
 
         if ($this->auth->attempt($username, $password)) {
-            tms_redirect('/');
+            tms_redirect('/dashboard');
         }
 
         tms_view('auth.login', [
