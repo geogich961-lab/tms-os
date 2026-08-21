@@ -381,12 +381,17 @@ final class UpdateService
         foreach ($parts as $part) {
             $src = $staging . '/' . $part;
             if (is_dir($src)) {
-                // Xóa thư mục cũ trước khi chép mới để tránh file rác
                 $dst = $this->target . '/' . $part;
-                exec("rm -rf " . escapeshellarg($dst));
+                // Sử dụng cp -af (archive & force) để ghi đè cưỡng bức các file đang bị khóa
+                // Đồng thời chép đè thay vì xóa sạch để giữ các file không nằm trong ZIP (nếu có)
                 @mkdir($dst, 0700, true);
-                exec("cp -rf " . escapeshellarg($src . '/.') . " " . escapeshellarg($dst));
+                exec("cp -af " . escapeshellarg($src . '/.') . " " . escapeshellarg($dst));
             }
+        }
+        
+        // Cố gắng xóa OPcache của PHP nếu có thể để nhận diện file config mới ngay lập tức
+        if (function_exists('opcache_reset')) {
+            @opcache_reset();
         }
         
         // Dọn dẹp staging

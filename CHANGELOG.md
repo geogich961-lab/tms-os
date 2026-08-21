@@ -1,3 +1,8 @@
+## V16.0.11 (2026-08-21)
+- **Force Overwrite Mechanism**: Sử dụng `cp -af` để ghi đè cưỡng bức các file cấu hình đang bị PHP khóa trên Termux.
+- **OPcache Reset**: Tự động xóa bộ nhớ đệm PHP ngay sau khi cập nhật để đảm bảo số phiên bản mới được nhận diện lập tức.
+- **Strict Sync**: Đảm bảo đồng bộ tuyệt đối giữa code giao diện và file cấu hình hệ thống.
+
 ## V16.0.10 (2026-08-21)
 - **Robust Update Engine**: 
   - Thay thế `rename` bằng `cp -rf` để đảm bảo ghi đè file thành công trên môi trường Termux.
