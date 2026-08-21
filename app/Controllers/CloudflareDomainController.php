@@ -162,13 +162,14 @@ final class CloudflareDomainController
         $this->json(array_merge(['success' => true], $this->cfDomain->stopTunnel()));
     }
 
-    /** POST /api/cloudflare-domain/detach */
+    /** POST /api/cloudflare-domain/detach (không truyền hostname = tách tên chính) */
     public function detach(): void
     {
         $this->guard();
         if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        $hostname = trim((string)($_POST['hostname'] ?? ''));
         try {
-            $this->json(array_merge(['success' => true], $this->cfDomain->detachHostname()));
+            $this->json(array_merge(['success' => true], $this->cfDomain->detachHostname($hostname === '' ? null : $hostname)));
         } catch (Throwable $e) {
             $this->jsonError($e);
         }

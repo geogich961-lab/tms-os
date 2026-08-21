@@ -438,6 +438,15 @@ if(document.querySelector('[data-service-alert]')){
   };
   loadInternalSites();
 
+  // ===== Chips tạo subdomain nhanh =====
+  document.querySelectorAll('.cfd-chip[data-chip]').forEach(chip=>{chip.addEventListener('click',()=>{
+    const zOpt=zoneSelect?.selectedOptions?.[0];
+    if(!zOpt?.value){showAlert('Hãy chọn domain trước rồi mới tạo subdomain.');return;}
+    const hnInput=document.getElementById('cfd-hostname');
+    if(!hnInput) return;
+    hnInput.value=(chip.dataset.chip+'.'+zOpt.textContent.trim()).toLowerCase();
+  });});
+
   // Auto-restart: Android hay kill cloudflared ngầm (tiết kiệm pin) khiến tunnel mất kết nối
   // (Cloudflare Error 1033). Khi đã cấu hình đủ hostname + tunnel mà cloudflared bị tắt,
   // tự khởi động lại đúng 1 lần mỗi 60 giây.
@@ -454,6 +463,31 @@ if(document.querySelector('[data-service-alert]')){
         setTimeout(renderStatus, 1500);
       }
     } catch (e) { console.warn('autoRestart failed', e); }
+  };
+
+  const renderHostnames=(d)=>{
+    const listEl=$('cfd-hostnames-list');
+    if(!listEl) return;
+    const hostnames=Array.isArray(d.hostnames)?d.hostnames:[];
+    listEl.hidden=!hostnames.length;
+    const panelUrl=d.panel_url||'';
+    const rows=hostnames.map(h=>`<div class="cfd-hostname-card">
+      <div class="cfd-hostname-main"><strong>${esc(h.hostname)}</strong><small>Trỏ đến ${esc(h.service)}</small></div>
+      <div class="cfd-hostname-actions">
+        <a class="btn btn-secondary btn-small" href="${esc(h.url)}" target="_blank" rel="noopener">Mở</a>
+        <button type="button" class="btn btn-secondary btn-small cfd-copy-host" data-copy="${esc(h.url)}">Sao chép</button>
+        <button type="button" class="btn btn-danger-soft btn-small cfd-detach-host" data-hostname="${esc(h.hostname)}">Tách</button>
+      </div>
+    </div>`).join('');
+    listEl.innerHTML='<div class="cfd-hostnames-head"><h3>Tên miền đang hoạt động ('+hostnames.length+')</h3></div>'+rows;
+    listEl.querySelectorAll('.cfd-copy-host').forEach(b=>{b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copy);}catch(e){}const old=b.textContent;b.textContent='Đã sao chép';setTimeout(()=>b.textContent=old,1200);};});
+    listEl.querySelectorAll('.cfd-detach-host').forEach(b=>{b.onclick=async()=>{
+      const hn=b.dataset.hostname;
+      if(!confirm('Tách tên host "'+hn+'" khỏi tunnel? Record DNS của tên host này sẽ bị xóa, các tên host khác không bị ảnh hưởng.')) return;
+      const old=b.textContent;b.disabled=true;b.textContent='Đang tách...';
+      try{const res=await post('/api/cloudflare-domain/detach',{csrf:csrf(),hostname:hn});showAlert(res.message||'Đã tách tên host.');renderStatus();}catch(e){showAlert(String(e.message));}
+      b.disabled=false;b.textContent=old;
+    };});
   };
 
   const renderStatus=async()=>{
@@ -482,6 +516,7 @@ if(document.querySelector('[data-service-alert]')){
       if(urlCard) urlCard.hidden=!url;
       if(publicUrl){publicUrl.textContent=url;publicUrl.href=url||'#';}
       if(openUrl) openUrl.href=url||'#';
+      renderHostnames(d);
       if(copyUrl){copyUrl.dataset.copy=url||'';copyUrl.onclick=async()=>{try{await navigator.clipboard.writeText(url);}catch(e){}const old=copyUrl.textContent;copyUrl.textContent='Đã sao chép';setTimeout(()=>copyUrl.textContent=old,1200);};}
       // Remote Access (V15.2.0): hiển thị panel từ xa nếu đã bật
       const panelUrl=d.panel_url||'';

@@ -1490,6 +1490,80 @@ canvas#monitor-chart { width: 100%; display: block; }
 }
 .cf-url-actions { display: flex; gap: 9px; flex-wrap: wrap; }
 
+/* ---------- 12b. Cloudflare Hosting (V15.3.5) — multi-site + form spacing ---------- */
+.cfd-section { margin-bottom: 18px; }
+.cfd-section .section-title-row { margin-bottom: 10px; }
+.cfd-section h2 { margin: 2px 0 0; font-size: 1.1rem; font-weight: 780; letter-spacing: -0.01em; }
+.cfd-section > .muted { margin: 0 0 14px; line-height: 1.55; }
+.cfd-form { display: flex; flex-direction: column; gap: 13px; }
+.cfd-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--text);
+  font-weight: 650;
+  font-size: 0.92rem;
+}
+.cfd-form label input,
+.cfd-form label select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 0.95rem;
+  margin-bottom: 0;
+}
+.cfd-form label input:focus,
+.cfd-form label select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.14); }
+.cfd-subdomain-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cfd-chip { flex: 0 0 auto; }
+.cfd-chip-hint { font-size: 0.78rem; }
+.cfd-hostnames { display: grid; gap: 12px; margin: 18px 0 4px; }
+.cfd-hostname-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 17px;
+  border-radius: var(--radius-lg);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.cfd-hostname-card[hidden] { display: none; }
+.cfd-hostname-card strong {
+  display: block;
+  font-size: 0.98rem;
+  word-break: break-all;
+  color: var(--text);
+  font-weight: 750;
+}
+.cfd-hostname-card small { display: block; color: var(--muted); font-size: 0.8rem; word-break: break-all; }
+.cfd-hostname-actions { display: flex; gap: 8px; flex-wrap: wrap; flex: 0 0 auto; }
+.cfd-hostname-actions .btn { white-space: nowrap; }
+.cfd-btn-grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.cfd-stat { padding: 12px 14px; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius); }
+.cfd-stat span { display: block; color: var(--muted); font-size: 0.76rem; font-weight: 650; text-transform: uppercase; letter-spacing: 0.05em; }
+.cfd-stat strong { display: block; font-size: 1rem; margin-top: 4px; }
+
+/* Tunnel info grid: label tách khỏi value, không dính chữ trên desktop */
+.cfh-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 16px 0 18px;
+}
+.cfh-stat { display: grid; grid-template-columns: auto 1fr; align-items: baseline; gap: 10px; }
+.cfh-stat span { color: var(--muted); font-size: 0.9rem; font-weight: 500; white-space: nowrap; }
+.cfh-stat strong { color: var(--text); font-size: 0.95rem; font-weight: 700; word-break: break-word; }
+
 .cf-live-dot {
   width: 10px;
   height: 10px;
@@ -1895,6 +1969,18 @@ canvas#monitor-chart { width: 100%; display: block; }
 
   .tunnel-provider-grid { grid-template-columns: 1fr 1fr; }
   .form-grid.two { grid-template-columns: 1fr; }
+  .cfd-btn-grid.two { grid-template-columns: 1fr 1fr; }
+  .cfd-section { margin-bottom: 15px; }
+  .cfd-section h2 { font-size: 1.06rem; }
+  .cfd-section > .muted { margin-bottom: 12px; line-height: 1.6; }
+  .cfd-form { gap: 11px; }
+  .cfd-form label { gap: 5px; font-size: 0.9rem; }
+  .cfd-form label input, .cfd-form label select { padding: 11px; font-size: 0.93rem; }
+  .cfd-subdomain-chips { gap: 7px; }
+  .cfd-chip-hint { flex-basis: 100%; }
+  .cfd-hostname-card { flex-direction: column; align-items: stretch; padding: 14px 15px; }
+  .cfd-hostname-actions { width: 100%; }
+  .cfd-hostname-actions .btn { flex: 1 1 auto; min-width: 0; }
   .provider-chip:last-child { grid-column: 1 / -1; }
   .fallback-history div { flex-direction: column; gap: 3px; }
 

@@ -175,22 +175,45 @@ final class CloudflareDomainService
         return ['tunnel_id' => $tunnelId, 'tunnel_name' => $name, 'token' => $token];
     }
 
+    /**
+     * Gắn một tên host (domain gốc HOẶC subdomain) vào tunnel, trỏ đến website nội bộ.
+     * V15.3.5 multi-site: GIỮ NGUYÊN các ingress/dns đang có, chỉ THÊM hostname mới —
+     * nhiều website/subdomain có thể hoạt động song song trên cùng một tunnel.
+     */
     public function attachHostname(string $zoneId, string $hostname, string $service): array
     {
         $info = $this->cf();
-        $tunnelId = (string)($info['cfg']['tunnel_id'] ?? '');
+        $cfg = $info['cfg'];
+        $tunnelId = (string)($cfg['tunnel_id'] ?? '');
         if ($tunnelId === '') {
             throw new RuntimeException('Chưa có tunnel. Hãy bấm "Tạo Cloudflare Tunnel" trước.');
         }
-        // 1. Ingress rule — V15.0.6: keepalive 90s + connectTimeout 10s + noHappyEyeballs để giảm độ trễ
+        $hostname = strtolower(trim($hostname));
+        if ($hostname === '' || strpos($hostname, '.') === false) {
+            throw new RuntimeException('Tên host không hợp lệ. Ví dụ: shop.thc.io.vn');
+        }
+        // 1. Đọc ingress hiện tại, thêm rule mới (giữ nguyên rule cũ — multi-site)
+        try {
+            $current = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations');
+        } catch (Throwable $e) {
+            $current = ['config' => ['ingress' => [['service' => 'http_status:404']]]];
+        }
+        $ingress = (array)(($current['config'] ?? [])['ingress'] ?? []);
+        foreach ($ingress as $rule) {
+            if (strcasecmp((string)($rule['hostname'] ?? ''), $hostname) === 0) {
+                throw new RuntimeException('Tên host "' . $hostname . '" đã được gắn rồi.');
+            }
+        }
+        $ingress = array_values(array_filter($ingress, static function ($rule) {
+            return isset($rule['hostname']);
+        }));
+        $ingress[] = ['hostname' => $hostname, 'service' => $service, 'originRequest' => (object)[
+            'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+            'httpHostHeader' => $hostname,
+        ]];
+        $ingress[] = ['service' => 'http_status:404'];
         $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
-            'config' => ['ingress' => [
-                ['hostname' => $hostname, 'service' => $service, 'originRequest' => (object)[
-                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
-                    'httpHostHeader' => $hostname,
-                ]],
-                ['service' => 'http_status:404'],
-            ]],
+            'config' => ['ingress' => $ingress],
         ]);
         // 2. DNS CNAME → <tunnel_id>.cfargotunnel.com
         $existing = $this->dnsRecords($zoneId);
@@ -212,14 +235,105 @@ final class CloudflareDomainService
             ]);
             $recordId = (string)($created['id'] ?? '');
         }
-        $cfg = $info['cfg'];
-        $cfg['hostname'] = $hostname;
-        $cfg['service'] = $service;
-        $cfg['zone_id'] = $zoneId;
-        $cfg['record_id'] = $recordId;
+        $site = [
+            'hostname' => $hostname,
+            'service' => $service,
+            'zone_id' => $zoneId,
+            'record_id' => $recordId,
+            'url' => 'https://' . $hostname,
+        ];
+        $hostnames = (array)($cfg['hostnames'] ?? []);
+        $already = false;
+        foreach ($hostnames as $h) {
+            if (strcasecmp((string)($h['hostname'] ?? ''), $hostname) === 0) {
+                $h['service'] = $site['service'];
+                $h['zone_id'] = $site['zone_id'];
+                $h['record_id'] = $site['record_id'];
+                $h['url'] = $site['url'];
+                $already = true;
+                break;
+            }
+        }
+        if (!$already) {
+            $hostnames[] = $site;
+        }
+        $cfg['hostnames'] = array_values($hostnames);
+        // hostname/service/zone_id/record_id cũ giữ làm "mặc định" (tương thích logic status cũ)
+        if (!isset($cfg['hostname']) || $cfg['hostname'] === '') {
+            $cfg['hostname'] = $hostname;
+            $cfg['service'] = $service;
+            $cfg['zone_id'] = $zoneId;
+            $cfg['record_id'] = $recordId;
+        }
         $this->writeJson($this->configFile, $cfg);
         @chmod($this->configFile, 0600);
-        return ['hostname' => $hostname, 'url' => 'https://' . $hostname, 'record_id' => $recordId];
+        return $site;
+    }
+
+    /**
+     * Tách MỘT tên host khỏi tunnel (multi-site). Không truyền hostname = tách tên chính (tương thích cũ).
+     */
+    public function detachHostname(?string $hostname = null): array
+    {
+        $info = $this->cf();
+        $cfg = $info['cfg'];
+        $tunnelId = (string)($cfg['tunnel_id'] ?? '');
+        $target = $hostname !== null ? strtolower(trim($hostname)) : (string)($cfg['hostname'] ?? '');
+        if ($target === '') {
+            throw new RuntimeException('Không xác định được tên host cần tách.');
+        }
+        $hostnames = array_values(array_filter((array)($cfg['hostnames'] ?? []), static function ($h) use ($target) {
+            return strcasecmp((string)($h['hostname'] ?? ''), $target) !== 0;
+        }));
+        $zoneId = '';
+        $recordId = '';
+        foreach ((array)($cfg['hostnames'] ?? []) as $h) {
+            if (strcasecmp((string)($h['hostname'] ?? ''), $target) === 0) {
+                $zoneId = (string)($h['zone_id'] ?? $cfg['zone_id'] ?? '');
+                $recordId = (string)($h['record_id'] ?? $cfg['record_id'] ?? '');
+                break;
+            }
+        }
+        // 1. Xóa ingress rule + rebuild lại cấu hình (giữ các rule khác)
+        if ($tunnelId !== '') {
+            $ingress = [['service' => 'http_status:404']];
+            foreach ($hostnames as $h) {
+                array_unshift($ingress, ['hostname' => (string)($h['hostname'] ?? ''), 'service' => (string)($h['service'] ?? ''), 'originRequest' => (object)[
+                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                    'httpHostHeader' => $h['hostname'] ?? '',
+                ]]);
+            }
+            // Giữ rule panel nếu đang bật
+            $panelHostname = (string)($cfg['panel_hostname'] ?? '');
+            if ($panelHostname !== '') {
+                array_splice($ingress, count($ingress) - 1, 0, [['hostname' => $panelHostname, 'service' => 'http://localhost:8888', 'originRequest' => (object)[
+                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+                    'httpHostHeader' => $panelHostname,
+                ]]]);
+            }
+            try {
+                $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
+                    'config' => ['ingress' => $ingress],
+                ]);
+            } catch (Throwable $e) { /* ingress có thể đã bị thay đổi thủ công — vẫn xóa DNS */ }
+        }
+        // 2. Xóa record DNS
+        if ($zoneId !== '' && $recordId !== '') {
+            try { $this->api('DELETE', '/zones/' . $zoneId . '/dns_records/' . $recordId); } catch (Throwable $e) { /* bỏ qua */ }
+        }
+        $cfg['hostnames'] = $hostnames;
+        unset($cfg['hostname'], $cfg['service'], $cfg['zone_id'], $cfg['record_id']);
+        // Nếu còn tên host khác, chọn cái đầu làm mặc định
+        if (count($hostnames) > 0) {
+            $first = $hostnames[0];
+            $cfg['hostname'] = (string)($first['hostname'] ?? '');
+            $cfg['service'] = (string)($first['service'] ?? '');
+            $cfg['zone_id'] = (string)($first['zone_id'] ?? '');
+            $cfg['record_id'] = (string)($first['record_id'] ?? '');
+        }
+        $this->writeJson($this->configFile, $cfg);
+        @chmod($this->configFile, 0600);
+        return ['message' => 'Đã tách tên host "' . $target . '" khỏi tunnel.'];
     }
 
     /**
@@ -326,19 +440,7 @@ final class CloudflareDomainService
         return ['message' => 'Đã tắt truy cập panel từ xa.'];
     }
 
-    public function detachHostname(): array
-    {
-        $info = $this->cf();
-        $cfg = $info['cfg'];
-        $zoneId = (string)($cfg['zone_id'] ?? '');
-        $recordId = (string)($cfg['record_id'] ?? '');
-        if ($zoneId !== '' && $recordId !== '') {
-            try { $this->api('DELETE', '/zones/' . $zoneId . '/dns_records/' . $recordId); } catch (Throwable $e) { /* bỏ qua */ }
-        }
-        unset($cfg['hostname'], $cfg['service'], $cfg['zone_id'], $cfg['record_id']);
-        $this->writeJson($this->configFile, $cfg);
-        return ['message' => 'Đã tách tên miền khỏi tunnel.'];
-    }
+
 
     public function deleteTunnel(): array
     {
@@ -423,6 +525,18 @@ final class CloudflareDomainService
             $log = implode("\n", $lines);
         }
         $panelHostname = (string)($cfg['panel_hostname'] ?? '');
+        $defaultUrl = '';
+        $hostnamesOut = [];
+        foreach ((array)($cfg['hostnames'] ?? []) as $h) {
+            $hostnamesOut[] = [
+                'hostname' => (string)($h['hostname'] ?? ''),
+                'service' => (string)($h['service'] ?? ''),
+                'url' => (string)($h['url'] ?? ('https://' . $h['hostname'])),
+            ];
+        }
+        if ($defaultUrl === '' && $hostnamesOut !== []) {
+            $defaultUrl = (string)($hostnamesOut[0]['url'] ?? '');
+        }
         return [
             'configured' => trim((string)($cfg['api_token'] ?? '')) !== '',
             'account_id' => (string)($cfg['account_id'] ?? ''),
@@ -436,7 +550,8 @@ final class CloudflareDomainService
             'panel_configured' => $panelHostname !== '',
             'running' => $running,
             'health' => $health,
-            'url' => trim((string)($cfg['hostname'] ?? '')) !== '' ? 'https://' . $cfg['hostname'] : '',
+            'url' => $defaultUrl,
+            'hostnames' => $hostnamesOut,
             'zones' => $zones,
             'log' => $log,
         ];

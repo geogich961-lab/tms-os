@@ -1,3 +1,10 @@
+# V15.3.5 — Cloudflare Hosting mới: nhiều website/subdomain trên cùng tunnel
+
+- Cloudflare Hosting được viết lại giao diện: bố cục dạng thẻ rõ ràng theo từng bước, label và ô nhập tách bạch, nút bấm có khoảng cách đều — không còn nút/chữ bị dính vào nhau trên điện thoại.
+- Hỗ trợ **nhiều website và subdomain cùng lúc** trên một tunnel: mỗi lần "Gắn tên miền" chỉ tạo thêm đường vào mới, các tên miền cũ không bị ảnh hưởng.
+- **Chips tạo subdomain nhanh**: chọn domain rồi chạm shop/blog/game/app/api để điền nhanh tên host (ví dụ shop.thc.io.vn).
+- Danh sách "Tên miền đang hoạt động" hiển thị mọi host đã gắn, kèm nút Mở / Sao chép / Tách riêng cho từng tên host.
+- Nút điều khiển tunnel (Khởi động/Dừng) nằm cạnh nhau dạng lưới, chữ và nút không còn chồng đè.
 # V15.3.4 — Fix: thanh menu di dong bi cuon theo trang
 - Sửa lỗi thanh header menu ở chế độ điện thoại (màn hình <= 760px) bị cuộn theo trang khi lướt nội dung: chuyển sang `position: fixed` phủ toàn bộ chiều ngang, thêm `safe-area-inset-top` cho điện thoại notch.
 - Nội dung trang tự động đẩy xuống tránh bị header che (padding-top động).

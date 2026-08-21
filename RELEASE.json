@@ -7,13 +7,16 @@
   "version_visible_to_user": true,
   "released_at": "2026-08-21",
   "name": "TMS OS V15.3.4",
-  "version": "15.3.4",
+  "version": "15.3.5",
   "notes": "V15.3.4: Sua loi thanh menu di dong bi cuon theo trang. Header mobile gio co dinh (fixed), khong bi cuon nua, noi dung khong bi che.",
   "features": [
     "Fix: Thanh menu header o dien thoai gio co dinh tren cung man hinh, khong cuon theo trang nua",
     "Header mobile dung position: fixed + tinh padding an toan (safe-area-inset-top) cho dien thoai notch",
     "Service Worker tms-os-v15-3-4: cap nhat cache CSS moi, tu dong xoa cache cu khi update"
   ],
-  "checksum_sha256": "61ab9de473d4d12a5dc0a978712d80e69aaa18041b3bfdbb525fcc8d4883456e",
-  "build_date": "2026-08-21"
+  "checksum_sha256": "",
+  "build_date": "2026-08-21",
+  "version_display": "TMS OS V15.3.5",
+  "changelog": "Giao dien Cloudflare Hosting moi: ho tro nhieu website/subdomain tren cung tunnel (multi-site), subdomain chips tao nhanh, sua nut/chu bi dinh o giao dien mobile.",
+  "download_url": "https://github.com/geogich961-lab/tms-os/releases/download/v15.3.5/TMS_OS_V15.3.5.zip"
 }
