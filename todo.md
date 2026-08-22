@@ -7,3 +7,12 @@
 - [x] Kiểm tra cú pháp script và xác thực URL raw GitHub của kênh thử nghiệm.
 - [x] Chuẩn bị đúng một lệnh Termux để điện thoại cài đặt/cập nhật bản thử nghiệm.
 - [x] Tích hợp lệnh quay về mã nguồn trước thử nghiệm khi cần.
+
+## Khắc phục lỗi cập nhật nội bộ
+
+- [x] Kiểm tra logic `start-tms.sh` và điều kiện tiến trình Nginx/PHP trước khi restart.
+- [x] Sửa script test để dừng tiến trình đang chiếm cổng trước khi khởi động lại dịch vụ.
+- [x] Sửa điều kiện kiểm tra script khởi động sau rollback, không phụ thuộc nhầm vào quyền thực thi.
+- [x] Kiểm tra đường khôi phục khi health check trả về HTTP 500.
+- [ ] Đồng bộ bản sửa lên `develop-v16.1.0` mà không tác động `main` hoặc GitHub Release.
+- [ ] Cung cấp lệnh khôi phục panel an toàn cho điện thoại trước lần test tiếp theo.

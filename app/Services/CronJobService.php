@@ -102,7 +102,7 @@ final class CronJobService
             $cmd = $job['command'];
             if ($job['notify_telegram']) {
                 // Wrap command to notify telegram
-                $wrapperPath = $this->home . '/.tms-os/scripts/cron-wrapper.php';
+                $wrapperPath = $this->home . '/tms-os/scripts/cron-wrapper.php';
                 $cmd = "php " . escapeshellarg($wrapperPath) . " " . escapeshellarg($job['id']);
             }
             

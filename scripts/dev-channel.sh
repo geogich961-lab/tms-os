@@ -39,13 +39,26 @@ confirm() {
 }
 
 restart_tms() {
-  if [ ! -x "$ROOT/scripts/start-tms.sh" ]; then
+  if [ ! -f "$ROOT/scripts/start-tms.sh" ]; then
     echo '[LỖI] Không tìm thấy script khởi động TMS OS sau khi cập nhật.'
     return 1
   fi
+  # Dọn cả master/worker Nginx còn sót và các port do TMS OS quản lý trước khi
+  # gọi start-tms. Điều này tránh trạng thái "Address already in use" khi swap code.
+  pkill -9 -f '[n]ginx' 2>/dev/null || true
+  pkill -9 -f '[p]hp-cgi' 2>/dev/null || true
+  for port in 80 8081 8082 8888 9000; do
+    fuser -k "${port}/tcp" 2>/dev/null || true
+  done
+  sleep 1
   bash "$ROOT/scripts/start-tms.sh"
-  sleep 2
-  curl -fsS --max-time 15 http://127.0.0.1:8888/login >/dev/null
+  for _ in 1 2 3 4 5 6 7 8 9 10; do
+    if curl -fsS --max-time 3 http://127.0.0.1:8888/login >/dev/null; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
 }
 
 rollback() {
