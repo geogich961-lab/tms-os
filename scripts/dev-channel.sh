@@ -99,7 +99,7 @@ update() {
 
   mkdir -p "$WORK" "$BACKUP_ROOT" "$STATE_DIR"
   local archive="$WORK/source.zip"
-  echo '[1/5] Đang tải mã nguồn từ nhánh thử nghiệm...'
+  echo '[1/6] Đang tải mã nguồn từ nhánh thử nghiệm...'
   curl -fL --retry 3 --retry-delay 2 --connect-timeout 20 --max-time 300 -o "$archive" "$ARCHIVE_URL"
   echo "[INFO] SHA-256 gói thử nghiệm: $(sha256sum "$archive" | awk '{print $1}')"
   unzip -q "$archive" -d "$WORK/extract"
@@ -109,13 +109,13 @@ update() {
     echo '[LỖI] Gói từ nhánh thử nghiệm không có cấu trúc TMS OS hợp lệ.'
     exit 1
   }
-  echo '[2/5] Đang kiểm tra cú pháp PHP của mã nguồn...'
+  echo '[2/6] Đang kiểm tra cú pháp PHP của mã nguồn...'
   while IFS= read -r -d '' file; do php -l "$file" >/dev/null; done < <(find "$source" -type f -name '*.php' -print0)
 
   local stamp backup
   stamp="$(date +%Y%m%d_%H%M%S)"
   backup="$BACKUP_ROOT/$stamp"
-  echo '[3/5] Đang sao lưu mã nguồn hiện tại...'
+  echo '[3/6] Đang sao lưu mã nguồn hiện tại...'
   mkdir -p "$backup"
   cp -a "$ROOT" "$backup/tms-os"
   printf '%s\n' "branch=$BRANCH" "updated_at=$(date -Iseconds)" > "$backup/metadata.txt"
@@ -125,7 +125,7 @@ update() {
     printf '%s\n' "saved_at=$(date -Iseconds)" "reason=before-first-internal-test" > "$BASELINE/metadata.txt"
   fi
 
-  echo '[4/5] Đang chuyển sang mã nguồn thử nghiệm...'
+  echo '[4/6] Đang chuyển sang mã nguồn thử nghiệm...'
   mv "$ROOT" "$ROOT.previous-dev"
   if ! mv "$source" "$ROOT"; then
     mv "$ROOT.previous-dev" "$ROOT"
@@ -136,7 +136,17 @@ update() {
   chmod 700 "$ROOT/scripts/tms-cron-engine.sh" 2>/dev/null || true
   mkdir -p "$ROOT/storage/logs" "$ROOT/storage/sessions" "$ROOT/storage/cache"
 
-  echo '[5/5] Đang khởi động lại TMS OS...'
+  echo '[5/6] Đang sửa dữ liệu và lịch Cron hiện có...'
+  if ! php "$ROOT/scripts/repair-cron-runtime.php"; then
+    echo '[LỖI] Không thể chuẩn hóa Cron runtime; sẽ khôi phục mã nguồn trước thử nghiệm.'
+    rm -rf "$ROOT.failed-dev"
+    mv "$ROOT" "$ROOT.failed-dev"
+    cp -a "$backup/tms-os" "$ROOT"
+    restart_tms || true
+    exit 1
+  fi
+
+  echo '[6/6] Đang khởi động lại TMS OS...'
   if restart_tms; then
     rm -rf "$ROOT.previous-dev"
     printf '{\n  "channel": "internal-test",\n  "branch": "%s",\n  "updated_at": "%s"\n}\n' "$BRANCH" "$(date -Iseconds)" > "$STATE_DIR/dev-channel.json"

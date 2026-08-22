@@ -33,3 +33,10 @@
 - [ ] Xác nhận wrapper ghi lại trạng thái chạy/thành công/thất bại đúng vào danh sách job.
 - [ ] Xác thực cron mẫu mỗi phút trong môi trường Termux tương thích và đồng bộ nhánh test.
 - [ ] Cung cấp lệnh kiểm tra dịch vụ cron trên điện thoại sau khi cập nhật.
+
+## Khắc phục Job ID Cron rỗng
+
+- [x] Chặn trường ID rỗng từ form tạo hoặc sửa Cron Job.
+- [x] Chuẩn hóa tự động các cron job cũ không có ID hợp lệ.
+- [x] Xác nhận dòng crontab luôn truyền Job ID hợp lệ tới `cron-wrapper.php`.
+- [ ] Đồng bộ bản vá lên `develop-v16.1.0` và hướng dẫn người dùng kiểm tra lại.

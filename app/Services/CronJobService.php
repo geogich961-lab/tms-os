@@ -17,14 +17,20 @@ final class CronJobService
 
     public function all(): array
     {
-        $data = @json_decode((string)@file_get_contents($this->cronFile), true);
-        return is_array($data) ? array_values($data) : [];
+        return array_values($this->readJobs());
     }
 
     public function save(array $job): void
     {
         $jobs = $this->readJobs();
-        $id = $job['id'] ?? bin2hex(random_bytes(8));
+
+        // Biểu mẫu tạo mới luôn gửi trường hidden id="". Chuỗi rỗng không được
+        // dùng làm khóa JSON hoặc truyền vào cron-wrapper.php.
+        $id = $this->validJobId((string)($job['id'] ?? ''))
+            ? strtolower(trim((string)$job['id']))
+            : $this->newJobId($jobs);
+        $existing = $jobs[$id] ?? [];
+
         $jobs[$id] = [
             'id' => $id,
             'name' => $job['name'] ?? 'Unnamed Job',
@@ -32,11 +38,20 @@ final class CronJobService
             'schedule' => $job['schedule'] ?? '* * * * *',
             'enabled' => (bool)($job['enabled'] ?? true),
             'notify_telegram' => (bool)($job['notify_telegram'] ?? false),
-            'last_run' => $job['last_run'] ?? null,
-            'last_status' => $job['last_status'] ?? null,
-            'created_at' => $job['created_at'] ?? date('c'),
+            'last_run' => $job['last_run'] ?? ($existing['last_run'] ?? null),
+            'last_status' => $job['last_status'] ?? ($existing['last_status'] ?? null),
+            'created_at' => $job['created_at'] ?? ($existing['created_at'] ?? date('c')),
         ];
         $this->writeJobs($jobs);
+        $this->syncCrontab();
+    }
+
+    /**
+     * Chuẩn hóa dữ liệu cũ, sau đó tạo lại crontab quản lý và bảo đảm Cron engine chạy.
+     */
+    public function repairRuntime(): void
+    {
+        $this->readJobs();
         $this->syncCrontab();
     }
 
@@ -95,7 +110,7 @@ final class CronJobService
     {
         $jobs = $this->all();
         // crond không kế thừa PATH/HOME của PHP-CGI. Khai báo rõ môi trường
-        // Termux giúp wrapper tìm được php và đọc đúng dữ liệu người dùng.
+        // Termux giúp wrapper tìm được PHP và đọc đúng dữ liệu người dùng.
         $prefix = getenv('PREFIX') ?: dirname($this->home) . '/usr';
         $phpBinary = $prefix . '/bin/php';
         $shellBinary = $prefix . '/bin/bash';
@@ -105,29 +120,35 @@ final class CronJobService
             'PATH=' . $prefix . '/bin:/system/bin:/system/xbin',
             'HOME=' . $this->home,
         ];
-        
+
         foreach ($jobs as $job) {
-            if (!$job['enabled']) continue;
-            
-            // Tất cả job đều qua wrapper để trạng thái lần chạy cuối được cập nhật.
-            // Wrapper chỉ gửi Telegram khi job bật notify_telegram.
+            if (empty($job['enabled'])) {
+                continue;
+            }
+
+            // Tất cả job qua wrapper để ghi lần chạy cuối và trạng thái.
             $wrapperPath = $this->home . '/tms-os/scripts/cron-wrapper.php';
-            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($wrapperPath) . ' ' . escapeshellarg($job['id']);
-            
+            $cmd = escapeshellarg($phpBinary) . ' '
+                . escapeshellarg($wrapperPath) . ' '
+                . escapeshellarg((string)$job['id']);
             $lines[] = "{$job['schedule']} {$cmd}";
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'tms-cron');
+        if ($tmpFile === false) {
+            throw new RuntimeException('Không thể tạo tệp cron tạm thời.');
+        }
         file_put_contents($tmpFile, implode("\n", $lines) . "\n");
         if (!self::hasCommand('crontab')) {
             @unlink($tmpFile);
             throw new RuntimeException('Chưa cài Cron runtime. Hãy chạy: pkg install cronie');
         }
-        exec("crontab " . escapeshellarg($tmpFile) . ' 2>&1', $output, $exitCode);
+        exec('crontab ' . escapeshellarg($tmpFile) . ' 2>&1', $output, $exitCode);
         @unlink($tmpFile);
         if ($exitCode !== 0) {
             throw new RuntimeException('Không thể lưu lịch Cron: ' . trim(implode(' ', $output)));
         }
+
         $engine = $this->home . '/tms-os/scripts/tms-cron-engine.sh';
         exec('bash ' . escapeshellarg($engine) . ' start 2>&1', $engineOutput, $engineCode);
         if ($engineCode !== 0) {
@@ -144,11 +165,59 @@ final class CronJobService
     private function readJobs(): array
     {
         $data = @json_decode((string)@file_get_contents($this->cronFile), true);
-        return is_array($data) ? $data : [];
+        if (!is_array($data)) {
+            return [];
+        }
+
+        $jobs = [];
+        $changed = false;
+        foreach ($data as $key => $job) {
+            if (!is_array($job)) {
+                $changed = true;
+                continue;
+            }
+
+            $candidate = (string)($job['id'] ?? $key);
+            $id = $this->validJobId($candidate)
+                ? strtolower(trim($candidate))
+                : $this->newJobId($jobs);
+
+            if ((string)$key !== $id || (string)($job['id'] ?? '') !== $id) {
+                $changed = true;
+            }
+            if (isset($jobs[$id])) {
+                $id = $this->newJobId($jobs);
+                $changed = true;
+            }
+
+            $job['id'] = $id;
+            $jobs[$id] = $job;
+        }
+
+        if ($changed) {
+            $this->writeJobs($jobs);
+        }
+
+        return $jobs;
+    }
+
+    private function validJobId(string $id): bool
+    {
+        return preg_match('/^[a-f0-9]{16,64}$/i', trim($id)) === 1;
+    }
+
+    private function newJobId(array $jobs): string
+    {
+        do {
+            $id = bin2hex(random_bytes(8));
+        } while (isset($jobs[$id]));
+
+        return $id;
     }
 
     private function writeJobs(array $jobs): void
     {
         file_put_contents($this->cronFile, json_encode($jobs, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        @chmod($this->cronFile, 0600);
     }
 }
