@@ -1,3 +1,10 @@
+## V16.0.18 (2026-08-22)
+- **Fix lỗi PWA tại Landing Page**:
+  - Tích hợp thẻ `<link rel="manifest">` để trình duyệt nhận diện Landing Page là một phần của ứng dụng PWA.
+  - Đăng ký Service Worker ngay tại Landing Page, giúp kích hoạt sự kiện `beforeinstallprompt` nhanh hơn và ổn định hơn.
+  - Đồng bộ Favicon và màu nền Splash Screen cho PWA.
+- **Service Worker V16.0.18**: Làm mới bộ nhớ đệm để kích hoạt các thay đổi về Manifest ngay lập tức.
+
 ## V16.0.17 (2026-08-22)
 - **Đồng bộ nhận diện thương hiệu chính thức**:
   - Cập nhật toàn bộ icon PWA (`icon-192.png`, `icon-512.png`) theo logo `tms-os.png` mới nhất.
@@ -16,13 +23,3 @@
 - **Service Worker & Cache Sync**:
   - Cập nhật phiên bản Service Worker lên V16.0.16 để làm mới bộ nhớ đệm.
   - Đồng bộ asset version cho CSS/JS để đảm bảo người dùng nhận được giao diện mới ngay lập tức.
-
-## V16.0.15 (2026-08-22)
-- **Nuclear Update Engine (Cơ chế hạt nhân)**: 
-  - Thay đổi chiến lược cập nhật từ "Ghi đè" sang "Xóa sạch - Chép mới" (rm -rf rồi cp -af). Điều này bẻ gãy hoàn toàn sự chiếm giữ file của PHP-CGI cũ, đảm bảo file cấu hình được thay đổi 100%.
-  - Cưỡng bức xóa file `config/app.php` cũ trước khi chép file mới để vượt qua cơ chế cache của hệ điều hành.
-- **Force Kill Engine**: Nâng cấp script khởi động lại với lệnh `pkill -9` cưỡng bức cả `php-cgi` và `nginx`, kết hợp `fuser -k` để giải phóng RAM và cổng kết nối triệt để.
-- **Asynchronous Smart Restart**: 
-  - Tối ưu hóa phản hồi HTTP: Gửi tín hiệu thành công về trình duyệt trước khi thực hiện kill tiến trình.
-  - Smart Delay 2s: Tạo khoảng trễ an toàn để Cloudflare và Nginx đóng kết nối trước khi khởi động lại, loại bỏ hoàn toàn lỗi "Error 520" và "Bad Gateway".
-- **OPcache & Stat Cache Purge**: Tự động gọi `clearstatcache()` và `opcache_reset()` cưỡng bức để PHP nhận diện mã nguồn mới ngay lập tức.

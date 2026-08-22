@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <title>TMS OS - Mini Android VPS</title>
     <link rel="stylesheet" href="/assets/app.css?v=<?=tms_asset_version()?>">
+    <link rel="manifest" href="/manifest.php?v=<?=tms_asset_version()?>">
+    <link rel="icon" type="image/png" href="/assets/favicon.png?v=<?=tms_asset_version()?>">
+    <meta name="theme-color" content="#a70e13">
     <style>
         body {
             margin: 0;
@@ -169,6 +172,15 @@
                 if (btn) btn.style.display = 'none';
             }
         });
+
+        // Đăng ký Service Worker tại Landing Page
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js?v=<?=tms_asset_version()?>')
+                    .then(reg => console.log('SW Registered'))
+                    .catch(err => console.log('SW Error:', err));
+            });
+        }
     </script>
 </body>
 </html>
