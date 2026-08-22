@@ -15,7 +15,7 @@
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "__EMBED_SHA256_PLACEHOLDER__",
+  "checksum_sha256": "665c6d5b0ed647378ddeb027b2fe16b2f3a9a2aaefcb0d30ad554f0e98680be9",
   "build_date": "2026-08-22",
   "version_display": "TMS OS V16.1.1",
   "changelog": "V16.1.1: Hotfix installer repair for missing runtime storage directory; preserves existing websites, databases and settings.",
