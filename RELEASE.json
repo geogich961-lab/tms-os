@@ -15,7 +15,7 @@
     "Async Restart: Phản hồi HTTP trước, restart sau để tránh lỗi 502/520.",
     "Smart Delay: Trễ 2s để đóng kết nối an toàn trước khi restart."
   ],
-  "checksum_sha256": "acf2d758e7d0826efa9f953961c3d6c3d9e1d6a377e44fb6f04534a4b63a263c",
+  "checksum_sha256": "bcf467225bd08728275e0ebc8fc35df8f0fae7fb56be050140ef38e64b0631d3",
   "build_date": "2026-08-21",
   "version_display": "TMS OS V16.0.15",
   "changelog": "V16.0.15: Implemented Nuclear Update Engine with rm-rf+cp-af mechanism, force kill processes, and asynchronous restart logic to fix version stuck issue.",

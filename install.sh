@@ -117,7 +117,7 @@ ZIP="$WORK/TMS_OS.zip"
 #   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
 #   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
 # Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
-EMBED_SHA256="acf2d758e7d0826efa9f953961c3d6c3d9e1d6a377e44fb6f04534a4b63a263c"
+EMBED_SHA256="bcf467225bd08728275e0ebc8fc35df8f0fae7fb56be050140ef38e64b0631d3"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do
@@ -139,6 +139,8 @@ for VERIFY_ATTEMPT in 1 2 3 4; do
     echo '[THÔNG BÁO] Chữ ký online chưa cập nhật trên GitHub — dùng chữ ký nhúng trong bộ cài (đã xác minh).'
     break
   fi
+  # V16.0.15: Thêm nocache vào URL tải ZIP để bẻ gãy cache của GitHub CDN
+  RELEASE_URL="${RELEASE_URL}?nocache=$RANDOM"
   echo "[THỬ LẠI] File tải về (try $VERIFY_ATTEMPT) chưa khớp chữ ký SHA-256 — GitHub đang cập nhật release. Tải lại sau 5 giây..."
   sleep 5
 done
@@ -163,6 +165,16 @@ echo '[OK] Bộ nguồn đã tải về và hợp lệ.'
 # ---------- Bước 5: chạy bộ cài chính của TMS OS ----------
 chmod -R 700 "$SRC/scripts"
 echo 'Bước 5/7: Thiết lập TMS OS (chọn engine database, tài khoản quản trị)...'
+
+# V16.0.15: Nếu kẹt V16.0.6, cưỡng bức xóa sạch thư mục target trước khi chạy sub-installer
+if [ "$INSTALL_MODE" = "clean" ]; then
+  echo '[CẢNH BÁO] Đang thực hiện cài đặt sạch — Xóa toàn bộ dữ liệu cũ...'
+  pkill -9 -f php-cgi 2>/dev/null || true
+  pkill -9 -f nginx 2>/dev/null || true
+  fuser -k 8888/tcp 9000/tcp 2>/dev/null || true
+  rm -rf "$HOME/tms-os" "$HOME/tms-os.previous"
+fi
+
 RC=0
 if [ "$INSTALL_MODE" = "repair" ]; then
   export TMS_INSTALL_MODE="repair"

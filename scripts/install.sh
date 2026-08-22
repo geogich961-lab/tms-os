@@ -149,6 +149,10 @@ if command -v pkg >/dev/null 2>&1; then
     # MariaDB: xóa datadir cũ + cấu hình cũ (đảm bảo khởi tạo từ zero)
     rm -rf "$PREFIX/var/lib/mysql" "$PREFIX/var/run/mysqld" "$PREFIX/tmp/mysql.sock" "/tmp/mysql.sock"
     rm -f "$HOME/.tms-os/mariadb-client.cnf" "$HOME/logs/services/mariadb.log"
+    # V16.0.15: Cưỡng bức xóa sạch socket MariaDB trong thư mục tạm của Termux
+    rm -rf "$PREFIX/tmp/mysql.sock" "$PREFIX/var/run/mysqld"
+    mkdir -p "$PREFIX/var/run/mysqld"
+    chmod 777 "$PREFIX/var/run/mysqld"
     # Cấu hình nginx/PHP cũ
     rm -f "$NGINX" "$SITES/default.conf"
     rm -f "$PHP_CONF_DIR/99-tms-os.ini"
