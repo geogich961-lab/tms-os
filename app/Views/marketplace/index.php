@@ -129,14 +129,14 @@ async function handleInstall(e) {
         });
         const result = await res.json();
         if (result.ok) {
-            tms_toast(result.message, 'success');
+            tmsToast(result.message, 'success');
             closeInstallModal();
             setTimeout(() => location.reload(), 2000);
         } else {
-            tms_toast(result.message, 'danger');
+            tmsToast(result.message || 'Không thể cài đặt ứng dụng.', 'error');
         }
     } catch (err) {
-        tms_toast('Lỗi kết nối máy chủ', 'danger');
+        tmsToast('Lỗi kết nối máy chủ', 'error');
     } finally {
         btn.disabled = false;
         btn.innerText = originalText;

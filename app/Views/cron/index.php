@@ -119,7 +119,10 @@ require __DIR__ . '/../layouts/header.php';
                 <p class="text-muted mb-4" style="font-size: 14px;">Tạo Bot qua @BotFather để nhận thông báo từ hệ thống.</p>
                 <div class="form-group">
                     <label>Bot Token</label>
-                    <input type="text" name="token" class="form-control" value="<?= tms_h($telegram['token']) ?>" placeholder="123456789:ABCdef..." required>
+                    <input type="password" name="token" class="form-control" value="" placeholder="<?= !empty($telegram['token']) ? 'Đã lưu an toàn — chỉ nhập để thay đổi' : '123456789:ABCdef...' ?>" autocomplete="new-password" autocapitalize="off" spellcheck="false">
+                    <?php if (!empty($telegram['token'])): ?>
+                        <small class="text-muted">Token đã được lưu. Để nguyên ô này trống nếu chỉ thay đổi Chat ID.</small>
+                    <?php endif; ?>
                 </div>
                 <div class="form-group">
                     <label>Chat ID (Cá nhân hoặc Nhóm)</label>
@@ -189,14 +192,14 @@ async function handleSaveJob(e) {
         });
         const result = await res.json();
         if (result.ok) {
-            tms_toast(result.message, 'success');
+            tmsToast(result.message, 'success');
             closeJobModal();
             location.reload();
         } else {
-            tms_toast(result.message, 'danger');
+            tmsToast(result.message || 'Không thể lưu tác vụ.', 'error');
         }
     } catch (err) {
-        tms_toast('Lỗi kết nối máy chủ', 'danger');
+        tmsToast('Lỗi kết nối máy chủ', 'error');
     }
 }
 
@@ -210,11 +213,11 @@ async function deleteJob(id) {
         });
         const result = await res.json();
         if (result.ok) {
-            tms_toast(result.message, 'success');
+            tmsToast(result.message, 'success');
             location.reload();
         }
     } catch (err) {
-        tms_toast('Lỗi kết nối máy chủ', 'danger');
+        tmsToast('Lỗi kết nối máy chủ', 'error');
     }
 }
 
@@ -231,11 +234,13 @@ async function handleSaveTelegram(e) {
         });
         const result = await res.json();
         if (result.ok) {
-            tms_toast(result.message, 'success');
+            tmsToast(result.message, 'success');
             closeTelegramModal();
+        } else {
+            tmsToast(result.message || 'Không thể lưu cấu hình Telegram.', 'error');
         }
     } catch (err) {
-        tms_toast('Lỗi kết nối máy chủ', 'danger');
+        tmsToast('Lỗi kết nối máy chủ', 'error');
     }
 }
 </script>

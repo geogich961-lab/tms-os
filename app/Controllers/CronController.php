@@ -44,8 +44,12 @@ final class CronController
         header('Content-Type: application/json');
         try {
             $input = json_decode(file_get_contents('php://input'), true) ?: $_POST;
-            $token = (string)($input['token'] ?? '');
+            $token = trim((string)($input['token'] ?? ''));
             $chatId = (string)($input['chat_id'] ?? '');
+            if ($token === '') {
+                $current = $this->cron->getTelegramConfig();
+                $token = (string)($current['token'] ?? '');
+            }
             $this->cron->saveTelegramConfig($token, $chatId);
             echo json_encode(['ok' => true, 'message' => 'Đã lưu cấu hình Telegram.']);
         } catch (Throwable $e) {
