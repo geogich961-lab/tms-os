@@ -1,8 +1,8 @@
-const VERSION='tms-os-v16-0-22';
+const VERSION='tms-os-v16-0-23';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
-  '/offline.html','/tms-pwa-v21.json?v=16.0.22',
-5	  '/assets/app.css?v=16.0.22',
+  '/offline.html','/tms-pwa-v21.json?v=16.0.23',
+  '/assets/app.css?v=16.0.23',
   '/assets/icons/tms-app-icon-192.png','/assets/icons/tms-app-icon-512.png'
 ];
 self.addEventListener('install',event=>{
@@ -20,7 +20,7 @@ self.addEventListener('fetch',event=>{
     event.respondWith(fetch(req,{cache:'no-store'}).catch(()=>caches.match('/offline.html')));
     return;
   }
-  if(url.pathname.startsWith('/assets/') || url.pathname==='/manifest.webmanifest' || url.pathname==='/manifest.php'){
+  if(url.pathname.startsWith('/assets/') || url.pathname.includes('manifest')){
     if(url.search.includes('v=')){
       event.respondWith(fetch(req).then(res=>{
         const copy=res.clone();

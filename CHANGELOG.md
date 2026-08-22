@@ -1,3 +1,9 @@
+## V16.0.23 (2026-08-22)
+- **Hotfix Service Worker (Syntax Error Fix)**:
+  - Sửa lỗi cú pháp nghiêm trọng (lặp dòng) trong file `service-worker.js` khiến trình duyệt không thể đăng ký Service Worker và treo tính năng PWA.
+  - Cập nhật phiên bản Service Worker lên V16.0.23 để làm mới toàn bộ cache trình duyệt.
+  - Tối ưu hóa việc nạp manifest trong logic fetch của Service Worker.
+
 ## V16.0.22 (2026-08-22)
 - **Tài liệu hóa tối ưu hệ thống (Documentation Update)**:
   - Cập nhật `README.md` và `HUONG_DAN_CAI_DAT.md` với hướng dẫn chi tiết cách cài đặt `termux-api` để theo dõi Pin/Nhiệt độ và `Termux:Boot` để tự khởi động máy chủ khi bật nguồn điện thoại.

@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.022,
-  "build": "20260822-0210",
+  "internal_version": 16.023,
+  "build": "20260822-0319",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.22",
-  "version": "16.0.22",
-  "notes": "V16.0.22: Tài liệu hóa termux-api & Termux:Boot.",
+  "name": "TMS OS V16.0.23",
+  "version": "16.0.23",
+  "notes": "V16.0.23: Hotfix lỗi cú pháp Service Worker.",
   "features": [
-    "README Update: Bổ sung hướng dẫn cài đặt termux-api và Termux:Boot.",
-    "HUONG_DAN_CAI_DAT Update: Hướng dẫn chi tiết cách tối ưu hóa máy chủ và tự khởi động.",
-    "Service Worker V16.0.22: Cập nhật cache cho tài liệu mới."
+    "Hotfix: Sửa lỗi cú pháp tại dòng 5 của service-worker.js gây treo PWA.",
+    "Service Worker V16.0.23: Làm mới cache và sửa lỗi đăng ký.",
+    "Manifest Sync: Đảm bảo đồng bộ tài nguyên PWA tốt hơn."
   ],
-  "checksum_sha256": "2be67245698eef49d5305d2306855709c90568615031d7f36efe8509ba3687b9",
+  "checksum_sha256": "c4c60e50927aeb2deb0aeb20a02dacde1ad1fd0a7dfd4e4686c26595d8d40ec3",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.22",
-  "changelog": "V16.0.22: Added documentation for termux-api and Termux:Boot to enhance system monitoring and auto-start capabilities.",
+  "version_display": "TMS OS V16.0.23",
+  "changelog": "V16.0.23: Hotfixed SyntaxError in service-worker.js that prevented Service Worker registration and PWA functionality.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
