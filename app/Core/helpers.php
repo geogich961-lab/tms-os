@@ -212,8 +212,8 @@ function tms_asset_version(): string
     }
     $version = '1';
     $conf = @include dirname(__DIR__, 2) . '/config/app.php';
-    if (is_array($conf) && isset($conf['build']) && preg_match('/V(\d+\.\d+\.\d+)$/', (string)$conf['build'], $m)) {
-        $version = $m[1];
+    if (is_array($conf) && isset($conf['build']) && preg_match('/V(\d+\.\d+\.\d+)(?:-([A-Za-z0-9._-]+))?$/', (string)$conf['build'], $m)) {
+        $version = $m[1] . (!empty($m[2]) ? '-' . strtolower($m[2]) : '');
     }
     $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
     $bust = @json_decode((string)@file_get_contents($home . '/.tms-os/asset-version.json'), true);

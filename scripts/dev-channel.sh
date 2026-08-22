@@ -61,6 +61,14 @@ restart_tms() {
   return 1
 }
 
+refresh_asset_cache() {
+  local bust_file="$STATE_DIR/asset-version.json"
+  mkdir -p "$STATE_DIR"
+  printf '{\n  "bust": %s,\n  "reason": "internal-test-update",\n  "updated_at": "%s"\n}\n' \
+    "$(date +%s)" "$(date -Iseconds)" > "$bust_file"
+  chmod 600 "$bust_file"
+}
+
 rollback() {
   if [ ! -d "$BASELINE/tms-os" ]; then
     echo '[LỖI] Chưa có điểm khôi phục trước thử nghiệm trên thiết bị này.'
@@ -136,7 +144,7 @@ update() {
   chmod 700 "$ROOT/scripts/tms-cron-engine.sh" 2>/dev/null || true
   mkdir -p "$ROOT/storage/logs" "$ROOT/storage/sessions" "$ROOT/storage/cache"
 
-  echo '[5/6] Đang sửa dữ liệu và lịch Cron hiện có...'
+  echo '[5/7] Đang sửa dữ liệu và lịch Cron hiện có...'
   if ! php "$ROOT/scripts/repair-cron-runtime.php"; then
     echo '[LỖI] Không thể chuẩn hóa Cron runtime; sẽ khôi phục mã nguồn trước thử nghiệm.'
     rm -rf "$ROOT.failed-dev"
@@ -146,7 +154,10 @@ update() {
     exit 1
   fi
 
-  echo '[6/6] Đang khởi động lại TMS OS...'
+  echo '[6/7] Đang làm mới CSS/JavaScript cho giao diện...'
+  refresh_asset_cache
+
+  echo '[7/7] Đang khởi động lại TMS OS...'
   if restart_tms; then
     rm -rf "$ROOT.previous-dev"
     printf '{\n  "channel": "internal-test",\n  "branch": "%s",\n  "updated_at": "%s"\n}\n' "$BRANCH" "$(date -Iseconds)" > "$STATE_DIR/dev-channel.json"
