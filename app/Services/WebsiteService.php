@@ -459,7 +459,7 @@ server {
     root {{ROOT}};
     index index.php index.html;
 
-    access_log {{HOME}}/logs/nginx/{{NAME}}-access.log;
+    access_log {{HOME}}/logs/nginx/{{NAME}}-access.log tms_access;
     error_log  {{HOME}}/logs/nginx/{{NAME}}-error.log;
 
     location / {

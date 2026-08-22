@@ -25,7 +25,14 @@ Báo cáo dùng cửa sổ một giờ, tách riêng Panel, Website mặc địn
 
 Trước khi kích hoạt báo cáo, TMS OS cài cấu hình Nginx chỉ tin `CF-Connecting-IP` khi kết nối tới Nginx đến từ loopback `127.0.0.1` hoặc `::1` của Cloudflare Tunnel. Truy cập LAN/localhost trực tiếp vẫn dùng địa chỉ socket thật và không thể ép Nginx tin header do client tự đặt. Cấu hình được kiểm tra bằng `nginx -t` trước khi reload; nếu mô-đun `realip` không có hoặc kiểm tra lỗi thì dừng kích hoạt thay vì tạo báo cáo IP không đáng tin cậy.
 
+## Điều tra IP loopback qua Tunnel
+
+Kiểm thử thực tế ngày 22/08/2026 cho thấy báo cáo nhận `127.0.0.1`, tức kết nối cục bộ từ `cloudflared`, thay vì IP Internet của khách. Cloudflare xác nhận `CF-Connecting-IP` mang IP khách tới origin cho lưu lượng từ Cloudflare edge; nếu header không có ở origin, cần kiểm tra Transform Rules và Managed Transforms. Cloudflare Tunnel dùng connector `cloudflared` tạo kết nối outbound tới Cloudflare, vì vậy origin có thể chỉ thấy socket local của connector nếu không khôi phục header [2] [3].
+
+Kết luận sau kiểm thử: `CF-Connecting-IP` vẫn là nguồn ưu tiên. Khi header này vắng mặt, TMS OS chỉ dùng IP đầu của `X-Forwarded-For` nếu socket gốc do `cloudflared` trên loopback mở; truy cập LAN trực tiếp không thể kích hoạt fallback. Giá trị cuối cùng còn được kiểm tra lại bằng `FILTER_VALIDATE_IP` trong PHP. Nginx thực đã ghi đúng `198.51.100.42` từ `CF-Connecting-IP` và `203.0.113.77` từ `X-Forwarded-For: 203.0.113.77, 127.0.0.1`.
+
 ## Tham chiếu
 
 [1]: https://developers.cloudflare.com/support/troubleshooting/restoring-visitor-ips/restoring-original-visitor-ips/ "Cloudflare — Restoring original visitor IPs"
 [2]: https://developers.cloudflare.com/fundamentals/reference/http-headers/ "Cloudflare — HTTP headers reference"
+[3]: https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/ "Cloudflare — Cloudflare Tunnel"

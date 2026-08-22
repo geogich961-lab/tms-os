@@ -9,8 +9,10 @@ mkdir($home . '/.tms-os/cloudflare-hosting', 0700, true);
 putenv('HOME=' . $home);
 $prefix = $base . '/prefix';
 mkdir($prefix . '/etc/nginx', 0700, true);
+mkdir($prefix . '/etc/nginx/sites-enabled', 0700, true);
 mkdir($prefix . '/bin', 0700, true);
 file_put_contents($prefix . '/etc/nginx/nginx.conf', "worker_processes 1;\nevents { worker_connections 32; }\nhttp {\n}\n");
+file_put_contents($prefix . '/etc/nginx/sites-enabled/demo.conf', "server { access_log {$home}/logs/nginx/demo-access.log; }\n");
 file_put_contents($prefix . '/bin/nginx', "#!/bin/sh\nexit 0\n");
 chmod($prefix . '/bin/nginx', 0700);
 putenv('PREFIX=' . $prefix);
@@ -41,6 +43,7 @@ $reports = new AccessReportService($cron, $commands);
 $ensureRealIp = Closure::bind(function (): void { $this->ensureTrustedVisitorIpConfiguration(); }, $reports, AccessReportService::class);
 $ensureRealIp();
 $migratedNginxConfig = (string)file_get_contents($prefix . '/etc/nginx/nginx.conf');
+$migratedSiteConfig = (string)file_get_contents($prefix . '/etc/nginx/sites-enabled/demo.conf');
 $preinstalledNginxConfig = "worker_processes 1;\nevents { worker_connections 32; }\nhttp {\n    set_real_ip_from 127.0.0.1;\n    set_real_ip_from ::1;\n    real_ip_header CF-Connecting-IP;\n    real_ip_recursive off;\n}\n";
 file_put_contents($prefix . '/etc/nginx/nginx.conf', $preinstalledNginxConfig);
 $ensureRealIp();
@@ -74,7 +77,11 @@ $ok = !empty($first['ok'])
     && str_contains($migratedNginxConfig, 'set_real_ip_from 127.0.0.1;')
     && str_contains($migratedNginxConfig, 'set_real_ip_from ::1;')
     && str_contains($migratedNginxConfig, 'real_ip_header CF-Connecting-IP;')
-    && $nginxConfig === $preinstalledNginxConfig
+    && str_contains($migratedNginxConfig, 'log_format tms_access')
+    && str_contains($migratedNginxConfig, '$http_x_forwarded_for')
+    && substr_count($nginxConfig, 'real_ip_header CF-Connecting-IP;') === 1
+    && str_contains($nginxConfig, 'log_format tms_access')
+    && str_contains($migratedSiteConfig, 'demo-access.log tms_access;')
     && isset($state['files'][$home . '/logs/nginx/tms-access.log']['offset']);
 
 exec('rm -rf ' . escapeshellarg($base));

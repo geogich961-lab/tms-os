@@ -82,6 +82,17 @@ final class AccessReportService
             return ['ok' => true, 'status' => 'disabled'];
         }
 
+        try {
+            // Bản cập nhật có thể bổ sung log format mới khi lịch đã bật sẵn.
+            $this->ensureTrustedVisitorIpConfiguration();
+        } catch (Throwable) {
+            $state = $this->readJson($this->stateFile);
+            $state['last_run_at'] = date('c');
+            $state['last_status'] = 'nginx_config_failed';
+            $this->writeJson($this->stateFile, $state);
+            return ['ok' => false, 'status' => 'nginx_config_failed'];
+        }
+
         $lock = @fopen($this->lockFile, 'c');
         if ($lock === false || !@flock($lock, LOCK_EX | LOCK_NB)) {
             if (is_resource($lock)) @fclose($lock);
@@ -300,7 +311,11 @@ final class AccessReportService
         return escapeshellarg($prefix . '/bin/php') . ' ' . escapeshellarg($this->home . '/tms-os/scripts/access-report.php');
     }
 
-    /** Chỉ tin CF-Connecting-IP khi cloudflared kết nối từ loopback. */
+    /**
+     * Chỉ tin IP header khi cloudflared kết nối từ loopback. Access log dùng
+     * CF-Connecting-IP trước, rồi mới dùng IP đầu của X-Forwarded-For khi
+     * Cloudflare không gửi CF header. Truy cập LAN không thể giả hai header này.
+     */
     private function ensureTrustedVisitorIpConfiguration(): void
     {
         $prefix = getenv('PREFIX') ?: dirname($this->home) . '/usr';
@@ -320,31 +335,65 @@ final class AccessReportService
             && preg_match('/set_real_ip_from\s+::1\s*;/', $content) === 1
             && preg_match('/real_ip_header\s+CF-Connecting-IP\s*;/', $content) === 1
             && preg_match('/real_ip_recursive\s+off\s*;/', $content) === 1;
-        if ($hasSafeExistingConfig && !str_contains($content, '# TMS OS access-report real-ip begin')) {
+        $hasAccessFormat = str_contains($content, '# TMS OS access-report format begin')
+            && preg_match('/log_format\s+tms_access\b/', $content) === 1;
+
+        $formatBlock = "    # TMS OS access-report format begin\n"
+            . "    map \$realip_remote_addr \$tms_from_cloudflared {\n"
+            . "        127.0.0.1 1;\n"
+            . "        ::1 1;\n"
+            . "        default 0;\n"
+            . "    }\n"
+            . "    map \"\$tms_from_cloudflared:\$http_cf_connecting_ip:\$http_x_forwarded_for\" \$tms_access_client {\n"
+            . "        ~^1:(?<tms_cf_ip>[0-9][0-9]?\\.[0-9][0-9]?\\.[0-9][0-9]?\\.[0-9][0-9]?|[0-9A-Fa-f:]+): \$tms_cf_ip;\n"
+            . "        ~^1::(?<tms_fallback_ip>[^,\\s]+)(?:\\s*,|\\s*$) \$tms_fallback_ip;\n"
+            . "        default \$remote_addr;\n"
+            . "    }\n"
+            . "    log_format tms_access '\$tms_access_client - \$remote_user [\$time_local] \"\$request\" \$status \$body_bytes_sent \"\$http_referer\" \"\$http_user_agent\"';\n"
+            . "    # TMS OS access-report format end\n";
+
+        if ($hasSafeExistingConfig && $hasAccessFormat) {
             return;
         }
         $updated = preg_replace('/\n?\s*# TMS OS access-report real-ip begin.*?# TMS OS access-report real-ip end\n?/s', "\n", $content);
+        $updated = is_string($updated)
+            ? preg_replace('/\n?\s*# TMS OS access-report format begin.*?# TMS OS access-report format end\n?/s', "\n", $updated)
+            : null;
         if (!is_string($updated)) throw new RuntimeException('Không thể chuẩn bị cấu hình Nginx cho IP khách.');
-        $updated = preg_replace('/(http\s*\{\s*\n?)/', "$1" . $block, $updated, 1, $replacements);
+        $insert = ($hasSafeExistingConfig ? '' : $block) . $formatBlock;
+        $updated = preg_replace('/(http\s*\{\s*\n?)/', "$1" . $insert, $updated, 1, $replacements);
         if (!is_string($updated) || $replacements !== 1) throw new RuntimeException('Không tìm thấy khối http trong cấu hình Nginx.');
-        if ($updated === $content) return;
+
+        $updates = [$configPath => $updated];
+        $logRoot = preg_quote(rtrim($this->home, '/') . '/logs/nginx/', '/');
+        foreach (glob($prefix . '/etc/nginx/sites-enabled/*.conf') ?: [] as $siteConfig) {
+            $siteContent = @file_get_contents($siteConfig);
+            if (!is_string($siteContent)) continue;
+            $siteUpdated = preg_replace('/(access_log\s+' . $logRoot . '[^;\s]*-access\.log)(?:\s+\w+)?;/', '$1 tms_access;', $siteContent);
+            if (is_string($siteUpdated) && $siteUpdated !== $siteContent) $updates[$siteConfig] = $siteUpdated;
+        }
 
         $backupDir = $this->home . '/.tms-os/backups';
         @mkdir($backupDir, 0700, true);
-        $backup = $backupDir . '/nginx-before-access-report-' . date('Ymd_His') . '.conf';
-        if (@file_put_contents($backup, $content, LOCK_EX) === false || @file_put_contents($configPath, $updated, LOCK_EX) === false) {
-            throw new RuntimeException('Không thể ghi cấu hình Nginx an toàn cho báo cáo truy cập.');
+        $originals = [];
+        foreach ($updates as $path => $newContent) {
+            $original = $path === $configPath ? $content : (string)@file_get_contents($path);
+            $originals[$path] = $original;
+            $backup = $backupDir . '/nginx-before-access-report-' . date('Ymd_His') . '-' . basename($path);
+            if (@file_put_contents($backup, $original, LOCK_EX) === false || @chmod($backup, 0600) === false || @file_put_contents($path, $newContent, LOCK_EX) === false) {
+                foreach ($originals as $rollbackPath => $rollbackContent) @file_put_contents($rollbackPath, $rollbackContent, LOCK_EX);
+                throw new RuntimeException('Không thể ghi cấu hình Nginx an toàn cho báo cáo truy cập.');
+            }
         }
-        @chmod($backup, 0600);
 
         exec(escapeshellarg($nginx) . ' -t -c ' . escapeshellarg($configPath) . ' 2>&1', $output, $code);
         if ($code !== 0) {
-            @file_put_contents($configPath, $content, LOCK_EX);
+            foreach ($originals as $rollbackPath => $rollbackContent) @file_put_contents($rollbackPath, $rollbackContent, LOCK_EX);
             throw new RuntimeException('Nginx không hỗ trợ cấu hình IP khách an toàn trên máy này; không bật báo cáo.');
         }
         exec(escapeshellarg($nginx) . ' -c ' . escapeshellarg($configPath) . ' -s reload 2>&1', $reloadOutput, $reloadCode);
         if ($reloadCode !== 0) {
-            @file_put_contents($configPath, $content, LOCK_EX);
+            foreach ($originals as $rollbackPath => $rollbackContent) @file_put_contents($rollbackPath, $rollbackContent, LOCK_EX);
             exec(escapeshellarg($nginx) . ' -c ' . escapeshellarg($configPath) . ' -s reload 2>&1');
             throw new RuntimeException('Không thể reload Nginx sau khi kiểm tra cấu hình IP khách.');
         }
@@ -371,7 +420,7 @@ final class AccessReportService
 
     private function cleanStatus(string $value): string
     {
-        return in_array($value, ['waiting', 'sent', 'sent_empty', 'send_failed'], true) ? $value : '';
+        return in_array($value, ['waiting', 'sent', 'sent_empty', 'send_failed', 'nginx_config_failed'], true) ? $value : '';
     }
 
     private function limitTelegramText(string $text): string

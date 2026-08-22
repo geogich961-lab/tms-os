@@ -240,8 +240,22 @@ http {
 	# Truy cập LAN trực tiếp giữ nguyên remote_addr, không tin header do client tự gửi.
 	set_real_ip_from 127.0.0.1;
 	set_real_ip_from ::1;
-	real_ip_header CF-Connecting-IP;
-	real_ip_recursive off;
+		real_ip_header CF-Connecting-IP;
+		real_ip_recursive off;
+
+		# Access report: chỉ dùng IP header khi connector cloudflared đến từ loopback.
+		# Nếu CF-Connecting-IP bị Transform loại bỏ, dùng IP đầu của X-Forwarded-For.
+		map \$realip_remote_addr \$tms_from_cloudflared {
+			127.0.0.1 1;
+			::1 1;
+			default 0;
+		}
+		map "\$tms_from_cloudflared:\$http_cf_connecting_ip:\$http_x_forwarded_for" \$tms_access_client {
+			~^1:(?<tms_cf_ip>[0-9][0-9]?\.[0-9][0-9]?\.[0-9][0-9]?\.[0-9][0-9]?|[0-9A-Fa-f:]+): \$tms_cf_ip;
+			~^1::(?<tms_fallback_ip>[^,\s]+)(?:\s*,|\s*\$) \$tms_fallback_ip;
+			default \$remote_addr;
+		}
+		log_format tms_access '\$tms_access_client - \$remote_user [\$time_local] "\$request" \$status \$body_bytes_sent "\$http_referer" "\$http_user_agent"';
 
 	# Nén gzip cho toàn bộ site — giảm mạnh dữ liệu truyền qua tunnel
   gzip on;
@@ -260,7 +274,7 @@ http {
 
   include $SITES/*.conf;
 server { listen 127.0.0.1:8888; server_name localhost; root $TARGET/public; index index.php;
-access_log $HOME/logs/nginx/tms-access.log; error_log $HOME/logs/nginx/tms-error.log;
+access_log $HOME/logs/nginx/tms-access.log tms_access; error_log $HOME/logs/nginx/tms-error.log;
 location / { try_files \$uri \$uri/ /index.php?\$query_string; }
 location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
   # Cache browser cho file tĩnh
@@ -273,7 +287,7 @@ location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param 
 NGINX
 cat > "$SITES/default.conf" <<NGINX
 server { listen 0.0.0.0:8080; server_name _; root $HOME/websites/default/public; index index.php index.html;
-access_log $HOME/logs/nginx/default-access.log; error_log $HOME/logs/nginx/default-error.log;
+access_log $HOME/logs/nginx/default-access.log tms_access; error_log $HOME/logs/nginx/default-error.log;
 location / { try_files \$uri \$uri/ /index.php?\$query_string; }
 location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
   location ~* \.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot)$ {
