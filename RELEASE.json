@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.11,
-  "build": "20260822-1935",
+  "internal_version": 16.12,
+  "build": "20260822-2214",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.1.1",
-  "version": "16.1.1",
-  "notes": "V16.1.1 hotfix: repair installer tự tạo storage runtime khi package cũ thiếu thư mục này, giữ nguyên dữ liệu đã có.",
+  "name": "TMS OS V16.1.2",
+  "version": "16.1.2",
+  "notes": "V16.1.2 hotfix: nhận diện đúng cấu hình IP khách an toàn do repair tạo, tránh chèn trùng map/log_format Nginx khi bật báo cáo truy cập Telegram.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "665c6d5b0ed647378ddeb027b2fe16b2f3a9a2aaefcb0d30ad554f0e98680be9",
+  "checksum_sha256": "6ba2c0c74805103f671ff80c35cb885b783e9328fece62a48aef3434768a9f92",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.1.1",
-  "changelog": "V16.1.1: Hotfix installer repair for missing runtime storage directory; preserves existing websites, databases and settings.",
+  "version_display": "TMS OS V16.1.2",
+  "changelog": "V16.1.2: Fix access report activation after repair by preserving the existing safe Cloudflare loopback real-IP configuration.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }

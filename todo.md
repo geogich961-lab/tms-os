@@ -129,5 +129,5 @@
 
 - [x] Tái hiện chính xác lỗi kiểm tra cấu hình Nginx trên luồng repair/Termux.
 - [x] Phân biệt lỗi thiếu mô-đun với lỗi cú pháp hoặc vị trí chỉ thị Nginx.
-- [ ] Sửa migration tương thích mà vẫn chỉ tin header IP từ Cloudflare Tunnel loopback.
-- [ ] Kiểm thử cấu hình thật, bật báo cáo và gửi Telegram trước khi phát hành hotfix.
+- [x] Sửa migration tương thích mà vẫn chỉ tin header IP từ Cloudflare Tunnel loopback.
+- [x] Kiểm thử cấu hình thật, bật báo cáo và gửi Telegram trước khi phát hành hotfix.
