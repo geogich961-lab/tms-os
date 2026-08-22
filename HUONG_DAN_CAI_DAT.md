@@ -1,8 +1,8 @@
-# TMS OS V16.1.0 — Hướng dẫn cài đặt & Tối ưu hóa
+# TMS OS V16.1.1 — Hướng dẫn cài đặt & Tối ưu hóa
 
 **TMS OS** là nền tảng biến điện thoại Android cũ thành VPS mini: chạy website, PHP, SQLite/MariaDB với panel quản trị PWA tiếng Việt, quản lý dịch vụ qua giao diện web, Guardian tự sửa lỗi, sao lưu/khôi phục, và **Cloudflare Hosting** để đưa website ra Internet bằng tên miền riêng chính chủ (HTTPS miễn phí).
 
-Phiên bản ổn định hiện tại: **V16.1.0** (2026-08-22).
+Phiên bản ổn định hiện tại: **V16.1.1** (2026-08-22).
 
 ## Cài đặt (3 bước, người dùng chỉ thao tác 2 lần)
 
@@ -11,7 +11,7 @@ Phiên bản ổn định hiện tại: **V16.1.0** (2026-08-22).
 **Bước 2.** Dán **1 dòng lệnh** sau vào Termux:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh | bash
+bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh)
 ```
 
 **Bước 3.** Khi hộp thoại Android hỏi quyền truy cập bộ nhớ, nhấn **CHO PHÉP**. Bộ cài sẽ tự động: cập nhật kho gói, cài PHP/Nginx/MariaDB/OpenSSH, tải bộ nguồn TMS OS, kiểm tra chữ ký SHA-256, hỏi người dùng tự nhập tên tài khoản + mật khẩu quản trị, hỏi chọn cơ sở dữ liệu (SQLite/MariaDB), rồi cấu hình và khởi động toàn bộ dịch vụ.

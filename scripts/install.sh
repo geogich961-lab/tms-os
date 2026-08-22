@@ -195,13 +195,19 @@ if command -v pkg >/dev/null 2>&1; then
   fi
 else echo 'Bộ cài này yêu cầu Termux có lệnh pkg.'; exit 1; fi
 for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd crond crontab; do command -v "$c" >/dev/null || { echo "Thiếu lệnh sau cài: $c"; exit 1; }; done
-for part in app config public routes storage scripts; do [ -d "$SOURCE_DIR/$part" ] || { echo "Thiếu thư mục: $part"; exit 1; }; done
+for part in app config public routes scripts; do [ -d "$SOURCE_DIR/$part" ] || { echo "Thiếu thư mục: $part"; exit 1; }; done
+# storage chỉ chứa dữ liệu runtime. Một số gói source cũ không có thư mục rỗng này;
+# repair phải tự tạo lại thay vì dừng sau khi đã sao lưu dữ liệu người dùng.
+mkdir -p "$SOURCE_DIR/storage/logs" "$SOURCE_DIR/storage/sessions" "$SOURCE_DIR/storage/cache"
 printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
 mkdir -p "$HOME/.tms-os" "$BACKUP" "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache" "$SITES" "$PHP_CONF_DIR" "$HOME/logs/nginx" "$HOME/logs/services" "$HOME/backups" "$QUARANTINE" "$HOME/websites/default/public"
 date +%s > "$HOME/.tms-os/runtime_started_at"
 [ -d "$TARGET" ] && cp -a "$TARGET" "$BACKUP/tms-os" || true
 [ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
-cp -a "$SOURCE_DIR"/{app,config,public,routes,scripts} "$STAGING/"; cp -a "$SOURCE_DIR/storage/." "$STAGING/storage/"; chmod -R 700 "$STAGING/storage"
+cp -a "$SOURCE_DIR"/{app,config,public,routes,scripts} "$STAGING/"
+[ -d "$SOURCE_DIR/storage" ] && cp -a "$SOURCE_DIR/storage/." "$STAGING/storage/" || true
+mkdir -p "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache"
+chmod -R 700 "$STAGING/storage"
 find "$STAGING" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do php -l "$f" >/dev/null; done
 printf '[3/7] Cấu hình PHP Engine tương thích tự động...\n'
 cat > "$PHP_CONF_DIR/99-tms-os.ini" <<INI

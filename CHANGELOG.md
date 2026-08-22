@@ -1,5 +1,11 @@
 # Changelog
 
+## V16.1.1 (2026-08-22)
+
+- **Hotfix repair installer**: Không còn dừng khi package source thiếu thư mục runtime `storage`.
+- **Giữ dữ liệu an toàn**: Repair tự tạo `storage/logs`, `storage/sessions`, `storage/cache` và tiếp tục giữ website, database, tài khoản, cấu hình hiện có.
+- **Đóng gói release**: Bổ sung kiểm tra bắt buộc thư mục runtime trước khi tạo ZIP cập nhật.
+
 ## V16.1.0 (2026-08-22)
 
 - **Cron Jobs ổn định**: Chạy tác vụ thực tế trên Termux, tự chuẩn hóa ID job, ghi nhận lần chạy/kết quả và giữ nguyên shell giao diện TMS OS trên di động.

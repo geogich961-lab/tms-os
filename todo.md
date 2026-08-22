@@ -110,3 +110,10 @@
 - [x] Chạy bộ kiểm thử phát hành, kiểm tra trình cài đặt và luồng cập nhật từ `main`.
 - [x] Hợp nhất bản đã xác nhận vào `main`, tạo tag và GitHub Release V16.1.0.
 - [x] Xác minh release, asset và hướng dẫn cập nhật một chạm sau phát hành.
+
+## Hotfix bộ cài sau phát hành V16.1.0
+
+- [ ] Tái hiện gói source từ `main` và xác định vì sao thư mục `storage` không tồn tại sau giải nén.
+- [ ] Sửa bộ cài repair để tạo các thư mục runtime bắt buộc mà không đụng dữ liệu hiện có.
+- [ ] Kiểm thử repair với dữ liệu SQLite, website và cấu hình đã tồn tại.
+- [ ] Đóng gói, xác minh checksum và phát hành hotfix có hướng dẫn cập nhật an toàn.
