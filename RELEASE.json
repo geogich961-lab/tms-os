@@ -1,23 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.023,
-  "build": "20260822-0319",
+  "internal_version": 16.024,
+  "build": "20260822-0419",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.23",
-  "version": "16.0.23",
-  "notes": "V16.0.23: Hotfix lỗi cú pháp Service Worker.",
+  "name": "TMS OS V16.0.24",
+  "version": "16.0.24",
+  "notes": "V16.0.24: Power Center - Tắt/Mở/Reset hệ thống (Hỗ trợ Root).",
   "features": [
-    "Hotfix: Sửa lỗi cú pháp tại dòng 5 của service-worker.js gây treo PWA.",
-    "Service Worker V16.0.23: Làm mới cache và sửa lỗi đăng ký.",
-    "Manifest Sync: Đảm bảo đồng bộ tài nguyên PWA tốt hơn."
+    "Power Center: Thêm trung tâm điều khiển hệ thống tại Dashboard.",
+    "System Reboot/Shutdown: Hỗ trợ khởi động lại và tắt máy trực tiếp từ Panel (Yêu cầu Root).",
+    "Factory Reset: Tính năng khôi phục cài đặt gốc TMS OS để làm sạch dữ liệu.",
+    "Service Optimization: Tinh chỉnh UnifiedSystemCoreService để xử lý các lệnh hệ thống an toàn."
   ],
-  "checksum_sha256": "c4c60e50927aeb2deb0aeb20a02dacde1ad1fd0a7dfd4e4686c26595d8d40ec3",
+  "checksum_sha256": "1050e51d60d86791c09c6f5b13842c276675807de12da0dcb4ab1d067efa4b60",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.23",
-  "changelog": "V16.0.23: Hotfixed SyntaxError in service-worker.js that prevented Service Worker registration and PWA functionality.",
+  "version_display": "TMS OS V16.0.24",
+  "changelog": "V16.0.24: Added Power Center for remote system control, including Reboot, Shutdown (Root required), and Factory Reset functionality.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }

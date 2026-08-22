@@ -1,3 +1,9 @@
+## V16.0.24 (2026-08-22)
+- **Power Center (System Control)**:
+  - Thêm trung tâm điều khiển hệ thống tại Dashboard với các tính năng: Reboot Android, Shutdown Android (Yêu cầu Root) và Factory Reset TMS OS.
+  - Tích hợp logic thực thi lệnh hệ thống bất đồng bộ trong `UnifiedSystemCoreService` để tránh treo Panel khi thiết bị tắt máy.
+- **Factory Reset**: Bổ sung script `tms-reset.sh` để khôi phục cài đặt gốc, xóa sạch dữ liệu cấu hình và database người dùng một cách an toàn.
+
 ## V16.0.23 (2026-08-22)
 - **Hotfix Service Worker (Syntax Error Fix)**:
   - Sửa lỗi cú pháp nghiêm trọng (lặp dòng) trong file `service-worker.js` khiến trình duyệt không thể đăng ký Service Worker và treo tính năng PWA.
@@ -15,8 +21,3 @@
   - Đổi tên file cấu hình PWA từ `manifest.webmanifest` sang `tms-pwa-v21.json`. Đây là biện pháp cuối cùng để ép trình duyệt Chrome trên Android phải xóa bỏ hoàn toàn thông tin icon cũ và nạp lại icon điện thoại vàng mới.
   - Cập nhật toàn bộ liên kết manifest trong Landing Page và Dashboard để trỏ vào file cấu hình mới.
 - **Service Worker V16.0.21**: Cập nhật để nạp manifest mới và đảm bảo bộ icon `tms-app-icon-*.png` được ưu tiên nạp vào bộ nhớ đệm.
-
-## V16.0.20 (2026-08-22)
-- **Bẻ gãy Cache Icon ứng dụng (Nuclear Cache-Busting)**:
-  - Đổi tên toàn bộ file icon PWA thành `tms-app-icon-192.png` và `tms-app-icon-512.png`.
-  - Cập nhật manifest để trỏ vào các file icon tên mới, ép trình duyệt phải tải lại ảnh mới 100%.
