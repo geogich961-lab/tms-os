@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.024,
-  "build": "20260822-0419",
+  "internal_version": 16.025,
+  "build": "20260822-0436",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.24",
-  "version": "16.0.24",
-  "notes": "V16.0.24: Power Center - Tắt/Mở/Reset hệ thống (Hỗ trợ Root).",
+  "name": "TMS OS V16.0.25",
+  "version": "16.0.25",
+  "notes": "V16.0.25: Gỡ bỏ Power Center để đảm bảo an toàn cho thiết bị (Security Revert).",
   "features": [
-    "Power Center: Thêm trung tâm điều khiển hệ thống tại Dashboard.",
-    "System Reboot/Shutdown: Hỗ trợ khởi động lại và tắt máy trực tiếp từ Panel (Yêu cầu Root).",
-    "Factory Reset: Tính năng khôi phục cài đặt gốc TMS OS để làm sạch dữ liệu.",
-    "Service Optimization: Tinh chỉnh UnifiedSystemCoreService để xử lý các lệnh hệ thống an toàn."
+    "Security Revert: Loại bỏ các tính năng yêu cầu quyền Root để bảo vệ thiết bị.",
+    "Non-Root Environment: Đảm bảo ứng dụng chạy trong môi trường cô lập an toàn.",
+    "Source Cleanup: Dọn dẹp các script hệ thống không còn sử dụng.",
+    "Stability Update: Tối ưu hóa hệ thống sau khi gỡ bỏ Power Center."
   ],
-  "checksum_sha256": "1050e51d60d86791c09c6f5b13842c276675807de12da0dcb4ab1d067efa4b60",
+  "checksum_sha256": "da5113c1f1736e339553c568d3196919fc23da610e274be3538132655c8c9ac5",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.24",
-  "changelog": "V16.0.24: Added Power Center for remote system control, including Reboot, Shutdown (Root required), and Factory Reset functionality.",
+  "version_display": "TMS OS V16.0.25",
+  "changelog": "V16.0.25: Reverted Power Center features to ensure device security and comply with non-root principles.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }

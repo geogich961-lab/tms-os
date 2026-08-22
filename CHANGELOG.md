@@ -1,3 +1,10 @@
+## V16.0.25 (2026-08-22)
+- **Gỡ bỏ Power Center (Security Revert)**:
+  - Loại bỏ hoàn toàn tính năng Power Center (Reboot, Shutdown, Factory Reset) để đảm bảo an toàn cho thiết bị và tuân thủ nguyên tắc không yêu cầu quyền Root.
+  - Xóa bỏ mọi logic thực thi lệnh hệ thống cấp cao trong `SystemService` và `UnifiedSystemCoreService`.
+  - Dọn dẹp các script hệ thống liên quan (`tms-reset.sh`) để tinh gọn mã nguồn.
+- **Bảo mật**: Đưa hệ thống về trạng thái chạy trong môi trường bị cô lập (Non-root), đảm bảo ứng dụng không có quyền can thiệp vào tầng phần cứng của điện thoại.
+
 ## V16.0.24 (2026-08-22)
 - **Power Center (System Control)**:
   - Thêm trung tâm điều khiển hệ thống tại Dashboard với các tính năng: Reboot Android, Shutdown Android (Yêu cầu Root) và Factory Reset TMS OS.

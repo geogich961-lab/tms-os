@@ -73,23 +73,7 @@ final class SystemService
         if($action==='start_all'){$r=$this->core->run('bash '.escapeshellarg($this->home.'/tms-os/scripts/start-tms.sh'),60);return ['ok'=>$r['code']===0,'message'=>$r['output']?:'Hoàn tất.'];}
         if($action==='backup'){$r=$this->core->run('bash '.escapeshellarg($this->home.'/tms-os/scripts/quick-backup.sh'),120);return ['ok'=>$r['code']===0,'message'=>$r['output']?:'Hoàn tất.'];}
         
-        // Power Center Actions
-        if ($action === 'system_reboot') {
-            $isRoot = $this->core->run('command -v su >/dev/null && su -c "id" >/dev/null 2>&1', 5)['code'] === 0;
-            if (!$isRoot) return ['ok' => false, 'message' => 'Yêu cầu quyền Root để khởi động lại thiết bị.'];
-            $this->core->run('nohup bash -c "sleep 2 && su -c reboot" > /dev/null 2>&1 &', 2);
-            return ['ok' => true, 'message' => 'Lệnh khởi động lại đã được gửi. Thiết bị sẽ reboot sau vài giây.'];
-        }
-        if ($action === 'system_shutdown') {
-            $isRoot = $this->core->run('command -v su >/dev/null && su -c "id" >/dev/null 2>&1', 5)['code'] === 0;
-            if (!$isRoot) return ['ok' => false, 'message' => 'Yêu cầu quyền Root để tắt thiết bị.'];
-            $this->core->run('nohup bash -c "sleep 2 && su -c reboot -p" > /dev/null 2>&1 &', 2);
-            return ['ok' => true, 'message' => 'Lệnh tắt máy đã được gửi. Thiết bị sẽ shutdown sau vài giây.'];
-        }
-        if ($action === 'tms_reset') {
-            $r = $this->core->run('bash ' . escapeshellarg($this->home . '/tms-os/scripts/tms-reset.sh'), 60);
-            return ['ok' => $r['code'] === 0, 'message' => $r['output'] ?: 'Hệ thống đã được reset về trạng thái ban đầu.'];
-        }
+
 
         if(!isset($map[$action]))return ['ok'=>false,'message'=>'Thao tác không hợp lệ.'];
         [$id,$verb]=$map[$action];
