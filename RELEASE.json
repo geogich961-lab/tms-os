@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.018,
-  "build": "20260822-0110",
+  "internal_version": 16.019,
+  "build": "20260822-0124",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.18",
-  "version": "16.0.18",
-  "notes": "V16.0.18: Landing Page PWA Integration Fix.",
+  "name": "TMS OS V16.0.19",
+  "version": "16.0.19",
+  "notes": "V16.0.19: Specific App Icon Integration.",
   "features": [
-    "Landing Page PWA Fix: Tích hợp manifest và Service Worker vào Landing Page để kích hoạt tính năng cài đặt tự động.",
-    "PWA Reliability: Đăng ký Service Worker ngay từ trang chủ công khai để trình duyệt nhận diện ứng dụng nhanh hơn.",
-    "Splash Screen Sync: Đồng bộ màu nền và favicon cho trải nghiệm PWA mượt mà.",
-    "Service Worker V16.0.18: Cập nhật cache để đảm bảo tính năng cài đặt hoạt động ổn định."
+    "Specific App Icon: Cập nhật icon ứng dụng PWA theo hình ảnh điện thoại vàng riêng biệt người dùng cung cấp.",
+    "Branding Distinction: Phân biệt rõ ràng giữa Logo hệ thống (có THCGaming) và Icon ứng dụng trên màn hình chính.",
+    "Favicon Sync: Cập nhật favicon theo icon ứng dụng mới.",
+    "Service Worker V16.0.19: Ép làm mới cache icon trên toàn bộ thiết bị."
   ],
-  "checksum_sha256": "3ec52cb15502d6cd3a6d54cf0b661f27cab4112c6d9d95d43b0e47a59e709083",
+  "checksum_sha256": "84c3e05eace762556b747b6d16a8a704febe0c65c2ef29a0e260695dec431ad0",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.18",
-  "changelog": "V16.0.18: Fixed PWA installation issues on the Landing Page by adding manifest link and service worker registration.",
+  "version_display": "TMS OS V16.0.19",
+  "changelog": "V16.0.19: Replaced PWA icons with the specific standalone app image provided by the user.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
