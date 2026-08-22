@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.019,
-  "build": "20260822-0124",
+  "internal_version": 16.02,
+  "build": "20260822-0134",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.19",
-  "version": "16.0.19",
-  "notes": "V16.0.19: Specific App Icon Integration.",
+  "name": "TMS OS V16.0.20",
+  "version": "16.0.20",
+  "notes": "V16.0.20: Nuclear Cache-Busting for App Icon.",
   "features": [
-    "Specific App Icon: Cập nhật icon ứng dụng PWA theo hình ảnh điện thoại vàng riêng biệt người dùng cung cấp.",
-    "Branding Distinction: Phân biệt rõ ràng giữa Logo hệ thống (có THCGaming) và Icon ứng dụng trên màn hình chính.",
-    "Favicon Sync: Cập nhật favicon theo icon ứng dụng mới.",
-    "Service Worker V16.0.19: Ép làm mới cache icon trên toàn bộ thiết bị."
+    "Icon Cache-Busting: Đổi tên toàn bộ file icon thành tms-app-icon-*.png để ép trình duyệt tải lại ảnh mới.",
+    "Specific Icon Source: Sử dụng chính xác hình ảnh người dùng cung cấp (điện thoại vàng trên nền đỏ).",
+    "Manifest Sync: Cập nhật manifest.webmanifest trỏ đúng vào bộ icon tên mới.",
+    "Service Worker V16.0.20: Làm mới cache tài nguyên tĩnh."
   ],
-  "checksum_sha256": "84c3e05eace762556b747b6d16a8a704febe0c65c2ef29a0e260695dec431ad0",
+  "checksum_sha256": "78bd318472bec939bd759375ad7c66c2b413288838b13776bc18215c5e0b8bb2",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.19",
-  "changelog": "V16.0.19: Replaced PWA icons with the specific standalone app image provided by the user.",
+  "version_display": "TMS OS V16.0.20",
+  "changelog": "V16.0.20: Renamed icon files to tms-app-icon-*.png to bypass aggressive browser caching.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }

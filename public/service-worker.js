@@ -1,9 +1,9 @@
-const VERSION='tms-os-v16-0-19';
+const VERSION='tms-os-v16-0-20';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
-  '/offline.html','/manifest.php?v=16.0.19',
-  '/assets/app.css?v=16.0.19',
-  '/assets/icons/icon-192.png','/assets/icons/icon-512.png'
+  '/offline.html','/manifest.php?v=16.0.20',
+  '/assets/app.css?v=16.0.20',
+  '/assets/icons/tms-app-icon-192.png','/assets/icons/tms-app-icon-512.png'
 ];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(STATIC_CACHE).then(cache=>cache.addAll(STATIC_ASSETS)).then(()=>self.skipWaiting()));
