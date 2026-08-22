@@ -550,8 +550,11 @@ final class CloudflareDomainService
 
     public function startTunnel(): array
     {
-        $info = $this->cf();
-        $token = trim((string)($info['cfg']['tunnel_token'] ?? ''));
+        // Connector chỉ cần Tunnel token đã lưu. Không gọi API Cloudflare ở đây,
+        // vì repair/khởi động phải có thể khôi phục tunnel ngay cả khi API token
+        // đã bị đổi hoặc không còn cần thiết cho việc chạy connector.
+        $cfg = $this->readJson($this->configFile);
+        $token = trim((string)($cfg['tunnel_token'] ?? ''));
         if ($token === '') { throw new RuntimeException('Chưa có tunnel token. Hãy tạo tunnel trước.'); }
         if (!file_exists($this->cloudflared())) {
             throw new RuntimeException('Chưa cài cloudflared. Vào Runtime Packages → cài Cloudflared rồi thử lại.');

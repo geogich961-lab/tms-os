@@ -14,6 +14,13 @@ STATE="$HOME/.tms-os"
 ROOT="$HOME/tms-os"
 mkdir -p "$STATE"
 
+# Cloudflare Tunnel có PID/config riêng và có thể dừng khi mạng hoặc dịch vụ
+# được khởi động lại. Kiểm tra nhẹ mỗi lần mở Termux; helper tự bỏ qua nếu chưa
+# cấu hình và không ghi token vào log.
+if [ -x "$ROOT/scripts/tms-cloudflare-tunnel.sh" ]; then
+  (bash "$ROOT/scripts/tms-cloudflare-tunnel.sh" start >> "$HOME/logs/services/cloudflare-tunnel.log" 2>&1) &
+fi
+
 # Khóa theo ngày: mỗi ngày chỉ khởi động 1 lần cho mỗi phiên login
 DAY="$(date +%Y-%m-%d)"
 LOCK="$STATE/.session-start-$DAY"

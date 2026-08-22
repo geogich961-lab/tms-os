@@ -138,3 +138,10 @@
 - [x] Sửa thứ tự nạp lớp cho worker mà không ảnh hưởng panel hoặc webhook Telegram.
 - [x] Thêm hồi quy bootstrap Cron, lỗi được làm sạch và không lộ đường dẫn hay cấu hình nhạy cảm.
 - [x] Kiểm thử package/release và phát hành hotfix có hướng dẫn xác nhận lịch tự động.
+
+## Khắc phục Cloudflare Tunnel 1033 sau repair V16.1.3
+
+- [x] Đối chiếu luồng repair/start-tms với điều kiện khởi động cloudflared và file cấu hình Tunnel.
+- [x] Sửa cơ chế phục hồi connector sau cập nhật, không đọc hoặc ghi lộ token/certificate Tunnel.
+- [ ] Thêm hồi quy trạng thái dịch vụ và hướng dẫn khôi phục tức thời an toàn.
+- [ ] Kiểm thử package rồi phát hành hotfix nếu lỗi thuộc mã nguồn.
