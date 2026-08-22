@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 /** Worker nội bộ cho Cron: tổng hợp access log mới và gửi đúng chat Telegram đã cấu hình. */
 $base = dirname(__DIR__);
-foreach (['CronJobService', 'SystemService', 'MonitoringService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService'] as $class) {
+// Worker chạy độc lập từ crond, không đi qua bootstrap web. SystemService phụ
+// thuộc UnifiedSystemCoreService nên phải nạp rõ theo thứ tự trước khi tạo bot.
+foreach (['UnifiedSystemCoreService', 'CronJobService', 'SystemService', 'MonitoringService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService'] as $class) {
     require_once $base . '/app/Services/' . $class . '.php';
 }
 

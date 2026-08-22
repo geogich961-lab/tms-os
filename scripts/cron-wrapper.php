@@ -22,7 +22,14 @@ $duration = round($endTime - $startTime, 2);
 $jobs[$jobId]['last_run'] = date('c');
 $jobs[$jobId]['last_status'] = ($status === 0 ? 'success' : 'failed');
 
-if ($job['notify_telegram']) {
+// Báo cáo truy cập tự gửi nội dung riêng sau khi Telegram xác nhận. Không để
+// wrapper chuyển stderr/fatal của worker lên chat, kể cả job cũ còn cờ notify.
+$isAccessReportWorker = str_contains((string)($job['command'] ?? ''), '/scripts/access-report.php');
+if ($isAccessReportWorker) {
+    $jobs[$jobId]['notify_telegram'] = false;
+}
+
+if (!$isAccessReportWorker && $job['notify_telegram']) {
     $statusEmoji = ($status === 0 ? '✅ Thành công' : '❌ Thất bại');
     $outputStr = implode("\n", array_slice($output, -10)); // Lấy 10 dòng cuối
     if (strlen($outputStr) > 1800) {
