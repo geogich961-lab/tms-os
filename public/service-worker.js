@@ -1,8 +1,8 @@
-const VERSION='tms-os-v16-0-20';
+const VERSION='tms-os-v16-0-21';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
-  '/offline.html','/manifest.php?v=16.0.20',
-  '/assets/app.css?v=16.0.20',
+  '/offline.html','/tms-pwa-v21.json?v=16.0.21',
+  '/assets/app.css?v=16.0.21',
   '/assets/icons/tms-app-icon-192.png','/assets/icons/tms-app-icon-512.png'
 ];
 self.addEventListener('install',event=>{

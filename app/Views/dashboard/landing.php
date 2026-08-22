@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <title>TMS OS - Mini Android VPS</title>
     <link rel="stylesheet" href="/assets/app.css?v=<?=tms_asset_version()?>">
-    <link rel="manifest" href="/manifest.php?v=<?=tms_asset_version()?>">
+    <link rel="manifest" href="/tms-pwa-v21.json?v=<?=tms_asset_version()?>">
     <link rel="icon" type="image/png" href="/assets/favicon.png?v=<?=tms_asset_version()?>">
     <meta name="theme-color" content="#a70e13">
     <style>

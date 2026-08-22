@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.02,
-  "build": "20260822-0134",
+  "internal_version": 16.021,
+  "build": "20260822-0139",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.20",
-  "version": "16.0.20",
-  "notes": "V16.0.20: Nuclear Cache-Busting for App Icon.",
+  "name": "TMS OS V16.0.21",
+  "version": "16.0.21",
+  "notes": "V16.0.21: Ultimate Manifest Cache-Busting.",
   "features": [
-    "Icon Cache-Busting: Đổi tên toàn bộ file icon thành tms-app-icon-*.png để ép trình duyệt tải lại ảnh mới.",
-    "Specific Icon Source: Sử dụng chính xác hình ảnh người dùng cung cấp (điện thoại vàng trên nền đỏ).",
-    "Manifest Sync: Cập nhật manifest.webmanifest trỏ đúng vào bộ icon tên mới.",
-    "Service Worker V16.0.20: Làm mới cache tài nguyên tĩnh."
+    "Manifest Renaming: Đổi tên file manifest thành tms-pwa-v21.json để cưỡng bức Chrome Android nạp lại toàn bộ metadata.",
+    "PWA Link Sync: Cập nhật liên kết manifest tại Landing Page và Dashboard.",
+    "Service Worker V16.0.21: Làm mới cache tài nguyên và manifest mới.",
+    "Icon Verification: Đảm bảo bộ icon tms-app-icon-*.png được nạp chính xác."
   ],
-  "checksum_sha256": "78bd318472bec939bd759375ad7c66c2b413288838b13776bc18215c5e0b8bb2",
+  "checksum_sha256": "9204c1832fe1ed078e6f19115897b921fa4d1f8a125da699986a270315c15c71",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.20",
-  "changelog": "V16.0.20: Renamed icon files to tms-app-icon-*.png to bypass aggressive browser caching.",
+  "version_display": "TMS OS V16.0.21",
+  "changelog": "V16.0.21: Renamed manifest file to tms-pwa-v21.json to bypass metadata caching on Chrome Android.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
