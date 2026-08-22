@@ -108,5 +108,5 @@
 - [x] Rà soát commits, thay đổi tệp và kết quả kiểm thử trên `develop-v16.1.0`.
 - [x] Chuẩn hóa metadata phiên bản từ build TEST sang V16.1.0 ổn định.
 - [x] Chạy bộ kiểm thử phát hành, kiểm tra trình cài đặt và luồng cập nhật từ `main`.
-- [ ] Hợp nhất bản đã xác nhận vào `main`, tạo tag và GitHub Release V16.1.0.
-- [ ] Xác minh release, asset và hướng dẫn cập nhật một chạm sau phát hành.
+- [x] Hợp nhất bản đã xác nhận vào `main`, tạo tag và GitHub Release V16.1.0.
+- [x] Xác minh release, asset và hướng dẫn cập nhật một chạm sau phát hành.
