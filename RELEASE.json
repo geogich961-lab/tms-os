@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.12,
-  "build": "20260822-2214",
+  "internal_version": 16.13,
+  "build": "20260822-2347",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.1.2",
-  "version": "16.1.2",
-  "notes": "V16.1.2 hotfix: nhận diện đúng cấu hình IP khách an toàn do repair tạo, tránh chèn trùng map/log_format Nginx khi bật báo cáo truy cập Telegram.",
+  "name": "TMS OS V16.1.3",
+  "version": "16.1.3",
+  "notes": "V16.1.3 hotfix: worker báo cáo tự nạp đủ service khi Cron chạy độc lập; không gửi stack trace worker báo cáo qua Telegram.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "6ba2c0c74805103f671ff80c35cb885b783e9328fece62a48aef3434768a9f92",
+  "checksum_sha256": "c7ad14ce04d1b2f5c2732a2c318b6eb48ac07ec29b78cff0b818698502f9815e",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.1.2",
-  "changelog": "V16.1.2: Fix access report activation after repair by preserving the existing safe Cloudflare loopback real-IP configuration.",
+  "version_display": "TMS OS V16.1.3",
+  "changelog": "V16.1.3: Fix the scheduled access-report worker bootstrap and suppress raw worker stack traces in Cron Telegram notifications.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
