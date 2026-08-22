@@ -127,6 +127,9 @@
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
+            // Hiện nút cài đặt khi trình duyệt sẵn sàng
+            const btn = document.querySelector('.btn-install');
+            if (btn) btn.style.display = 'block';
         });
 
         function tmsInstallPWA(e) {
@@ -135,20 +138,37 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
                     if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the A2HS prompt');
+                        const btn = document.querySelector('.btn-install');
+                        if (btn) btn.style.display = 'none';
                     }
                     deferredPrompt = null;
                 });
             } else {
+                // Kiểm tra xem có đang ở chế độ standalone không (đã cài đặt)
+                const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+                if (isStandalone) {
+                    alert('TMS OS đã được cài đặt trên màn hình chính.');
+                    return;
+                }
+                
                 // Check if iOS
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 if (isIOS) {
                     alert('Để cài đặt trên iOS: Chạm vào nút Chia sẻ trong Safari và chọn "Thêm vào Màn hình chính".');
                 } else {
-                    alert('Ứng dụng đã được cài đặt hoặc trình duyệt của bạn không hỗ trợ cài đặt tự động. Vui lòng sử dụng menu trình duyệt để "Thêm vào màn hình chính".');
+                    alert('Trình duyệt của bạn chưa sẵn sàng hoặc không hỗ trợ cài đặt tự động. Vui lòng sử dụng menu trình duyệt (ba chấm) để chọn "Cài đặt ứng dụng" hoặc "Thêm vào màn hình chính".');
                 }
             }
         }
+        
+        // Ẩn nút nếu đã cài đặt
+        window.addEventListener('DOMContentLoaded', () => {
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+            if (isStandalone) {
+                const btn = document.querySelector('.btn-install');
+                if (btn) btn.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
