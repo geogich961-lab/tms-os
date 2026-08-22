@@ -137,4 +137,4 @@
 - [x] Tái hiện lỗi thiếu UnifiedSystemCoreService khi chạy scripts/access-report.php độc lập.
 - [x] Sửa thứ tự nạp lớp cho worker mà không ảnh hưởng panel hoặc webhook Telegram.
 - [x] Thêm hồi quy bootstrap Cron, lỗi được làm sạch và không lộ đường dẫn hay cấu hình nhạy cảm.
-- [ ] Kiểm thử package/release và phát hành hotfix có hướng dẫn xác nhận lịch tự động.
+- [x] Kiểm thử package/release và phát hành hotfix có hướng dẫn xác nhận lịch tự động.
