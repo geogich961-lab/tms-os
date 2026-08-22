@@ -46,7 +46,7 @@ if command -v pkg >/dev/null 2>&1; then
   echo '[1/7] Cập nhật kho và tự động cài mọi thành phần...'
   # V14.1.1: mirror Termux thỉnh thoảng lỗi 404 (index chưa cập nhật).
   # Tự retry: apt-get update → apt-get install --fix-missing → đổi mirror nếu vẫn lỗi.
-  TMS_PKGS="php php-gd nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl"
+  TMS_PKGS="php php-gd nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl cronie"
   tms_pkg_ok=0
   for TMS_ATTEMPT in 1 2 3; do
     if pkg install -y $TMS_PKGS >/dev/null 2>&1; then tms_pkg_ok=1; break; fi
@@ -65,12 +65,12 @@ if command -v pkg >/dev/null 2>&1; then
   if [ "$tms_pkg_ok" -ne 1 ]; then
     echo '[LỖI] Không cài được một số gói sau 3 lần thử (có thể do mạng hoặc mirror).'
     echo '        Thử lại sau vài phút, hoặc chạy thủ công:'
-    echo '          pkg install php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl'
+    echo '          pkg install php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl cronie'
     exit 1
   fi
   # V14.1.3: kiểm tra từng binary thiết yếu — điện thoại thật đôi khi pkg báo OK nhưng thiếu file
   TMS_MISSING=""
-  for c in php nginx curl mariadb mariadb-dump zip unzip sshd; do command -v "$c" >/dev/null || TMS_MISSING="$TMS_MISSING $c"; done
+  for c in php nginx curl mariadb mariadb-dump zip unzip sshd crond crontab; do command -v "$c" >/dev/null || TMS_MISSING="$TMS_MISSING $c"; done
   if [ -n "$TMS_MISSING" ]; then
     echo "[Khắc phục] Thiếu: $TMS_MISSING — thử cài lại riêng từng gói..."
     for c in $TMS_MISSING; do
@@ -194,7 +194,7 @@ if command -v pkg >/dev/null 2>&1; then
     echo '[OK] Đã chọn SQLite — không cần khởi động database daemon.'
   fi
 else echo 'Bộ cài này yêu cầu Termux có lệnh pkg.'; exit 1; fi
-for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd; do command -v "$c" >/dev/null || { echo "Thiếu lệnh sau cài: $c"; exit 1; }; done
+for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd crond crontab; do command -v "$c" >/dev/null || { echo "Thiếu lệnh sau cài: $c"; exit 1; }; done
 for part in app config public routes storage scripts; do [ -d "$SOURCE_DIR/$part" ] || { echo "Thiếu thư mục: $part"; exit 1; }; done
 printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
 mkdir -p "$HOME/.tms-os" "$BACKUP" "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache" "$SITES" "$PHP_CONF_DIR" "$HOME/logs/nginx" "$HOME/logs/services" "$HOME/backups" "$QUARANTINE" "$HOME/websites/default/public"

@@ -94,25 +94,51 @@ final class CronJobService
     private function syncCrontab(): void
     {
         $jobs = $this->all();
-        $lines = ["# TMS OS Managed Cron Jobs - DO NOT EDIT MANUALLY"];
+        // crond không kế thừa PATH/HOME của PHP-CGI. Khai báo rõ môi trường
+        // Termux giúp wrapper tìm được php và đọc đúng dữ liệu người dùng.
+        $prefix = getenv('PREFIX') ?: dirname($this->home) . '/usr';
+        $phpBinary = $prefix . '/bin/php';
+        $shellBinary = $prefix . '/bin/bash';
+        $lines = [
+            '# TMS OS Managed Cron Jobs - DO NOT EDIT MANUALLY',
+            'SHELL=' . $shellBinary,
+            'PATH=' . $prefix . '/bin:/system/bin:/system/xbin',
+            'HOME=' . $this->home,
+        ];
         
         foreach ($jobs as $job) {
             if (!$job['enabled']) continue;
             
-            $cmd = $job['command'];
-            if ($job['notify_telegram']) {
-                // Wrap command to notify telegram
-                $wrapperPath = $this->home . '/tms-os/scripts/cron-wrapper.php';
-                $cmd = "php " . escapeshellarg($wrapperPath) . " " . escapeshellarg($job['id']);
-            }
+            // Tất cả job đều qua wrapper để trạng thái lần chạy cuối được cập nhật.
+            // Wrapper chỉ gửi Telegram khi job bật notify_telegram.
+            $wrapperPath = $this->home . '/tms-os/scripts/cron-wrapper.php';
+            $cmd = escapeshellarg($phpBinary) . ' ' . escapeshellarg($wrapperPath) . ' ' . escapeshellarg($job['id']);
             
             $lines[] = "{$job['schedule']} {$cmd}";
         }
 
         $tmpFile = tempnam(sys_get_temp_dir(), 'tms-cron');
         file_put_contents($tmpFile, implode("\n", $lines) . "\n");
-        exec("crontab " . escapeshellarg($tmpFile));
+        if (!self::hasCommand('crontab')) {
+            @unlink($tmpFile);
+            throw new RuntimeException('Chưa cài Cron runtime. Hãy chạy: pkg install cronie');
+        }
+        exec("crontab " . escapeshellarg($tmpFile) . ' 2>&1', $output, $exitCode);
         @unlink($tmpFile);
+        if ($exitCode !== 0) {
+            throw new RuntimeException('Không thể lưu lịch Cron: ' . trim(implode(' ', $output)));
+        }
+        $engine = $this->home . '/tms-os/scripts/tms-cron-engine.sh';
+        exec('bash ' . escapeshellarg($engine) . ' start 2>&1', $engineOutput, $engineCode);
+        if ($engineCode !== 0) {
+            throw new RuntimeException('Không thể khởi động Cron engine: ' . trim(implode(' ', $engineOutput)));
+        }
+    }
+
+    private static function hasCommand(string $command): bool
+    {
+        exec('command -v ' . escapeshellarg($command) . ' 2>/dev/null', $output, $code);
+        return $code === 0;
     }
 
     private function readJobs(): array

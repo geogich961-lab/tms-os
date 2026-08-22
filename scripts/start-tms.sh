@@ -32,5 +32,7 @@ if [ "$DBMODE" = "mariadb" ]; then
 fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
 [ -f "$HOME/tms-os/scripts/tms-guardian.sh" ] && bash "$HOME/tms-os/scripts/tms-guardian.sh" start || true
+# Cron Jobs chạy bằng crond trong user-space Termux; thiếu cronie không làm panel dừng.
+[ -f "$HOME/tms-os/scripts/tms-cron-engine.sh" ] && bash "$HOME/tms-os/scripts/tms-cron-engine.sh" start >>"$HOME/logs/services/cron.log" 2>&1 || true
 command -v termux-wake-lock >/dev/null 2>&1 && termux-wake-lock || true
 echo "TMS OS đang chạy: http://127.0.0.1:8888 (database: $DBMODE)"

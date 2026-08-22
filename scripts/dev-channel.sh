@@ -84,6 +84,11 @@ rollback() {
 update() {
   [ -d "$ROOT" ] || { echo '[LỖI] Không tìm thấy TMS OS hiện có tại ~/tms-os. Kênh này chỉ dùng để cập nhật bản đã cài.'; exit 1; }
   for cmd in curl unzip php sha256sum; do need_command "$cmd"; done
+  if ! command -v crond >/dev/null 2>&1 || ! command -v crontab >/dev/null 2>&1; then
+    echo '[CHUẨN BỊ] Đang cài Cron runtime (cronie) cho Cron Jobs...'
+    command -v pkg >/dev/null 2>&1 || { echo '[LỖI] Không có pkg để cài cronie.'; exit 1; }
+    pkg install -y cronie
+  fi
   echo '============================================================'
   echo ' TMS OS — KÊNH THỬ NGHIỆM NỘI BỘ'
   echo " Nhánh nguồn: ${BRANCH}"
@@ -128,6 +133,7 @@ update() {
     exit 1
   fi
   chmod -R 700 "$ROOT/scripts" "$ROOT/storage" 2>/dev/null || true
+  chmod 700 "$ROOT/scripts/tms-cron-engine.sh" 2>/dev/null || true
   mkdir -p "$ROOT/storage/logs" "$ROOT/storage/sessions" "$ROOT/storage/cache"
 
   echo '[5/5] Đang khởi động lại TMS OS...'
