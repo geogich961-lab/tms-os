@@ -67,3 +67,9 @@
 - [x] Cô lập nguyên nhân: build `V16.1.0-TEST` không được nhận diện, khiến trình duyệt giữ CSS cũ và SVG phóng đại.
 - [x] Buộc làm mới CSS/JavaScript sau mỗi lần cập nhật kênh nội bộ và nhận diện đúng build TEST.
 - [ ] Xác thực hiển thị trên desktop và mobile trước khi đẩy lại nhánh thử nghiệm.
+
+## Khôi phục shell chung cho Cron
+
+- [x] Xác minh biến hoặc luồng render khiến Cron bỏ qua layout `os-shell`.
+- [x] Khôi phục sidebar, header di động, footer và toast dùng chung cho Cron Jobs.
+- [ ] Kiểm tra không phát sinh lỗi menu, toast hoặc dialog trên desktop và mobile trước khi đồng bộ.

@@ -1,5 +1,6 @@
 <?php
 $title = 'Cron Jobs';
+$showShell = true;
 $jobs = is_array($jobs ?? null) ? $jobs : [];
 $totalJobs = count($jobs);
 $enabledJobs = count(array_filter($jobs, static fn(array $job): bool => !array_key_exists('enabled', $job) || (bool)$job['enabled']));
