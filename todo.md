@@ -47,3 +47,17 @@
 - [x] Lưu kết quả giao thông báo an toàn, không lưu hoặc hiển thị Bot Token.
 - [x] Hiển thị kết quả gửi Telegram gần nhất trên trang Cron Jobs.
 - [ ] Kiểm thử và đồng bộ bản vá lên `develop-v16.1.0`.
+
+## Khắc phục lỗi giao Telegram
+
+- [x] Lấy thông báo lỗi Telegram đã được làm sạch từ tác vụ Cron trên điện thoại.
+- [x] Xác định nguyên nhân cấu hình, xác thực hoặc kết nối dựa trên mã lỗi thực tế: Chat ID đang là ID bot.
+- [ ] Thay Chat ID bằng ID người dùng hoặc nhóm hợp lệ, không thay Bot Token.
+- [ ] Kiểm tra lại trạng thái `Đã gửi` bằng Cron Job trên thiết bị thật.
+
+## Hoàn thiện giao diện Cron Job Manager
+
+- [x] Rà soát layout, màu sắc và thành phần dùng chung của giao diện TMS OS.
+- [x] Thiết kế lại phần tổng quan Cron, danh sách tác vụ và trạng thái Telegram dễ quét.
+- [x] Tối ưu biểu mẫu tạo/sửa tác vụ và cấu hình Telegram cho màn hình điện thoại.
+- [ ] Kiểm tra responsive, cú pháp PHP/JavaScript và đồng bộ lên `develop-v16.1.0`.
