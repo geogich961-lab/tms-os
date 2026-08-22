@@ -40,6 +40,9 @@ final class CronJobService
             'notify_telegram' => (bool)($job['notify_telegram'] ?? false),
             'last_run' => $job['last_run'] ?? ($existing['last_run'] ?? null),
             'last_status' => $job['last_status'] ?? ($existing['last_status'] ?? null),
+            'telegram_last_status' => $job['telegram_last_status'] ?? ($existing['telegram_last_status'] ?? null),
+            'telegram_last_message' => $job['telegram_last_message'] ?? ($existing['telegram_last_message'] ?? null),
+            'telegram_last_sent_at' => $job['telegram_last_sent_at'] ?? ($existing['telegram_last_sent_at'] ?? null),
             'created_at' => $job['created_at'] ?? ($existing['created_at'] ?? date('c')),
         ];
         $this->writeJobs($jobs);
@@ -81,18 +84,35 @@ final class CronJobService
         @chmod($this->telegramConfigFile, 0600);
     }
 
-    public function sendTelegramNotification(string $message): bool
+    /**
+     * Chỉ trả về trạng thái kỹ thuật đã làm sạch; tuyệt đối không trả về token,
+     * URL API đầy đủ hoặc nội dung phản hồi thô từ Telegram.
+     *
+     * @return array{ok: bool, status: string, message: string}
+     */
+    public function sendTelegramNotification(string $message): array
     {
         $config = $this->getTelegramConfig();
         if (empty($config['token']) || empty($config['chat_id'])) {
-            return false;
+            return [
+                'ok' => false,
+                'status' => 'not_configured',
+                'message' => 'Chưa có Bot Token hoặc Chat ID.',
+            ];
+        }
+        if (!function_exists('curl_init')) {
+            return [
+                'ok' => false,
+                'status' => 'runtime_error',
+                'message' => 'Termux PHP chưa có tiện ích cURL.',
+            ];
         }
 
         $url = "https://api.telegram.org/bot{$config['token']}/sendMessage";
         $data = [
             'chat_id' => $config['chat_id'],
-            'text' => "🔔 *TMS OS Cron Notification*\n\n{$message}",
-            'parse_mode' => 'Markdown'
+            // Không dùng Markdown: output của lệnh Cron có thể chứa ký tự làm Telegram từ chối.
+            'text' => "🔔 TMS OS Cron Notification\n\n{$message}",
         ];
 
         $ch = curl_init($url);
@@ -100,10 +120,39 @@ final class CronJobService
         curl_setopt($ch, CURLOPT_POST, true);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($data));
         curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
         $response = curl_exec($ch);
+        $curlError = curl_error($ch);
+        $httpCode = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        return $response !== false;
+        if ($response === false) {
+            return [
+                'ok' => false,
+                'status' => 'network_error',
+                'message' => 'Không kết nối được Telegram' . ($curlError !== '' ? ': ' . $curlError : '.'),
+            ];
+        }
+
+        $payload = json_decode($response, true);
+        if ($httpCode >= 200 && $httpCode < 300 && is_array($payload) && !empty($payload['ok'])) {
+            return [
+                'ok' => true,
+                'status' => 'sent',
+                'message' => 'Telegram đã xác nhận nhận thông báo.',
+            ];
+        }
+
+        $description = is_array($payload) ? trim((string)($payload['description'] ?? '')) : '';
+        $description = preg_replace('/[\r\n\t]+/', ' ', $description) ?: '';
+        $description = substr($description, 0, 160);
+        return [
+            'ok' => false,
+            'status' => 'api_error',
+            'message' => $description !== ''
+                ? 'Telegram từ chối yêu cầu: ' . $description
+                : 'Telegram không xác nhận nhận thông báo (HTTP ' . $httpCode . ').',
+        ];
     }
 
     private function syncCrontab(): void

@@ -39,6 +39,11 @@ require __DIR__ . '/../layouts/header.php';
                                 <strong><?= tms_h($job['name']) ?></strong>
                                 <?php if ($job['notify_telegram']): ?>
                                     <span class="badge badge-info-soft ml-1">Telegram</span>
+                                    <?php if (($job['telegram_last_status'] ?? '') === 'sent'): ?>
+                                        <span class="badge badge-success ml-1" title="<?= tms_h((string)($job['telegram_last_message'] ?? '')) ?>">Đã gửi</span>
+                                    <?php elseif (!empty($job['telegram_last_status'])): ?>
+                                        <span class="badge badge-danger ml-1" title="<?= tms_h((string)($job['telegram_last_message'] ?? '')) ?>">Gửi lỗi</span>
+                                    <?php endif; ?>
                                 <?php endif; ?>
                             </td>
                             <td><code><?= tms_h($job['schedule']) ?></code></td>

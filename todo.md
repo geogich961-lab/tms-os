@@ -40,3 +40,10 @@
 - [x] Chuẩn hóa tự động các cron job cũ không có ID hợp lệ.
 - [x] Xác nhận dòng crontab luôn truyền Job ID hợp lệ tới `cron-wrapper.php`.
 - [ ] Đồng bộ bản vá lên `develop-v16.1.0` và hướng dẫn người dùng kiểm tra lại.
+
+## Xác thực thông báo Telegram của Cron
+
+- [x] Kiểm tra phản hồi Telegram API thay vì chỉ trạng thái lệnh Cron.
+- [x] Lưu kết quả giao thông báo an toàn, không lưu hoặc hiển thị Bot Token.
+- [x] Hiển thị kết quả gửi Telegram gần nhất trên trang Cron Jobs.
+- [ ] Kiểm thử và đồng bộ bản vá lên `develop-v16.1.0`.
