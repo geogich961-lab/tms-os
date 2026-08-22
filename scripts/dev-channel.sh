@@ -13,6 +13,7 @@ HOME="${HOME:-/data/data/com.termux/files/home}"
 ROOT="$HOME/tms-os"
 STATE_DIR="$HOME/.tms-os"
 BACKUP_ROOT="$STATE_DIR/dev-channel-backups"
+BASELINE="$STATE_DIR/dev-channel-stable-baseline"
 WORK="$STATE_DIR/.dev-channel-work-$$"
 ARCHIVE_URL="https://github.com/${REPO}/archive/refs/heads/${BRANCH}.zip"
 
@@ -48,17 +49,15 @@ restart_tms() {
 }
 
 rollback() {
-  local backup
-  backup="$(ls -1dt "$BACKUP_ROOT"/* 2>/dev/null | head -n 1 || true)"
-  if [ -z "$backup" ] || [ ! -d "$backup/tms-os" ]; then
-    echo '[LỖI] Chưa có bản sao lưu thử nghiệm để khôi phục.'
+  if [ ! -d "$BASELINE/tms-os" ]; then
+    echo '[LỖI] Chưa có điểm khôi phục trước thử nghiệm trên thiết bị này.'
     exit 1
   fi
-  echo "Bản sao lưu gần nhất: $backup"
-  confirm 'Gõ TEST để khôi phục mã nguồn trước lần thử nghiệm gần nhất: '
+  echo "Điểm khôi phục ổn định: $BASELINE"
+  confirm 'Gõ TEST để khôi phục mã nguồn trước khi vào kênh thử nghiệm: '
   rm -rf "$ROOT.failed-rollback"
   [ -d "$ROOT" ] && mv "$ROOT" "$ROOT.failed-rollback"
-  cp -a "$backup/tms-os" "$ROOT"
+  cp -a "$BASELINE/tms-os" "$ROOT"
   chmod -R 700 "$ROOT/scripts" "$ROOT/storage" 2>/dev/null || true
   if restart_tms; then
     rm -rf "$ROOT.failed-rollback"
@@ -102,6 +101,11 @@ update() {
   mkdir -p "$backup"
   cp -a "$ROOT" "$backup/tms-os"
   printf '%s\n' "branch=$BRANCH" "updated_at=$(date -Iseconds)" > "$backup/metadata.txt"
+  if [ ! -d "$BASELINE/tms-os" ]; then
+    mkdir -p "$BASELINE"
+    cp -a "$ROOT" "$BASELINE/tms-os"
+    printf '%s\n' "saved_at=$(date -Iseconds)" "reason=before-first-internal-test" > "$BASELINE/metadata.txt"
+  fi
 
   echo '[4/5] Đang chuyển sang mã nguồn thử nghiệm...'
   mv "$ROOT" "$ROOT.previous-dev"
