@@ -6,9 +6,9 @@
 
 ## 🌟 Tính năng nổi bật
 
-- **Cài đặt 1 chạm**: Tự động hóa hoàn toàn quy trình thiết lập môi trường (Nginx, PHP, MariaDB/SQLite).
-- **TMS Explorer (V16.0.0)**: Trình quản lý tệp chuyên nghiệp hỗ trợ Multi-select, thao tác hàng loạt và tối ưu cho di động.
-- **Cloudflare Hosting**: Đưa website ra Internet bằng tên miền riêng chính chủ với HTTPS miễn phí (Full Strict).
+- **Cài đặt dễ dàng**: Tự động hóa hoàn toàn quy trình thiết lập môi trường (Nginx, PHP, MariaDB/SQLite).
+- **File Explorer**: Trình quản lý tệp chuyên nghiệp hỗ trợ Multi-select, thao tác hàng loạt và tối ưu cho di động.
+- **Cloudflare**: Đưa website ra Internet bằng tên miền riêng chính chủ với HTTPS miễn phí (Full Strict).
 - **Resource Monitor**: Theo dõi thời gian thực RAM, CPU, Nhiệt độ, Pin và lưu lượng mạng (RX/TX).
 - **Database Manager**: Quản lý SQLite/MariaDB trực quan theo phong cách Navicat ngay trên trình duyệt.
 - **Guardian System**: Cơ chế tự động phát hiện và sửa lỗi dịch vụ, đảm bảo hệ thống hoạt động 24/7.
