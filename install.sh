@@ -117,7 +117,7 @@ ZIP="$WORK/TMS_OS.zip"
 #   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
 #   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
 # Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
-EMBED_SHA256="1f5965fae27e2bc72bfffa64dbcee8de27fcfd3f242c61669dc93166f5660862"
+EMBED_SHA256="acf2d758e7d0826efa9f953961c3d6c3d9e1d6a377e44fb6f04534a4b63a263c"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do
