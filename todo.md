@@ -102,3 +102,11 @@
 - [x] Bổ sung tương thích Tunnel trong Nginx, bộ tổng hợp báo cáo và website mới tạo.
 - [x] Kiểm thử Nginx thực với `CF-Connecting-IP` và fallback `X-Forwarded-For`.
 - [ ] Đồng bộ nhánh thử nghiệm và kiểm thử IP công khai thật, IP LAN trực tiếp trên điện thoại.
+
+## Phát hành ổn định V16.1.0
+
+- [x] Rà soát commits, thay đổi tệp và kết quả kiểm thử trên `develop-v16.1.0`.
+- [x] Chuẩn hóa metadata phiên bản từ build TEST sang V16.1.0 ổn định.
+- [x] Chạy bộ kiểm thử phát hành, kiểm tra trình cài đặt và luồng cập nhật từ `main`.
+- [ ] Hợp nhất bản đã xác nhận vào `main`, tạo tag và GitHub Release V16.1.0.
+- [ ] Xác minh release, asset và hướng dẫn cập nhật một chạm sau phát hành.

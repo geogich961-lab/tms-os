@@ -1,8 +1,8 @@
-# TMS OS V16.0.22 — Hướng dẫn cài đặt & Tối ưu hóa
+# TMS OS V16.1.0 — Hướng dẫn cài đặt & Tối ưu hóa
 
 **TMS OS** là nền tảng biến điện thoại Android cũ thành VPS mini: chạy website, PHP, SQLite/MariaDB với panel quản trị PWA tiếng Việt, quản lý dịch vụ qua giao diện web, Guardian tự sửa lỗi, sao lưu/khôi phục, và **Cloudflare Hosting** để đưa website ra Internet bằng tên miền riêng chính chủ (HTTPS miễn phí).
 
-Phiên bản ổn định hiện tại: **V16.0.22** (2026-08-22).
+Phiên bản ổn định hiện tại: **V16.1.0** (2026-08-22).
 
 ## Cài đặt (3 bước, người dùng chỉ thao tác 2 lần)
 

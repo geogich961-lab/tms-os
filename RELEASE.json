@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.025,
-  "build": "20260822-0436",
+  "internal_version": 16.1,
+  "build": "20260822-1610",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.25",
-  "version": "16.0.25",
-  "notes": "V16.0.25: Gỡ bỏ Power Center để đảm bảo an toàn cho thiết bị (Security Revert).",
+  "name": "TMS OS V16.1.0",
+  "version": "16.1.0",
+  "notes": "V16.1.0: Cron Jobs, Telegram webhook /status và báo cáo truy cập theo giờ đã được kiểm thử trên Termux Android.",
   "features": [
-    "Security Revert: Loại bỏ các tính năng yêu cầu quyền Root để bảo vệ thiết bị.",
-    "Non-Root Environment: Đảm bảo ứng dụng chạy trong môi trường cô lập an toàn.",
-    "Source Cleanup: Dọn dẹp các script hệ thống không còn sử dụng.",
-    "Stability Update: Tối ưu hóa hệ thống sau khi gỡ bỏ Power Center."
+    "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
+    "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
+    "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
+    "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "da5113c1f1736e339553c568d3196919fc23da610e274be3538132655c8c9ac5",
+  "checksum_sha256": "88ec864b5a3ffb5bc8a1272edd7d40960f86c6fa1de93259049d37f244a636cf",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.25",
-  "changelog": "V16.0.25: Reverted Power Center features to ensure device security and comply with non-root principles.",
+  "version_display": "TMS OS V16.1.0",
+  "changelog": "V16.1.0: Cron Jobs, Telegram webhook /status, hourly access reports and trusted visitor IP recovery through Cloudflare Tunnel.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }

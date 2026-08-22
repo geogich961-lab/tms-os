@@ -1,10 +1,10 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================================
-# TMS OS — Bộ cài 1 dòng lệnh (V14.1.0)
+# TMS OS — Bộ cài 1 dòng lệnh (V16.1.0)
 # Cách dùng: curl -fsSL URL/install.sh | bash
 # Chỉ cần Termux + quyền truy cập bộ nhớ (termux-setup-storage).
 # Tương thích Android 7.0+ (API 24+).
-# V14.1.0: phát hiện cài đặt cũ → hỏi cài mới / sửa chữa;
+# V16.1.0: phát hiện cài đặt cũ → hỏi cài mới / sửa chữa;
 #          tài khoản database + admin phải tự nhập (không tự tạo);
 #          khi chạy qua pipe vẫn tự chuyển sang chế độ tương tác.
 # ============================================================
@@ -117,7 +117,7 @@ ZIP="$WORK/TMS_OS.zip"
 #   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
 #   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
 # Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
-EMBED_SHA256="da5113c1f1736e339553c568d3196919fc23da610e274be3538132655c8c9ac5"
+EMBED_SHA256="88ec864b5a3ffb5bc8a1272edd7d40960f86c6fa1de93259049d37f244a636cf"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do

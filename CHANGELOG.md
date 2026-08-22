@@ -1,4 +1,15 @@
+# Changelog
+
+## V16.1.0 (2026-08-22)
+
+- **Cron Jobs ổn định**: Chạy tác vụ thực tế trên Termux, tự chuẩn hóa ID job, ghi nhận lần chạy/kết quả và giữ nguyên shell giao diện TMS OS trên di động.
+- **Telegram an toàn**: Thông báo Cron có xác nhận API; webhook HTTPS `/status` dùng secret, lọc Chat ID, chống update trùng và không trả về bí mật.
+- **Báo cáo truy cập theo giờ**: Tổng hợp panel và từng website, request, IP duy nhất, lỗi HTTP và IP khách thật qua Cloudflare Tunnel; không gửi raw log, query, cookie hay token.
+- **Cloudflare Tunnel**: Khôi phục IP khách từ `CF-Connecting-IP`, fallback an toàn `X-Forwarded-For` chỉ khi nguồn là loopback cloudflared.
+- **Bảo mật**: Thao tác quản trị Cron/Telegram được bảo vệ bởi đăng nhập và CSRF; không bổ sung quyền Root.
+
 ## V16.0.25 (2026-08-22)
+
 - **Gỡ bỏ Power Center (Security Revert)**:
   - Loại bỏ hoàn toàn tính năng Power Center (Reboot, Shutdown, Factory Reset) để đảm bảo an toàn cho thiết bị và tuân thủ nguyên tắc không yêu cầu quyền Root.
   - Xóa bỏ mọi logic thực thi lệnh hệ thống cấp cao trong `SystemService` và `UnifiedSystemCoreService`.
@@ -12,19 +23,10 @@
 - **Factory Reset**: Bổ sung script `tms-reset.sh` để khôi phục cài đặt gốc, xóa sạch dữ liệu cấu hình và database người dùng một cách an toàn.
 
 ## V16.0.23 (2026-08-22)
-- **Hotfix Service Worker (Syntax Error Fix)**:
-  - Sửa lỗi cú pháp nghiêm trọng (lặp dòng) trong file `service-worker.js` khiến trình duyệt không thể đăng ký Service Worker và treo tính năng PWA.
-  - Cập nhật phiên bản Service Worker lên V16.0.23 để làm mới toàn bộ cache trình duyệt.
-  - Tối ưu hóa việc nạp manifest trong logic fetch của Service Worker.
+- **Hotfix Service Worker (Syntax Error Fix)**: Sửa lỗi Service Worker và cập nhật cache PWA.
 
 ## V16.0.22 (2026-08-22)
-- **Tài liệu hóa tối ưu hệ thống (Documentation Update)**:
-  - Cập nhật `README.md` và `HUONG_DAN_CAI_DAT.md` với hướng dẫn chi tiết cách cài đặt `termux-api` để theo dõi Pin/Nhiệt độ và `Termux:Boot` để tự khởi động máy chủ khi bật nguồn điện thoại.
-  - Hướng dẫn người dùng cách tải các ứng dụng bổ trợ từ F-Droid để đảm bảo tính tương thích cao nhất.
-- **Service Worker V16.0.22**: Cập nhật phiên bản để làm mới cache cho các tài liệu hướng dẫn vừa cập nhật.
+- **Tài liệu hóa tối ưu hệ thống**: Bổ sung hướng dẫn Termux:API và Termux:Boot.
 
 ## V16.0.21 (2026-08-22)
-- **Cưỡng bức làm mới Manifest (Ultimate Cache-Busting)**:
-  - Đổi tên file cấu hình PWA từ `manifest.webmanifest` sang `tms-pwa-v21.json`. Đây là biện pháp cuối cùng để ép trình duyệt Chrome trên Android phải xóa bỏ hoàn toàn thông tin icon cũ và nạp lại icon điện thoại vàng mới.
-  - Cập nhật toàn bộ liên kết manifest trong Landing Page và Dashboard để trỏ vào file cấu hình mới.
-- **Service Worker V16.0.21**: Cập nhật để nạp manifest mới và đảm bảo bộ icon `tms-app-icon-*.png` được ưu tiên nạp vào bộ nhớ đệm.
+- **Làm mới Manifest**: Đổi tên manifest PWA để làm mới icon ứng dụng.

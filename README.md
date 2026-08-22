@@ -14,6 +14,7 @@
 - **Guardian System**: Cơ chế tự động phát hiện và sửa lỗi dịch vụ, đảm bảo hệ thống hoạt động 24/7.
 - **PWA Support**: Cài đặt Panel quản trị như một ứng dụng gốc trên màn hình chính điện thoại.
 - **Auto-Boot & API Support**: Hỗ trợ Termux:Boot để tự khởi động khi mở máy và Termux:API để báo cáo chi tiết thông số thiết bị.
+- **Cron Jobs & Telegram**: Lập lịch tác vụ, thông báo kết quả, webhook `/status` và báo cáo truy cập theo giờ qua Telegram.
 
 ---
 
@@ -56,7 +57,7 @@ Sau khi cài đặt hoàn tất, bạn có thể truy cập vào giao diện qu�
 Dự án được phát triển liên tục bởi THCGaming. Nếu bạn gặp lỗi hoặc có ý tưởng nâng cấp, hãy tạo **Issue** hoặc **Pull Request** trên GitHub.
 
 - **GitHub**: [geogich961-lab/tms-os](https://github.com/geogich961-lab/tms-os)
-- **Phiên bản hiện tại**: V16.0.22 (Latest Stable)
+- **Phiên bản hiện tại**: V16.1.0 (Latest Stable)
 
 ---
 *Phát triển bởi THCGaming. Tận dụng đồ cũ - Bảo vệ môi trường - Sáng tạo công nghệ.*
