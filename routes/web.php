@@ -1,7 +1,12 @@
 <?php
 declare(strict_types=1);
 $authService=new AuthService();$systemService=new SystemService();$fileService=new FileManagerService();$websiteService=new WebsiteService();$databaseService=new DatabaseService();$sqlQueryService=new SqlQueryService();$backupService=new BackupService();$logService=new LogService();$networkService=new NetworkService();$terminalService=new TerminalService();$diagnosticsService=new DiagnosticsService();$pluginService=new PluginService();$appInstallerService=new AppInstallerService($websiteService,$databaseService);$monitoringService=new MonitoringService($systemService);$updateService=new UpdateService();$moduleService=new ModuleService();$serviceManagerService=new ServiceManagerService();$guardianService=new GuardianService();
+$cronJobService=new CronJobService();
+
 $authController=new AuthController($authService);$dashboardController=new DashboardController($authService,$systemService,$websiteService,$networkService);$fileController=new FileManagerController($authService,$fileService);$websiteController=new WebsiteController($authService,$websiteService,$backupService);$databaseController=new DatabaseController($authService,$databaseService);$sqlController=new SqlController($authService,$sqlQueryService);$backupController=new BackupController($authService,$backupService,$websiteService);$logController=new LogController($authService,$logService);$settingsController=new SettingsController($authService);$networkController=new NetworkController($authService,$networkService,$websiteService);$terminalController=new TerminalController($authService,$terminalService);$diagnosticsController=new DiagnosticsController($authService,$diagnosticsService);$pluginController=new PluginController($authService,$pluginService);$appInstallerController=new AppInstallerController($authService,$appInstallerService);$monitoringController=new MonitoringController($authService,$monitoringService);$notificationController=new NotificationController($authService,$systemService);$updateController=new UpdateController($authService,$updateService);$moduleController=new ModuleController($authService,$moduleService);$serviceManagerController=new ServiceManagerController($authService,$serviceManagerService);$guardianController=new GuardianController($authService,$guardianService);
+$marketplaceController=new MarketplaceController($appInstallerService);
+$cronController=new CronController($cronJobService);
+
 $router->get('/login',fn()=>$authController->loginForm());$router->post('/login',fn()=>$authController->login());$router->post('/logout',fn()=>$authController->logout());
 $router->get('/',fn()=>$dashboardController->landing());$router->get('/dashboard',fn()=>$dashboardController->index());$router->post('/service/action',fn()=>$dashboardController->action());
 $router->get('/files',fn()=>$fileController->index());$router->get('/files/editor',fn()=>$fileController->editor());$router->get('/files/download',fn()=>$fileController->download());$router->post('/files/upload',fn()=>$fileController->upload());$router->post('/files/create',fn()=>$fileController->create());$router->post('/files/rename',fn()=>$fileController->rename());$router->post('/files/delete',fn()=>$fileController->delete());$router->post('/files/archive',fn()=>$fileController->archive());$router->post('/files/extract',fn()=>$fileController->extract());$router->post('/files/save',fn()=>$fileController->save());$router->post('/files/chmod',fn()=>$fileController->chmod());$router->post('/files/copy',fn()=>$fileController->copy());$router->post('/files/move',fn()=>$fileController->move());$router->get('/files/perms',fn()=>$fileController->perms());$router->post('/files/perms/apply',fn()=>$fileController->applyPerms());
@@ -15,7 +20,6 @@ $router->get('/logs',fn()=>$logController->index());$router->get('/settings',fn(
 
 $cfdomainService=new CloudflareDomainService();$cfdomainController=new CloudflareDomainController($authService,$cfdomainService,$websiteService);
 $router->get('/cf-hosting',fn()=>$cfdomainController->index());$router->get('/api/cloudflare-domain/status',fn()=>$cfdomainController->status());$router->get('/api/cloudflare-domain/account-info',fn()=>$cfdomainController->accountInfo());$router->get('/api/cloudflare-domain/internal-sites',fn()=>$cfdomainController->internalSites());$router->post('/api/cloudflare-domain/perf-status',fn()=>$cfdomainController->perfStatus());$router->post('/api/cloudflare-domain/perf-optimize',fn()=>$cfdomainController->perfOptimize());$router->post('/api/cloudflare-domain/sync-routes',fn()=>$cfdomainController->syncRoutes());$router->get('/api/cloudflare-domain/dns-records',fn()=>$cfdomainController->dnsRecords());$router->post('/api/cloudflare-domain/token',fn()=>$cfdomainController->saveToken());$router->post('/api/cloudflare-domain/create-tunnel',fn()=>$cfdomainController->createTunnel());$router->post('/api/cloudflare-domain/attach',fn()=>$cfdomainController->attach());$router->post('/api/cloudflare-domain/start',fn()=>$cfdomainController->start());$router->post('/api/cloudflare-domain/stop',fn()=>$cfdomainController->stop());$router->post('/api/cloudflare-domain/detach',fn()=>$cfdomainController->detach());$router->post('/api/cloudflare-domain/delete-tunnel',fn()=>$cfdomainController->deleteTunnel());$router->post('/api/cloudflare-domain/uninstall',fn()=>$cfdomainController->uninstall());$router->post('/api/cloudflare-domain/attach-panel',fn()=>$cfdomainController->attachPanel());$router->post('/api/cloudflare-domain/detach-panel',fn()=>$cfdomainController->detachPanel());$router->get('/internet-access',fn()=>tms_redirect('/cf-hosting'));$router->get('/cloudflare',fn()=>tms_redirect('/cf-hosting'));
-
 
 $router->get('/guardian',fn()=>$guardianController->index());
 $router->get('/api/guardian',fn()=>$guardianController->api());
@@ -36,6 +40,14 @@ $router->post('/packages/install',fn()=>$pluginController->install());
 $router->post('/packages/update',fn()=>$pluginController->update());$router->post('/packages/remove',fn()=>$pluginController->remove());
 $router->post('/plugins/install',fn()=>$pluginController->install());
 $router->post('/plugins/update',fn()=>$pluginController->update());
+
+$router->get('/marketplace',fn()=>$marketplaceController->index());
+$router->post('/marketplace/install',fn()=>$marketplaceController->install());
+$router->get('/cron',fn()=>$cronController->index());
+$router->post('/cron/save',fn()=>$cronController->save());
+$router->post('/cron/delete',fn()=>$cronController->delete());
+$router->post('/cron/telegram',fn()=>$cronController->saveTelegram());
+
 $router->get('/apps',fn()=>$appInstallerController->index());
 $router->post('/apps/install',fn()=>$appInstallerController->install());
 $router->get('/monitoring',fn()=>$monitoringController->index());
