@@ -73,3 +73,12 @@
 - [x] Xác minh biến hoặc luồng render khiến Cron bỏ qua layout `os-shell`.
 - [x] Khôi phục sidebar, header di động, footer và toast dùng chung cho Cron Jobs.
 - [ ] Kiểm tra không phát sinh lỗi menu, toast hoặc dialog trên desktop và mobile trước khi đồng bộ.
+
+## Lệnh trạng thái qua Telegram
+
+- [x] Chọn webhook HTTPS bảo mật để phản hồi lệnh gần như tức thì.
+- [x] Thiết kế lệnh `/status`, giới hạn Chat ID và nội dung phản hồi không chứa bí mật.
+- [x] Thu thập thông tin thiết bị, tài nguyên và dịch vụ TMS OS có sẵn trên Termux.
+- [x] Thêm webhook HTTPS có secret, chống gửi trùng, giới hạn kích thước payload và endpoint quản trị có xác thực/CSRF.
+- [x] Thêm kiểm thử service cho secret thiếu/sai, sai Chat ID, lệnh không hỗ trợ, chống trùng và báo cáo an toàn.
+- [ ] Kiểm thử bot trả lời trên điện thoại và đồng bộ lên `develop-v16.1.0`.

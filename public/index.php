@@ -15,11 +15,11 @@ $basePath = dirname(__DIR__);
 require $basePath . '/app/Core/helpers.php';
 require $basePath . '/app/Core/Router.php';
 
-foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'AppInstallerService', 'CronJobService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'SqlQueryService'] as $class) {
+foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'AppInstallerService', 'CronJobService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'SqlQueryService'] as $class) {
     require $basePath . '/app/Services/' . $class . '.php';
 }
 
-foreach (['AuthController', 'DashboardController', 'FileManagerController', 'WebsiteController', 'DatabaseController', 'BackupController', 'LogController', 'SettingsController', 'NetworkController', 'TerminalController', 'DiagnosticsController', 'PluginController', 'AppInstallerController', 'MarketplaceController', 'CronController', 'MonitoringController', 'NotificationController', 'UpdateController', 'ModuleController', 'ServiceManagerController', 'GuardianController', 'CloudflareDomainController', 'SqlController'] as $class) {
+foreach (['AuthController', 'DashboardController', 'FileManagerController', 'WebsiteController', 'DatabaseController', 'BackupController', 'LogController', 'SettingsController', 'NetworkController', 'TerminalController', 'DiagnosticsController', 'PluginController', 'AppInstallerController', 'MarketplaceController', 'CronController', 'TelegramWebhookController', 'MonitoringController', 'NotificationController', 'UpdateController', 'ModuleController', 'ServiceManagerController', 'GuardianController', 'CloudflareDomainController', 'SqlController'] as $class) {
     require $basePath . '/app/Controllers/' . $class . '.php';
 }
 

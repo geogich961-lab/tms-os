@@ -31,6 +31,16 @@ final class CloudflareDomainService
         @mkdir($this->dir, 0700, true);
     }
 
+    /** URL panel công khai đọc từ cấu hình cục bộ, không gọi Cloudflare API. */
+    public function publicPanelUrl(): string
+    {
+        $hostname = strtolower(trim((string)($this->readJson($this->configFile)['panel_hostname'] ?? '')));
+        if (!preg_match('/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i', $hostname)) {
+            return '';
+        }
+        return 'https://' . $hostname;
+    }
+
     private function cf(): array
     {
         $cfg = $this->readJson($this->configFile);

@@ -7,6 +7,10 @@ $enabledJobs = count(array_filter($jobs, static fn(array $job): bool => !array_k
 $successfulJobs = count(array_filter($jobs, static fn(array $job): bool => ($job['last_status'] ?? '') === 'success'));
 $telegramJobs = count(array_filter($jobs, static fn(array $job): bool => !empty($job['notify_telegram'])));
 $telegramReady = !empty($telegram['token']) && !empty($telegram['chat_id']);
+$telegramCommandStatus = is_array($telegramCommandStatus ?? null) ? $telegramCommandStatus : [];
+$telegramCommandEnabled = !empty($telegramCommandStatus['enabled']);
+$telegramCommandReady = !empty($telegramCommandStatus['ready']);
+$csrf = (string)($csrf ?? '');
 require __DIR__ . '/../layouts/header.php';
 ?>
 
@@ -66,6 +70,19 @@ require __DIR__ . '/../layouts/header.php';
         </div>
         <button type="button" class="btn <?= $telegramReady ? 'btn-ghost' : 'btn-primary' ?> btn-small" onclick="openTelegramModal()">
             <?= $telegramReady ? 'Cập nhật cấu hình' : 'Thiết lập ngay' ?>
+        </button>
+    </section>
+
+    <section class="panel-card cron-notify-panel <?= $telegramCommandEnabled ? 'is-ready' : 'needs-setup' ?>">
+        <div class="cron-notify-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/><path d="M4 19.5h16"/></svg>
+        </div>
+        <div class="cron-notify-copy">
+            <strong><?= $telegramCommandEnabled ? 'Lệnh /status Telegram đang hoạt động' : 'Lệnh /status Telegram chưa được bật' ?></strong>
+            <span><?php if ($telegramCommandEnabled): ?>Nhắn <code>/status</code> trong chat đã cấu hình để nhận báo cáo thiết bị tức thì.<?php elseif (!$telegramReady): ?>Lưu Bot Token và Chat ID trước khi bật lệnh bot.<?php elseif (!$telegramCommandReady): ?>Cần bật Remote Access HTTPS trong Cloudflare Hosting trước.<?php else: ?>Bot sẽ chỉ phản hồi trong Chat ID đã cấu hình; bí mật webhook được giữ trên thiết bị.<?php endif; ?></span>
+        </div>
+        <button type="button" id="telegramCommandToggle" class="btn <?= $telegramCommandEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$telegramCommandReady && !$telegramCommandEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleTelegramCommand()">
+            <?= $telegramCommandEnabled ? 'Tắt lệnh /status' : 'Bật lệnh /status' ?>
         </button>
     </section>
 
@@ -178,6 +195,7 @@ require __DIR__ . '/../layouts/header.php';
 
 <script>
 (function () {
+    window.TMS_CSRF = <?= json_encode($csrf, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     const getDialog = (id) => document.getElementById(id);
     const showDialog = (id) => { const dialog = getDialog(id); if (dialog && !dialog.open) dialog.showModal(); };
     const closeDialog = (id) => { const dialog = getDialog(id); if (dialog && dialog.open) dialog.close(); };
@@ -218,7 +236,7 @@ async function handleSaveJob(event) {
     data.notify_telegram = document.getElementById('jobNotify').checked;
     data.enabled = document.getElementById('jobEnabled').checked;
     try {
-        const response = await fetch('/cron/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const response = await fetch('/cron/save', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: JSON.stringify(data) });
         const result = await response.json();
         if (!result.ok) throw new Error(result.message || 'Không thể lưu tác vụ.');
         tmsToast(result.message, 'success');
@@ -230,7 +248,7 @@ async function handleSaveJob(event) {
 async function deleteJob(id) {
     if (!confirm('Xóa tác vụ này? Lịch chạy tương ứng cũng sẽ được gỡ khỏi hệ thống.')) return;
     try {
-        const response = await fetch('/cron/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+        const response = await fetch('/cron/delete', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: JSON.stringify({ id }) });
         const result = await response.json();
         if (!result.ok) throw new Error(result.message || 'Không thể xóa tác vụ.');
         tmsToast(result.message, 'success');
@@ -241,13 +259,32 @@ async function deleteJob(id) {
 async function handleSaveTelegram(event) {
     event.preventDefault();
     try {
-        const response = await fetch('/cron/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(event.target).entries())) });
+        const response = await fetch('/cron/telegram', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: JSON.stringify(Object.fromEntries(new FormData(event.target).entries())) });
         const result = await response.json();
         if (!result.ok) throw new Error(result.message || 'Không thể lưu cấu hình Telegram.');
         tmsToast(result.message, 'success');
         document.getElementById('telegramModal').close();
         window.setTimeout(() => window.location.reload(), 280);
     } catch (error) { tmsToast(error.message || 'Lỗi kết nối máy chủ', 'error'); }
+}
+
+async function toggleTelegramCommand() {
+    const button = document.getElementById('telegramCommandToggle');
+    if (!button || button.disabled) return;
+    const enabling = !button.textContent.includes('Tắt');
+    button.disabled = true;
+    try {
+        const response = await fetch(enabling ? '/api/telegram-commands/enable' : '/api/telegram-commands/disable', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: '{}'
+        });
+        const result = await response.json();
+        if (!result.ok) throw new Error(result.message || 'Không thể cập nhật lệnh Telegram.');
+        tmsToast(result.message, 'success');
+        window.setTimeout(() => window.location.reload(), 280);
+    } catch (error) {
+        button.disabled = false;
+        tmsToast(error.message || 'Lỗi kết nối máy chủ', 'error');
+    }
 }
 </script>
 
