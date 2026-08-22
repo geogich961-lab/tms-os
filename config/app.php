@@ -3,7 +3,7 @@ declare(strict_types=1);
 return [
     'name' => 'TMS OS',
     'short_name' => 'TMS OS',
-    'build' => 'Platform V16.0.21',
+    'build' => 'Platform V16.0.22',
     'channel' => 'stable',
     'timezone' => 'Asia/Ho_Chi_Minh',
 ];

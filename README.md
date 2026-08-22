@@ -13,6 +13,7 @@
 - **Database Manager**: Quản lý SQLite/MariaDB trực quan theo phong cách Navicat ngay trên trình duyệt.
 - **Guardian System**: Cơ chế tự động phát hiện và sửa lỗi dịch vụ, đảm bảo hệ thống hoạt động 24/7.
 - **PWA Support**: Cài đặt Panel quản trị như một ứng dụng gốc trên màn hình chính điện thoại.
+- **Auto-Boot & API Support**: Hỗ trợ Termux:Boot để tự khởi động khi mở máy và Termux:API để báo cáo chi tiết thông số thiết bị.
 
 ---
 
@@ -20,7 +21,8 @@
 
 ### Yêu cầu chuẩn bị
 1. Một điện thoại chạy **Android 7.0** trở lên.
-2. Cài đặt ứng dụng **Termux** từ [F-Droid](https://f-droid.org/packages/com.termux) (Khuyên dùng bản F-Droid để đảm bảo tương thích).
+2. Cài đặt ứng dụng **Termux** từ [F-Droid](https://f-droid.org/packages/com.termux).
+3. (Khuyên dùng) Cài đặt thêm **Termux:API** và **Termux:Boot** từ F-Droid để sử dụng đầy đủ tính năng.
 
 ### Lệnh cài đặt duy nhất
 Mở Termux và dán dòng lệnh sau:
@@ -54,7 +56,7 @@ Sau khi cài đặt hoàn tất, bạn có thể truy cập vào giao diện qu�
 Dự án được phát triển liên tục bởi THCGaming. Nếu bạn gặp lỗi hoặc có ý tưởng nâng cấp, hãy tạo **Issue** hoặc **Pull Request** trên GitHub.
 
 - **GitHub**: [geogich961-lab/tms-os](https://github.com/geogich961-lab/tms-os)
-- **Phiên bản hiện tại**: V16.0.0 (Latest Stable)
+- **Phiên bản hiện tại**: V16.0.22 (Latest Stable)
 
 ---
 *Phát triển bởi THCGaming. Tận dụng đồ cũ - Bảo vệ môi trường - Sáng tạo công nghệ.*

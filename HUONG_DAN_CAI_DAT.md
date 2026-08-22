@@ -1,8 +1,8 @@
-# TMS OS V15.4.1 — Hướng dẫn cài đặt 1 dòng lệnh
+# TMS OS V16.0.22 — Hướng dẫn cài đặt & Tối ưu hóa
 
 **TMS OS** là nền tảng biến điện thoại Android cũ thành VPS mini: chạy website, PHP, SQLite/MariaDB với panel quản trị PWA tiếng Việt, quản lý dịch vụ qua giao diện web, Guardian tự sửa lỗi, sao lưu/khôi phục, và **Cloudflare Hosting** để đưa website ra Internet bằng tên miền riêng chính chủ (HTTPS miễn phí).
 
-Phiên bản ổn định hiện tại: **V15.4.1** (2026-08-21).
+Phiên bản ổn định hiện tại: **V16.0.22** (2026-08-22).
 
 ## Cài đặt (3 bước, người dùng chỉ thao tác 2 lần)
 
@@ -29,18 +29,39 @@ Khi máy đã từng cài TMS OS, bộ cài sẽ tự phát hiện và hỏi ng�
 
 Ngoài ra, bạn có thể reset toàn bộ hệ thống bất kỳ lúc nào qua `~/tms-os/scripts/factory-reset.sh` hoặc gỡ cài đặt qua `~/tms-os/scripts/uninstall.sh`.
 
+## Tối ưu hóa hệ thống (Khuyên dùng)
+
+Để TMS OS hoạt động như một máy chủ thực thụ, bạn nên cài đặt thêm hai thành phần sau từ F-Droid:
+
+### 1. Termux:API (Theo dõi thông số thiết bị)
+Cài đặt app **Termux:API** để tính năng **Resource Monitor** trong Panel có thể hiển thị chính xác:
+- Phần trăm Pin và tình trạng sạc.
+- Nhiệt độ thiết bị.
+- Thông tin mạng chi tiết.
+
+Sau khi cài app, hãy chạy lệnh này trong Termux:
+```bash
+pkg install termux-api
+```
+
+### 2. Termux:Boot (Tự khởi động khi bật nguồn điện thoại)
+Để máy chủ tự chạy ngay khi bạn vừa bật điện thoại mà không cần mở Termux thủ công:
+1. Cài đặt app **Termux:Boot**.
+2. Mở app **Termux:Boot** một lần (để Android cấp quyền chạy ngầm).
+3. TMS OS đã tự động tạo script khởi động tại `~/.termux/boot/start-tms` cho bạn.
+
+---
+
 ## Khởi động máy chủ
 
 ### Khởi động thủ công
-
 ```bash
 bash ~/tms-os/scripts/start-tms.sh   # bật máy chủ
 bash ~/tms-os/scripts/stop-tms.sh    # tắt máy chủ
 ```
 
-### Tự khởi động khi mở Termux (V15.4.1)
-
-Mỗi lần mở Termux, hệ thống tự kiểm tra: nếu Nginx/PHP Engine/MariaDB chưa chạy sẽ tự khởi động ngầm (chỉ thực hiện 1 lần trong mỗi phiên, không làm chậm khi mở app). Hook tự động được gắn vào `~/.bashrc` khi cài mới hoặc sửa chữa. Tính năng này khắc phục hoàn toàn lỗi "Không thể kết nối máy chủ" khi Android tắt ngầm Termux để tiết kiệm pin.
+### Tự khởi động khi mở ứng dụng Termux
+Mỗi lần bạn mở ứng dụng Termux, hệ thống sẽ tự động kiểm tra và khởi động các dịch vụ nếu chúng chưa chạy. Tính năng này được tích hợp sẵn vào `~/.bashrc`.
 
 ## Public website bằng tên miền riêng — Cloudflare Hosting
 

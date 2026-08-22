@@ -1,24 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.021,
-  "build": "20260822-0139",
+  "internal_version": 16.022,
+  "build": "20260822-0210",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.21",
-  "version": "16.0.21",
-  "notes": "V16.0.21: Ultimate Manifest Cache-Busting.",
+  "name": "TMS OS V16.0.22",
+  "version": "16.0.22",
+  "notes": "V16.0.22: Tài liệu hóa termux-api & Termux:Boot.",
   "features": [
-    "Manifest Renaming: Đổi tên file manifest thành tms-pwa-v21.json để cưỡng bức Chrome Android nạp lại toàn bộ metadata.",
-    "PWA Link Sync: Cập nhật liên kết manifest tại Landing Page và Dashboard.",
-    "Service Worker V16.0.21: Làm mới cache tài nguyên và manifest mới.",
-    "Icon Verification: Đảm bảo bộ icon tms-app-icon-*.png được nạp chính xác."
+    "README Update: Bổ sung hướng dẫn cài đặt termux-api và Termux:Boot.",
+    "HUONG_DAN_CAI_DAT Update: Hướng dẫn chi tiết cách tối ưu hóa máy chủ và tự khởi động.",
+    "Service Worker V16.0.22: Cập nhật cache cho tài liệu mới."
   ],
-  "checksum_sha256": "9204c1832fe1ed078e6f19115897b921fa4d1f8a125da699986a270315c15c71",
+  "checksum_sha256": "2be67245698eef49d5305d2306855709c90568615031d7f36efe8509ba3687b9",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.21",
-  "changelog": "V16.0.21: Renamed manifest file to tms-pwa-v21.json to bypass metadata caching on Chrome Android.",
+  "version_display": "TMS OS V16.0.22",
+  "changelog": "V16.0.22: Added documentation for termux-api and Termux:Boot to enhance system monitoring and auto-start capabilities.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
