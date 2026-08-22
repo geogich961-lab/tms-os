@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.016,
-  "build": "20260822-0100",
+  "internal_version": 16.017,
+  "build": "20260822-0106",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-22",
-  "name": "TMS OS V16.0.16",
-  "version": "16.0.16",
-  "notes": "V16.0.16: Fix UI PWA Landing Page & Dashboard Button Overflow.",
+  "name": "TMS OS V16.0.17",
+  "version": "16.0.17",
+  "notes": "V16.0.17: Official Branding Sync - New PWA Icons & Favicon.",
   "features": [
-    "Fix PWA Logic: Cải thiện khả năng phát hiện trạng thái cài đặt tại Landing Page.",
-    "UI Dashboard Fix: Xếp chồng nút cài đặt (vertical stack) trên mobile để tránh tràn chữ.",
-    "Style Optimization: Tối ưu font-size và padding cho các nút hành động trên mobile.",
-    "Service Worker Sync: Cập nhật version service worker để đồng bộ cache mới."
+    "Official Icon Sync: Cập nhật icon PWA (192px, 512px) theo logo tms-os.png mới.",
+    "Favicon Refresh: Cập nhật favicon và logo landing page đồng bộ.",
+    "Manifest Update: Chuẩn hóa manifest.webmanifest và manifest.php.",
+    "Service Worker V16.0.17: Ép làm mới cache icon trên thiết bị người dùng."
   ],
-  "checksum_sha256": "c8ed899fa4e1dc43718cd711f427bc81059237a0628f666445e7f17dc89f89d6",
+  "checksum_sha256": "33c42f104d5830ebe7359ec0afd57177841bc624628cf9f486e57ab8b83243cf",
   "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.0.16",
-  "changelog": "V16.0.16: Fixed PWA installation logic on landing page and resolved button overflow issues on dashboard for mobile devices.",
+  "version_display": "TMS OS V16.0.17",
+  "changelog": "V16.0.17: Fully synchronized PWA icons, favicon, and landing page logo with the new official branding.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-22"
 }
