@@ -48,6 +48,30 @@ $preinstalledNginxConfig = "worker_processes 1;\nevents { worker_connections 32;
 file_put_contents($prefix . '/etc/nginx/nginx.conf', $preinstalledNginxConfig);
 $ensureRealIp();
 $nginxConfig = (string)file_get_contents($prefix . '/etc/nginx/nginx.conf');
+$unmarkedInstallerConfig = <<<'NGINX'
+worker_processes 1;
+events { worker_connections 32; }
+http {
+    set_real_ip_from 127.0.0.1;
+    set_real_ip_from ::1;
+    real_ip_header CF-Connecting-IP;
+    real_ip_recursive off;
+    map $realip_remote_addr $tms_from_cloudflared {
+        127.0.0.1 1;
+        ::1 1;
+        default 0;
+    }
+    map "$tms_from_cloudflared:$http_cf_connecting_ip:$http_x_forwarded_for" $tms_access_client {
+        ~^1:(?<tms_cf_ip>[0-9][0-9]?\.[0-9][0-9]?\.[0-9][0-9]?\.[0-9][0-9]?|[0-9A-Fa-f:]+): $tms_cf_ip;
+        ~^1::(?<tms_fallback_ip>[^,\s]+)(?:\s*,|\s*$) $tms_fallback_ip;
+        default $remote_addr;
+    }
+    log_format tms_access '$tms_access_client - $remote_user [$time_local] "$request" $status $body_bytes_sent "$http_referer" "$http_user_agent"';
+}
+NGINX;
+file_put_contents($prefix . '/etc/nginx/nginx.conf', $unmarkedInstallerConfig);
+$ensureRealIp();
+$unmarkedAfterEnsure = (string)file_get_contents($prefix . '/etc/nginx/nginx.conf');
 $first = $reports->runHourly();
 $firstText = (string)($sent[0]['data']['text'] ?? '');
 $statePath = $home . '/.tms-os/access-report-state.json';
@@ -82,6 +106,8 @@ $ok = !empty($first['ok'])
     && substr_count($nginxConfig, 'real_ip_header CF-Connecting-IP;') === 1
     && str_contains($nginxConfig, 'log_format tms_access')
     && str_contains($migratedSiteConfig, 'demo-access.log tms_access;')
+    && substr_count($unmarkedAfterEnsure, 'map $realip_remote_addr $tms_from_cloudflared') === 1
+    && substr_count($unmarkedAfterEnsure, 'log_format tms_access') === 1
     && isset($state['files'][$home . '/logs/nginx/tms-access.log']['offset']);
 
 exec('rm -rf ' . escapeshellarg($base));

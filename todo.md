@@ -117,3 +117,17 @@
 - [x] Sửa bộ cài repair để tạo các thư mục runtime bắt buộc mà không đụng dữ liệu hiện có.
 - [x] Kiểm thử repair với dữ liệu SQLite, website và cấu hình đã tồn tại.
 - [x] Đóng gói, xác minh checksum và phát hành hotfix có hướng dẫn cập nhật an toàn.
+
+## Khắc phục báo cáo Telegram không xác nhận sau V16.1.1
+
+- [ ] Rà soát luồng gửi báo cáo, trạng thái đã làm sạch và dữ liệu cấu hình Telegram được giữ sau repair.
+- [ ] Tái hiện phản hồi không thành công bằng transport giả, không gọi Telegram thật.
+- [ ] Sửa nguyên nhân và thêm hồi quy cho gửi thử/lịch chạy mỗi giờ.
+- [ ] Phát hành bản vá cùng hướng dẫn kiểm tra không cần nhập lại bí mật.
+
+## Khắc phục Nginx chặn báo cáo IP sau V16.1.1
+
+- [x] Tái hiện chính xác lỗi kiểm tra cấu hình Nginx trên luồng repair/Termux.
+- [x] Phân biệt lỗi thiếu mô-đun với lỗi cú pháp hoặc vị trí chỉ thị Nginx.
+- [ ] Sửa migration tương thích mà vẫn chỉ tin header IP từ Cloudflare Tunnel loopback.
+- [ ] Kiểm thử cấu hình thật, bật báo cáo và gửi Telegram trước khi phát hành hotfix.

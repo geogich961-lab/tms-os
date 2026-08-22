@@ -14,6 +14,10 @@ trap cleanup EXIT
 git -C "$ROOT" diff --check
 git -C "$ROOT" archive --format=tar HEAD | tar -xf - -C "$WORK"
 
+# Asset cập nhật chỉ chứa ứng dụng runtime. Bộ cài một dòng lệnh và RELEASE.json
+# được phát hành riêng: không đưa chúng vào ZIP để tránh checksum tự tham chiếu.
+rm -f "$WORK/install.sh" "$WORK/RELEASE.json"
+
 for part in app config public routes scripts storage; do
   [ -d "$WORK/$part" ] || { echo "[LỖI] Gói release thiếu thư mục: $part" >&2; exit 1; }
 done

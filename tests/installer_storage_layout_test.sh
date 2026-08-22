@@ -17,5 +17,9 @@ grep -Fq '[ -d "$SOURCE_DIR/storage" ] && cp -a "$SOURCE_DIR/storage/." "$STAGIN
 
 bash "$PACKAGER" "$WORK/TMS_OS_LATEST.zip" >/dev/null
 unzip -l "$WORK/TMS_OS_LATEST.zip" | grep -Eq '(^|[[:space:]])storage/(apps.json|cache/\.keep|logs/\.keep|sessions/\.keep)$'
+if unzip -Z1 "$WORK/TMS_OS_LATEST.zip" | grep -qxE '(install\.sh|RELEASE\.json)'; then
+  echo 'release package must not contain self-checksum installer metadata' >&2
+  exit 1
+fi
 
 echo 'installer storage layout tests: OK'

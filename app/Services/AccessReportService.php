@@ -335,8 +335,13 @@ final class AccessReportService
             && preg_match('/set_real_ip_from\s+::1\s*;/', $content) === 1
             && preg_match('/real_ip_header\s+CF-Connecting-IP\s*;/', $content) === 1
             && preg_match('/real_ip_recursive\s+off\s*;/', $content) === 1;
-        $hasAccessFormat = str_contains($content, '# TMS OS access-report format begin')
-            && preg_match('/log_format\s+tms_access\b/', $content) === 1;
+        // V16.1.1 repair đã tạo đúng map/log_format nhưng chưa mang marker của
+        // migration này. Nhận diện bằng đủ ba directive thực tế, thay vì marker,
+        // để không chèn trùng map/log_format rồi khiến nginx -t thất bại.
+        $hasAccessFormat = preg_match('/\bmap\s+\$realip_remote_addr\s+\$tms_from_cloudflared\s*\{/', $content) === 1
+            && preg_match('/\bmap\s+"?\$tms_from_cloudflared:\$http_cf_connecting_ip:\$http_x_forwarded_for"?\s+\$tms_access_client\s*\{/', $content) === 1
+            && preg_match('/\blog_format\s+tms_access\b/', $content) === 1
+            && str_contains($content, '$tms_access_client');
 
         $formatBlock = "    # TMS OS access-report format begin\n"
             . "    map \$realip_remote_addr \$tms_from_cloudflared {\n"
