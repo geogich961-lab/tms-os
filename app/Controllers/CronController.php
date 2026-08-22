@@ -7,6 +7,7 @@ final class CronController
         private AuthService $auth,
         private CronJobService $cron,
         private TelegramCommandService $commands,
+        private AccessReportService $accessReports,
     ) {}
 
     private function guard(): void
@@ -46,6 +47,7 @@ final class CronController
         $jobs = $this->cron->all();
         $telegram = $this->cron->getTelegramConfig();
         $telegramCommandStatus = $this->commands->status();
+        $accessReportStatus = $this->accessReports->status();
         $csrf = tms_csrf_token();
         require __DIR__ . '/../Views/cron/index.php';
     }
@@ -90,6 +92,42 @@ final class CronController
             }
             $this->cron->saveTelegramConfig($token, $chatId);
             echo json_encode(['ok' => true, 'message' => 'Đã lưu cấu hình Telegram.']);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function enableAccessReport(): void
+    {
+        $input = $this->input();
+        if (!$this->guardJson($input)) return;
+        try {
+            echo json_encode(['ok' => true] + $this->accessReports->enable());
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function disableAccessReport(): void
+    {
+        $input = $this->input();
+        if (!$this->guardJson($input)) return;
+        try {
+            echo json_encode(['ok' => true] + $this->accessReports->disable());
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function testAccessReport(): void
+    {
+        $input = $this->input();
+        if (!$this->guardJson($input)) return;
+        try {
+            echo json_encode(['ok' => true] + $this->accessReports->sendTest());
         } catch (Throwable $e) {
             http_response_code(500);
             echo json_encode(['ok' => false, 'message' => $e->getMessage()]);

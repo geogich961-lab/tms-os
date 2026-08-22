@@ -39,16 +39,23 @@ opt_block = """  # V15.0.6: tối ưu hiệu năng — nén gzip + keepalive + c
   tcp_nopush on;
   tcp_nodelay on;
   keepalive_timeout 65;
-  client_max_body_size 500M;
-  server_tokens off;
+	client_max_body_size 500M;
+	server_tokens off;
 
-  open_file_cache max=1000 inactive=60s;
+	# Chỉ tin CF-Connecting-IP từ cloudflared chạy trên loopback.
+	# Request LAN trực tiếp không thể giả IP bằng header này.
+	set_real_ip_from 127.0.0.1;
+	set_real_ip_from ::1;
+	real_ip_header CF-Connecting-IP;
+	real_ip_recursive off;
+
+	open_file_cache max=1000 inactive=60s;
   open_file_cache_valid 60s;
   open_file_cache_min_uses 2;
   open_file_cache_errors on;
 """
 # Loại các directive đã tồn tại trong file (tránh lỗi 'directive is duplicate')
-for directive in ['tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'client_max_body_size', 'server_tokens', 'open_file_cache', 'gzip ']:
+for directive in ['tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'client_max_body_size', 'server_tokens', 'open_file_cache', 'gzip ', 'set_real_ip_from', 'real_ip_header', 'real_ip_recursive']:
     if re.search(r'(?m)\b' + directive, old, re.M):
         opt_block = re.sub(r'^\s*' + re.escape(directive).replace(r'\ ', r' ') + r'.*$', '', opt_block, flags=re.M)
 

@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 $authService=new AuthService();$systemService=new SystemService();$fileService=new FileManagerService();$websiteService=new WebsiteService();$databaseService=new DatabaseService();$sqlQueryService=new SqlQueryService();$backupService=new BackupService();$logService=new LogService();$networkService=new NetworkService();$terminalService=new TerminalService();$diagnosticsService=new DiagnosticsService();$pluginService=new PluginService();$appInstallerService=new AppInstallerService($websiteService,$databaseService);$monitoringService=new MonitoringService($systemService);$updateService=new UpdateService();$moduleService=new ModuleService();$serviceManagerService=new ServiceManagerService();$guardianService=new GuardianService();
-$cronJobService=new CronJobService();$cfdomainService=new CloudflareDomainService();$telegramCommandService=new TelegramCommandService($cronJobService,$monitoringService,$cfdomainService);
+$cronJobService=new CronJobService();$cfdomainService=new CloudflareDomainService();$telegramCommandService=new TelegramCommandService($cronJobService,$monitoringService,$cfdomainService);$accessReportService=new AccessReportService($cronJobService,$telegramCommandService);
 
 $authController=new AuthController($authService);$dashboardController=new DashboardController($authService,$systemService,$websiteService,$networkService);$fileController=new FileManagerController($authService,$fileService);$websiteController=new WebsiteController($authService,$websiteService,$backupService);$databaseController=new DatabaseController($authService,$databaseService);$sqlController=new SqlController($authService,$sqlQueryService);$backupController=new BackupController($authService,$backupService,$websiteService);$logController=new LogController($authService,$logService);$settingsController=new SettingsController($authService);$networkController=new NetworkController($authService,$networkService,$websiteService);$terminalController=new TerminalController($authService,$terminalService);$diagnosticsController=new DiagnosticsController($authService,$diagnosticsService);$pluginController=new PluginController($authService,$pluginService);$appInstallerController=new AppInstallerController($authService,$appInstallerService);$monitoringController=new MonitoringController($authService,$monitoringService);$notificationController=new NotificationController($authService,$systemService);$updateController=new UpdateController($authService,$updateService);$moduleController=new ModuleController($authService,$moduleService);$serviceManagerController=new ServiceManagerController($authService,$serviceManagerService);$guardianController=new GuardianController($authService,$guardianService);
 $marketplaceController=new MarketplaceController($appInstallerService);
-$cronController=new CronController($authService,$cronJobService,$telegramCommandService);$telegramWebhookController=new TelegramWebhookController($telegramCommandService,$authService);
+$cronController=new CronController($authService,$cronJobService,$telegramCommandService,$accessReportService);$telegramWebhookController=new TelegramWebhookController($telegramCommandService,$authService);
 
 $router->get('/login',fn()=>$authController->loginForm());$router->post('/login',fn()=>$authController->login());$router->post('/logout',fn()=>$authController->logout());
 $router->post('/telegram/webhook',fn()=>$telegramWebhookController->webhook());
@@ -48,6 +48,9 @@ $router->get('/cron',fn()=>$cronController->index());
 $router->post('/cron/save',fn()=>$cronController->save());
 $router->post('/cron/delete',fn()=>$cronController->delete());
 $router->post('/cron/telegram',fn()=>$cronController->saveTelegram());
+$router->post('/api/access-reports/enable',fn()=>$cronController->enableAccessReport());
+$router->post('/api/access-reports/disable',fn()=>$cronController->disableAccessReport());
+$router->post('/api/access-reports/test',fn()=>$cronController->testAccessReport());
 $router->get('/api/telegram-commands/status',fn()=>$telegramWebhookController->status());
 $router->post('/api/telegram-commands/enable',fn()=>$telegramWebhookController->enable());
 $router->post('/api/telegram-commands/disable',fn()=>$telegramWebhookController->disable());

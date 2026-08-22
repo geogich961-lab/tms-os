@@ -234,9 +234,16 @@ http {
   tcp_nodelay on;
   keepalive_timeout 65;
   client_max_body_size 500M;
-  server_tokens off;
+	server_tokens off;
 
-  # Nén gzip cho toàn bộ site — giảm mạnh dữ liệu truyền qua tunnel
+	# TMS OS: chỉ cloudflared chạy nội bộ mới được phép chuyển IP khách từ Cloudflare.
+	# Truy cập LAN trực tiếp giữ nguyên remote_addr, không tin header do client tự gửi.
+	set_real_ip_from 127.0.0.1;
+	set_real_ip_from ::1;
+	real_ip_header CF-Connecting-IP;
+	real_ip_recursive off;
+
+	# Nén gzip cho toàn bộ site — giảm mạnh dữ liệu truyền qua tunnel
   gzip on;
   gzip_vary on;
   gzip_proxied any;

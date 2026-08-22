@@ -1,0 +1,381 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Tổng hợp access log Nginx theo phần mới thêm và gửi báo cáo quản trị về
+ * đúng chat Telegram đã lưu. Không gửi URL, query string, user-agent hay log thô.
+ */
+final class AccessReportService
+{
+    private const MAX_BYTES_PER_FILE = 2_000_000;
+    private const MAX_IPS_PER_MESSAGE = 42;
+    private const MAX_REPORT_MESSAGES = 3;
+
+    private string $home;
+    private string $configFile;
+    private string $stateFile;
+    private string $lockFile;
+
+    public function __construct(
+        private CronJobService $cron,
+        private TelegramCommandService $telegram,
+    ) {
+        $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
+        $dir = $this->home . '/.tms-os';
+        @mkdir($dir, 0700, true);
+        $this->configFile = $dir . '/access-report-config.json';
+        $this->stateFile = $dir . '/access-report-state.json';
+        $this->lockFile = $dir . '/access-report.lock';
+    }
+
+    /** Trạng thái làm sạch, phù hợp hiển thị trong panel. */
+    public function status(): array
+    {
+        $config = $this->readJson($this->configFile);
+        $state = $this->readJson($this->stateFile);
+        $telegram = $this->cron->getTelegramConfig();
+        $configured = trim((string)($telegram['token'] ?? '')) !== '' && trim((string)($telegram['chat_id'] ?? '')) !== '';
+        $job = $this->scheduledJob();
+
+        return [
+            'configured' => $configured,
+            'enabled' => !empty($config['enabled']),
+            'scheduled' => $job !== null && !empty($job['enabled']),
+            'last_run_at' => $this->cleanTimestamp((string)($state['last_run_at'] ?? '')),
+            'last_sent_at' => $this->cleanTimestamp((string)($state['last_sent_at'] ?? '')),
+            'last_status' => $this->cleanStatus((string)($state['last_status'] ?? '')),
+        ];
+    }
+
+    /** Bật lịch gửi, chụp mốc cuối log để không gửi lịch sử truy cập cũ. */
+    public function enable(): array
+    {
+        $telegram = $this->cron->getTelegramConfig();
+        if (trim((string)($telegram['token'] ?? '')) === '' || trim((string)($telegram['chat_id'] ?? '')) === '') {
+            throw new RuntimeException('Cần lưu Bot Token và Chat ID Telegram trước.');
+        }
+
+        $this->ensureTrustedVisitorIpConfiguration();
+        $this->baselineLogs();
+        $this->writeJson($this->configFile, [
+            'enabled' => true,
+            'activated_at' => date('c'),
+        ]);
+        $this->ensureScheduledJob(true);
+
+        return $this->status() + ['message' => 'Đã bật báo cáo truy cập chi tiết mỗi giờ. Báo cáo đầu tiên sẽ chỉ lấy lượt truy cập phát sinh sau thời điểm này.'];
+    }
+
+    /** Tắt lịch nhưng giữ cấu hình Nginx để tiếp tục ghi IP đúng cho các tính năng khác. */
+    public function disable(): array
+    {
+        $this->writeJson($this->configFile, ['enabled' => false, 'activated_at' => '']);
+        $this->ensureScheduledJob(false);
+        return $this->status() + ['message' => 'Đã tắt báo cáo truy cập theo giờ.'];
+    }
+
+    /** Chạy từ worker Cron. Chỉ commit offset sau khi Telegram xác nhận đã nhận. */
+    public function runHourly(): array
+    {
+        $config = $this->readJson($this->configFile);
+        if (empty($config['enabled'])) {
+            return ['ok' => true, 'status' => 'disabled'];
+        }
+
+        $lock = @fopen($this->lockFile, 'c');
+        if ($lock === false || !@flock($lock, LOCK_EX | LOCK_NB)) {
+            if (is_resource($lock)) @fclose($lock);
+            return ['ok' => true, 'status' => 'busy'];
+        }
+
+        try {
+            $state = $this->readJson($this->stateFile);
+            [$summary, $nextFiles] = $this->collectNewAccess($state);
+            $messages = $this->formatReportMessages($summary);
+            foreach ($messages as $message) {
+                $sent = $this->telegram->sendConfiguredMessage($message);
+                if (empty($sent['ok'])) {
+                    $state['last_run_at'] = date('c');
+                    $state['last_status'] = 'send_failed';
+                    $this->writeJson($this->stateFile, $state);
+                    return ['ok' => false, 'status' => 'send_failed'];
+                }
+            }
+
+            $state['files'] = $nextFiles;
+            $state['last_run_at'] = date('c');
+            $state['last_sent_at'] = date('c');
+            $state['last_status'] = $summary['requests'] > 0 ? 'sent' : 'sent_empty';
+            $this->writeJson($this->stateFile, $state);
+            return ['ok' => true, 'status' => (string)$state['last_status'], 'requests' => $summary['requests']];
+        } finally {
+            @flock($lock, LOCK_UN);
+            @fclose($lock);
+        }
+    }
+
+    /** Chạy thử cùng luồng thật; chỉ dữ liệu mới sau lần bật gần nhất được báo cáo. */
+    public function sendTest(): array
+    {
+        $config = $this->readJson($this->configFile);
+        if (empty($config['enabled'])) {
+            throw new RuntimeException('Hãy bật báo cáo truy cập theo giờ trước khi gửi thử.');
+        }
+        $result = $this->runHourly();
+        if (empty($result['ok'])) {
+            throw new RuntimeException('Telegram chưa xác nhận báo cáo thử. Hãy kiểm tra kết nối và cấu hình bot.');
+        }
+        return $this->status() + ['message' => 'Đã gửi báo cáo thử với các lượt truy cập mới hiện có.'];
+    }
+
+    private function collectNewAccess(array $state): array
+    {
+        $summary = ['requests' => 0, 'ips' => [], 'destinations' => [], 'status' => ['4xx' => 0, '5xx' => 0], 'truncated_files' => 0];
+        $oldFiles = is_array($state['files'] ?? null) ? $state['files'] : [];
+        $nextFiles = [];
+
+        foreach ($this->accessLogFiles() as $path) {
+            $stat = @stat($path);
+            if (!is_array($stat)) continue;
+            $size = max(0, (int)($stat['size'] ?? 0));
+            $identity = (string)($stat['dev'] ?? '') . ':' . (string)($stat['ino'] ?? '');
+            $previous = is_array($oldFiles[$path] ?? null) ? $oldFiles[$path] : [];
+            $offset = $identity !== '' && $identity === (string)($previous['identity'] ?? '') && $size >= (int)($previous['offset'] ?? 0)
+                ? (int)$previous['offset']
+                : 0;
+            if ($size - $offset > self::MAX_BYTES_PER_FILE) {
+                $offset = max(0, $size - self::MAX_BYTES_PER_FILE);
+                $summary['truncated_files']++;
+            }
+
+            $handle = @fopen($path, 'rb');
+            if ($handle === false) continue;
+            @fseek($handle, $offset);
+            $label = $this->labelForLog($path);
+            while (($line = fgets($handle)) !== false) {
+                $this->addLogLine($summary, $label, $line);
+            }
+            @fclose($handle);
+            $nextFiles[$path] = ['identity' => $identity, 'offset' => $size];
+        }
+
+        return [$summary, $nextFiles];
+    }
+
+    private function addLogLine(array &$summary, string $label, string $line): void
+    {
+        if (!preg_match('/^([^\s]+)\s+\S+\s+\S+\s+\[[^\]]+\]\s+"[^"]*"\s+(\d{3})\s+/', $line, $matches)) return;
+        $ip = trim($matches[1]);
+        if (filter_var($ip, FILTER_VALIDATE_IP) === false) return;
+        $status = (int)$matches[2];
+
+        $summary['requests']++;
+        $summary['ips'][$ip] = (int)($summary['ips'][$ip] ?? 0) + 1;
+        if (!isset($summary['destinations'][$label])) $summary['destinations'][$label] = ['requests' => 0, 'ips' => []];
+        $summary['destinations'][$label]['requests']++;
+        $summary['destinations'][$label]['ips'][$ip] = (int)($summary['destinations'][$label]['ips'][$ip] ?? 0) + 1;
+        if ($status >= 500) $summary['status']['5xx']++;
+        elseif ($status >= 400) $summary['status']['4xx']++;
+    }
+
+    /** @return list<string> */
+    private function formatReportMessages(array $summary): array
+    {
+        $now = date('H:i · d/m/Y');
+        $destinations = $summary['destinations'];
+        uasort($destinations, static fn(array $a, array $b): int => $b['requests'] <=> $a['requests']);
+        $lines = [
+            'TMS OS · Báo cáo truy cập theo giờ',
+            'Mốc gửi: ' . $now,
+            '',
+            'Tổng: ' . (int)$summary['requests'] . ' yêu cầu · ' . count($summary['ips']) . ' IP duy nhất',
+            'Phản hồi: ' . (int)$summary['status']['4xx'] . ' × 4xx · ' . (int)$summary['status']['5xx'] . ' × 5xx',
+            '',
+            'Theo đích:',
+        ];
+        if ($destinations === []) {
+            $lines[] = '• Chưa ghi nhận request mới kể từ lần báo cáo gần nhất.';
+        } else {
+            foreach ($destinations as $label => $data) {
+                $lines[] = '• ' . $label . ': ' . (int)$data['requests'] . ' yêu cầu · ' . count($data['ips']) . ' IP';
+            }
+        }
+        if (!empty($summary['truncated_files'])) {
+            $lines[] = '';
+            $lines[] = 'Lưu ý: một số log tăng quá nhanh; chỉ phần mới nhất trong kỳ được tổng hợp.';
+        }
+
+        arsort($summary['ips'], SORT_NUMERIC);
+        $ipEntries = [];
+        foreach ($summary['ips'] as $ip => $count) {
+            $targets = [];
+            foreach ($destinations as $label => $data) {
+                if (isset($data['ips'][$ip])) $targets[] = $label . ': ' . (int)$data['ips'][$ip];
+            }
+            $ipEntries[] = '• ' . $ip . ' — ' . (int)$count . ' yêu cầu' . ($targets ? ' (' . implode(', ', $targets) . ')' : '');
+        }
+        if ($ipEntries === []) return [implode("\n", $lines)];
+
+        $messages = [];
+        $chunks = array_chunk($ipEntries, self::MAX_IPS_PER_MESSAGE);
+        $shown = array_slice($chunks, 0, self::MAX_REPORT_MESSAGES);
+        foreach ($shown as $index => $chunk) {
+            $prefix = $index === 0 ? array_merge($lines, ['', 'IP hoạt động:']) : ['TMS OS · Báo cáo truy cập (tiếp)'];
+            $messages[] = $this->limitTelegramText(implode("\n", array_merge($prefix, $chunk)));
+        }
+        if (count($chunks) > self::MAX_REPORT_MESSAGES) {
+            $remaining = max(0, count($ipEntries) - self::MAX_IPS_PER_MESSAGE * self::MAX_REPORT_MESSAGES);
+            $messages[count($messages) - 1] .= "\n… Còn {$remaining} IP không hiển thị để giới hạn tin nhắn.";
+        }
+        return $messages;
+    }
+
+    private function baselineLogs(): void
+    {
+        $files = [];
+        foreach ($this->accessLogFiles() as $path) {
+            $stat = @stat($path);
+            if (!is_array($stat)) continue;
+            $files[$path] = [
+                'identity' => (string)($stat['dev'] ?? '') . ':' . (string)($stat['ino'] ?? ''),
+                'offset' => max(0, (int)($stat['size'] ?? 0)),
+            ];
+        }
+        $this->writeJson($this->stateFile, ['files' => $files, 'last_run_at' => '', 'last_sent_at' => '', 'last_status' => 'waiting']);
+    }
+
+    /** @return list<string> */
+    private function accessLogFiles(): array
+    {
+        $dir = $this->home . '/logs/nginx';
+        $files = [];
+        foreach (glob($dir . '/*-access.log') ?: [] as $path) {
+            $base = basename($path);
+            if ($base === 'tms-access.log' || $base === 'default-access.log' || preg_match('/^[a-z0-9][a-z0-9_-]{0,63}-access\.log$/i', $base)) $files[] = $path;
+        }
+        sort($files, SORT_STRING);
+        return $files;
+    }
+
+    private function labelForLog(string $path): string
+    {
+        $base = basename($path);
+        if ($base === 'tms-access.log') return 'Panel TMS OS';
+        if ($base === 'default-access.log') return 'Website mặc định';
+        $name = preg_replace('/-access\.log$/', '', $base) ?: 'không xác định';
+        return 'Website: ' . substr($name, 0, 64);
+    }
+
+    private function ensureScheduledJob(bool $enabled): void
+    {
+        $job = $this->scheduledJob();
+        if ($job === null) {
+            if (!$enabled) return;
+            $this->cron->save([
+                'name' => 'TMS OS · Báo cáo truy cập Telegram mỗi giờ',
+                'command' => $this->workerCommand(),
+                'schedule' => '0 * * * *',
+                'enabled' => true,
+                'notify_telegram' => false,
+            ]);
+            return;
+        }
+        $job['enabled'] = $enabled;
+        $job['notify_telegram'] = false;
+        $this->cron->save($job);
+    }
+
+    private function scheduledJob(): ?array
+    {
+        $command = $this->workerCommand();
+        foreach ($this->cron->all() as $job) {
+            if (trim((string)($job['command'] ?? '')) === $command) return $job;
+        }
+        return null;
+    }
+
+    private function workerCommand(): string
+    {
+        $prefix = getenv('PREFIX') ?: dirname($this->home) . '/usr';
+        return escapeshellarg($prefix . '/bin/php') . ' ' . escapeshellarg($this->home . '/tms-os/scripts/access-report.php');
+    }
+
+    /** Chỉ tin CF-Connecting-IP khi cloudflared kết nối từ loopback. */
+    private function ensureTrustedVisitorIpConfiguration(): void
+    {
+        $prefix = getenv('PREFIX') ?: dirname($this->home) . '/usr';
+        $nginx = $prefix . '/bin/nginx';
+        $configPath = $prefix . '/etc/nginx/nginx.conf';
+        $content = @file_get_contents($configPath);
+        if (!is_string($content) || $content === '') throw new RuntimeException('Không tìm thấy cấu hình Nginx để bật ghi nhận IP khách.');
+        if (!is_executable($nginx)) throw new RuntimeException('Không tìm thấy Nginx Termux để kiểm tra cấu hình IP khách.');
+
+        $block = "    # TMS OS access-report real-ip begin\n"
+            . "    set_real_ip_from 127.0.0.1;\n"
+            . "    set_real_ip_from ::1;\n"
+            . "    real_ip_header CF-Connecting-IP;\n"
+            . "    real_ip_recursive off;\n"
+            . "    # TMS OS access-report real-ip end\n";
+        $hasSafeExistingConfig = preg_match('/set_real_ip_from\s+127\.0\.0\.1\s*;/', $content) === 1
+            && preg_match('/set_real_ip_from\s+::1\s*;/', $content) === 1
+            && preg_match('/real_ip_header\s+CF-Connecting-IP\s*;/', $content) === 1
+            && preg_match('/real_ip_recursive\s+off\s*;/', $content) === 1;
+        if ($hasSafeExistingConfig && !str_contains($content, '# TMS OS access-report real-ip begin')) {
+            return;
+        }
+        $updated = preg_replace('/\n?\s*# TMS OS access-report real-ip begin.*?# TMS OS access-report real-ip end\n?/s', "\n", $content);
+        if (!is_string($updated)) throw new RuntimeException('Không thể chuẩn bị cấu hình Nginx cho IP khách.');
+        $updated = preg_replace('/(http\s*\{\s*\n?)/', "$1" . $block, $updated, 1, $replacements);
+        if (!is_string($updated) || $replacements !== 1) throw new RuntimeException('Không tìm thấy khối http trong cấu hình Nginx.');
+        if ($updated === $content) return;
+
+        $backupDir = $this->home . '/.tms-os/backups';
+        @mkdir($backupDir, 0700, true);
+        $backup = $backupDir . '/nginx-before-access-report-' . date('Ymd_His') . '.conf';
+        if (@file_put_contents($backup, $content, LOCK_EX) === false || @file_put_contents($configPath, $updated, LOCK_EX) === false) {
+            throw new RuntimeException('Không thể ghi cấu hình Nginx an toàn cho báo cáo truy cập.');
+        }
+        @chmod($backup, 0600);
+
+        exec(escapeshellarg($nginx) . ' -t -c ' . escapeshellarg($configPath) . ' 2>&1', $output, $code);
+        if ($code !== 0) {
+            @file_put_contents($configPath, $content, LOCK_EX);
+            throw new RuntimeException('Nginx không hỗ trợ cấu hình IP khách an toàn trên máy này; không bật báo cáo.');
+        }
+        exec(escapeshellarg($nginx) . ' -c ' . escapeshellarg($configPath) . ' -s reload 2>&1', $reloadOutput, $reloadCode);
+        if ($reloadCode !== 0) {
+            @file_put_contents($configPath, $content, LOCK_EX);
+            exec(escapeshellarg($nginx) . ' -c ' . escapeshellarg($configPath) . ' -s reload 2>&1');
+            throw new RuntimeException('Không thể reload Nginx sau khi kiểm tra cấu hình IP khách.');
+        }
+    }
+
+    private function readJson(string $path): array
+    {
+        $data = @json_decode((string)@file_get_contents($path), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function writeJson(string $path, array $data): void
+    {
+        if (@file_put_contents($path, json_encode($data, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT), LOCK_EX) === false) {
+            throw new RuntimeException('Không thể lưu trạng thái báo cáo truy cập.');
+        }
+        @chmod($path, 0600);
+    }
+
+    private function cleanTimestamp(string $value): string
+    {
+        return preg_match('/^\d{4}-\d{2}-\d{2}T/', $value) === 1 ? $value : '';
+    }
+
+    private function cleanStatus(string $value): string
+    {
+        return in_array($value, ['waiting', 'sent', 'sent_empty', 'send_failed'], true) ? $value : '';
+    }
+
+    private function limitTelegramText(string $text): string
+    {
+        return function_exists('mb_substr') ? mb_substr($text, 0, 3500, 'UTF-8') : substr($text, 0, 3500);
+    }
+}

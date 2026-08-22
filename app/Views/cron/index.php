@@ -10,6 +10,10 @@ $telegramReady = !empty($telegram['token']) && !empty($telegram['chat_id']);
 $telegramCommandStatus = is_array($telegramCommandStatus ?? null) ? $telegramCommandStatus : [];
 $telegramCommandEnabled = !empty($telegramCommandStatus['enabled']);
 $telegramCommandReady = !empty($telegramCommandStatus['ready']);
+$accessReportStatus = is_array($accessReportStatus ?? null) ? $accessReportStatus : [];
+$accessReportEnabled = !empty($accessReportStatus['enabled']);
+$accessReportReady = !empty($accessReportStatus['configured']);
+$accessReportLastRun = !empty($accessReportStatus['last_run_at']) ? date('H:i · d/m', strtotime((string)$accessReportStatus['last_run_at'])) : 'Chưa chạy';
 $csrf = (string)($csrf ?? '');
 require __DIR__ . '/../layouts/header.php';
 ?>
@@ -84,6 +88,22 @@ require __DIR__ . '/../layouts/header.php';
         <button type="button" id="telegramCommandToggle" class="btn <?= $telegramCommandEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$telegramCommandReady && !$telegramCommandEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleTelegramCommand()">
             <?= $telegramCommandEnabled ? 'Tắt lệnh /status' : 'Bật lệnh /status' ?>
         </button>
+    </section>
+
+    <section class="panel-card cron-notify-panel <?= $accessReportEnabled ? 'is-ready' : 'needs-setup' ?>">
+        <div class="cron-notify-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5h16"/><path d="M6 17V9m4 8V5m4 12v-4m4 4V7"/><circle cx="18" cy="5" r="2.2"/></svg>
+        </div>
+        <div class="cron-notify-copy">
+            <strong><?= $accessReportEnabled ? 'Báo cáo IP truy cập mỗi giờ đang hoạt động' : 'Báo cáo IP truy cập mỗi giờ chưa được bật' ?></strong>
+            <span><?php if ($accessReportEnabled): ?>Gửi IP đầy đủ, tổng lượt truy cập, phân theo Panel/website và lỗi 4xx/5xx vào đúng chat đã cấu hình. Lần chạy gần nhất: <?= tms_h($accessReportLastRun) ?>.<?php elseif (!$accessReportReady): ?>Lưu Bot Token và Chat ID trước khi bật báo cáo.<?php else: ?>Báo cáo chỉ gửi phần log mới sau khi bật; không gửi URL, query, cookie hoặc log thô.<?php endif; ?></span>
+        </div>
+        <div class="row-actions">
+            <?php if ($accessReportEnabled): ?><button type="button" id="accessReportTest" class="btn btn-ghost btn-small" onclick="testAccessReport()">Gửi thử</button><?php endif; ?>
+            <button type="button" id="accessReportToggle" class="btn <?= $accessReportEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$accessReportReady && !$accessReportEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleAccessReport()">
+                <?= $accessReportEnabled ? 'Tắt báo cáo IP' : 'Bật báo cáo IP' ?>
+            </button>
+        </div>
     </section>
 
     <section class="cron-workspace">
@@ -279,6 +299,44 @@ async function toggleTelegramCommand() {
         });
         const result = await response.json();
         if (!result.ok) throw new Error(result.message || 'Không thể cập nhật lệnh Telegram.');
+        tmsToast(result.message, 'success');
+        window.setTimeout(() => window.location.reload(), 280);
+    } catch (error) {
+        button.disabled = false;
+        tmsToast(error.message || 'Lỗi kết nối máy chủ', 'error');
+    }
+}
+
+async function toggleAccessReport() {
+    const button = document.getElementById('accessReportToggle');
+    if (!button || button.disabled) return;
+    const enabling = !button.textContent.includes('Tắt');
+    if (enabling && !confirm('Báo cáo này gửi IP truy cập đầy đủ mỗi giờ vào chat Telegram đã cấu hình. Bạn xác nhận bật?')) return;
+    button.disabled = true;
+    try {
+        const response = await fetch(enabling ? '/api/access-reports/enable' : '/api/access-reports/disable', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: '{}'
+        });
+        const result = await response.json();
+        if (!result.ok) throw new Error(result.message || 'Không thể cập nhật báo cáo truy cập.');
+        tmsToast(result.message, 'success');
+        window.setTimeout(() => window.location.reload(), 280);
+    } catch (error) {
+        button.disabled = false;
+        tmsToast(error.message || 'Lỗi kết nối máy chủ', 'error');
+    }
+}
+
+async function testAccessReport() {
+    const button = document.getElementById('accessReportTest');
+    if (!button || button.disabled) return;
+    button.disabled = true;
+    try {
+        const response = await fetch('/api/access-reports/test', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: '{}'
+        });
+        const result = await response.json();
+        if (!result.ok) throw new Error(result.message || 'Không thể gửi báo cáo thử.');
         tmsToast(result.message, 'success');
         window.setTimeout(() => window.location.reload(), 280);
     } catch (error) {
