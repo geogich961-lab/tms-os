@@ -150,8 +150,10 @@ final class WebsiteService
             throw new RuntimeException('Tên website không hợp lệ.');
         }
 
-        $configPath = $this->sitesDir . '/' . $name . '.conf';
-        if (!is_file($configPath)) {
+        $enabled = $this->sitesDir . '/' . $name . '.conf';
+        $disabled = $enabled . '.disabled';
+        $configPath = is_file($enabled) ? $enabled : (is_file($disabled) ? $disabled : '');
+        if ($configPath === '') {
             throw new RuntimeException('Website không tồn tại.');
         }
 

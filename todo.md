@@ -152,3 +152,10 @@
 - [x] Đối chiếu nơi ghi, định dạng hash và nơi xác minh thông tin quản trị.
 - [x] Sửa lỗi cùng hồi quy cho mật khẩu cũ/mới và lệnh khôi phục an toàn.
 - [x] Kiểm thử package rồi phát hành hotfix có hướng dẫn khôi phục truy cập panel.
+
+## Khắc phục website default hiển thị nhưng không thể xóa
+
+- [x] Tái hiện sự khác biệt giữa website được phát hiện từ Nginx và registry quản lý.
+- [x] Sửa thao tác xóa default theo quy tắc an toàn, không tác động website khác.
+- [x] Thêm hồi quy cho xóa website default và website có registry bình thường.
+- [ ] Kiểm thử package rồi phát hành hotfix cùng hướng dẫn thao tác trong panel.
