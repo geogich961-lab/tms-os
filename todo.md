@@ -195,10 +195,10 @@
 
 - [x] Lấy phản hồi lỗi attach đã được làm sạch từ API thực tế và đối chiếu với mã V16.1.9.
 - [x] Sửa điều kiện/định dạng API Cloudflare còn thiếu mà không ghi đè ingress hiện hữu.
-- [ ] Thêm hồi quy, phát hành hotfix và xác minh gắn `thc.io.vn` vào cổng 8083.
+- [x] Thêm hồi quy và phát hành hotfix V16.1.10 để xác minh gắn `thc.io.vn` vào cổng 8083.
 
 ## Khẩn cấp: Cloudflare từ chối service URL tms-os:8083
 
 - [x] Chuẩn hóa service website nội bộ thành URL loopback có scheme trước khi ghi ingress.
 - [x] Thêm hồi quy cho website registry cũ trả về dạng `tên-site:cổng` và URL hợp lệ sẵn có.
-- [ ] Kiểm thử, phát hành hotfix và xác minh gắn hostname gốc vào cổng 8083.
+- [x] Kiểm thử và phát hành hotfix V16.1.10; chờ người dùng xác minh gắn hostname gốc vào cổng 8083.
