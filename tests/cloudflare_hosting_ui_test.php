@@ -5,6 +5,7 @@ $root = dirname(__DIR__);
 $view = (string) file_get_contents($root . '/app/Views/cfdomain/index.php');
 $scriptPath = $root . '/public/assets/cfdomain.js';
 $script = (string) file_get_contents($scriptPath);
+$service = (string) file_get_contents($root . '/app/Services/CloudflareDomainService.php');
 
 if (!str_contains($view, '/assets/cfdomain.js')) {
     fwrite(STDERR, "Cloudflare Hosting view does not load its page controller.\n");
@@ -21,10 +22,14 @@ if ($script === '') {
 
 foreach ([
     '/api/cloudflare-domain/token',
+    '/api/cloudflare-domain/account-info',
     '/api/cloudflare-domain/create-tunnel',
     '/api/cloudflare-domain/attach',
     '/api/cloudflare-domain/attach-panel',
     '/api/cloudflare-domain/perf-optimize',
+    'Promise.allSettled',
+    'latestStatus',
+    'setZoneWarning',
     'refresh({ silent: true })',
 ] as $required) {
     if (!str_contains($script, $required)) {
@@ -33,4 +38,16 @@ foreach ([
     }
 }
 
-echo "OK: Cloudflare Hosting UI controller is loaded and wired to required endpoints.\n";
+foreach ([
+    "'/zones?per_page=50'",
+    "'zone_warn' => \$zoneWarn",
+    "\$accountIdSt = trim((string)(\$cfg['account_id'] ?? ''));",
+    "if (\$tunnelIdSt !== '' && \$accountIdSt !== ''",
+] as $required) {
+    if (!str_contains($service, $required)) {
+        fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");
+        exit(1);
+    }
+}
+
+echo "OK: Cloudflare Hosting safely keeps UI/tunnel state when Zone loading is unavailable.\n";

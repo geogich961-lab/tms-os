@@ -123,56 +123,52 @@ final class CloudflareDomainService
 
     /**
      * Kiểm tra token và trả account_id + danh sách zone.
-     * Token chỉ cần: Cloudflare Tunnel (Edit) + Zone DNS (Edit).
-     * KHÔNG yêu cầu "Account Settings: Read" — account_id được lấy từ
-     * /user/memberships (quyền Account Membership: Read, bao gồm trong Tunnel:Edit
-     * với nhiều token mẫu) hoặc giữ lại giá trị đã lưu trong cấu hình trước đó.
+     *
+     * Account ID đã lưu là nguồn ưu tiên vì tunnel đang chạy không phụ thuộc việc
+     * liệt kê zone. Nếu Cloudflare tạm thời từ chối GET /zones, trả trạng thái
+     * suy giảm thay vì làm hỏng toàn bộ trang Cloudflare Hosting.
      */
     public function accountInfo(): array
     {
         $info = $this->cf();
-        $accountId = '';
+        $accountId = trim((string)($info['account_id'] ?? ''));
+        $list = [];
+        $zoneWarn = '';
+
+        // Chỉ gọi /zones một lần. Ngoài việc tránh lỗi 400 do scope phụ, dữ liệu
+        // này còn có thể cung cấp account_id khi cấu hình cũ chưa lưu giá trị đó.
         try {
-            $acct = $this->api('GET', '/accounts');
-            foreach ((array)($acct[0] ?? []) as $acc) {
-                $accountId = (string)($acc['id'] ?? '');
-                break;
-            }
-            if ($accountId === '' && is_array($acct)) {
-                $accountId = (string)($acct['id'] ?? '');
+            $zones = $this->api('GET', '/zones?per_page=50');
+            foreach ((array)$zones as $zone) {
+                if (!is_array($zone)) { continue; }
+                $list[] = [
+                    'id' => (string)($zone['id'] ?? ''),
+                    'name' => (string)($zone['name'] ?? ''),
+                    'status' => (string)($zone['status'] ?? ''),
+                ];
+                if ($accountId === '') {
+                    $account = (array)($zone['account'] ?? []);
+                    $accountId = trim((string)($account['id'] ?? ''));
+                }
             }
         } catch (Throwable $e) {
-            // Token chưa cấp quyền Account: Read — tiếp tục với các cách khác
+            $zoneWarn = $e->getMessage();
         }
-        // Fallback 1: /user/memberships (thường khả dụng với token Tunnel:Edit)
+
+        // Với cấu hình mới chưa có account_id, thử endpoint account một lần và
+        // phân tích đúng mảng bản ghi. Không gọi endpoint này ở trang làm mới
+        // bình thường khi account_id đã tồn tại.
         if ($accountId === '') {
             try {
-                $mems = $this->api('GET', '/user/memberships');
-                foreach ((array)$mems as $m) {
-                    $acc = $m['account'] ?? [];
-                    $accountId = (string)($acc['id'] ?? '');
+                $accounts = $this->api('GET', '/accounts');
+                foreach ((array)$accounts as $account) {
+                    if (!is_array($account)) { continue; }
+                    $accountId = trim((string)($account['id'] ?? ''));
                     if ($accountId !== '') { break; }
                 }
             } catch (Throwable $e) {
-                // bỏ qua
+                if ($zoneWarn === '') { $zoneWarn = $e->getMessage(); }
             }
-        }
-        // Fallback 2: lấy account.id từ /zones (token Zone DNS:Edit luôn có quyền đọc zone)
-        if ($accountId === '') {
-            try {
-                $zones = $this->api('GET', '/zones');
-                foreach ((array)$zones as $z) {
-                    $acc = $z['account'] ?? [];
-                    $accountId = (string)($acc['id'] ?? '');
-                    if ($accountId !== '') { break; }
-                }
-            } catch (Throwable $e) {
-                // bỏ qua
-            }
-        }
-        // Fallback 3: giữ account_id đã lưu trong cấu hình trước đó
-        if ($accountId === '') {
-            $accountId = (string)($info['account_id'] ?? '');
         }
         if ($accountId === '') {
             throw new RuntimeException('Không thể đọc thông tin tài khoản. Hãy tạo lại token tại dash.cloudflare.com/profile/api-tokens với quyền: Cloudflare Tunnel (Edit) + Zone DNS (Edit) + Zone Zone (Read), phạm vi Account: All accounts, Zone: All zones.');
@@ -182,12 +178,7 @@ final class CloudflareDomainService
             $cfg['account_id'] = $accountId;
             $this->writeJson($this->configFile, $cfg);
         }
-        $zones = $this->api('GET', '/zones');
-        $list = [];
-        foreach ($zones as $z) {
-            $list[] = ['id' => (string)($z['id'] ?? ''), 'name' => (string)($z['name'] ?? ''), 'status' => (string)($z['status'] ?? '')];
-        }
-        return ['account_id' => $accountId, 'zones' => $list];
+        return ['account_id' => $accountId, 'zones' => $list, 'zone_warn' => $zoneWarn];
     }
 
     public function dnsRecords(string $zoneId): array
@@ -604,9 +595,10 @@ final class CloudflareDomainService
         // V15.3.8: đọc ingress THẬT trên Cloudflare để xác nhận từng route (so với config local)
         $ingressReal = [];
         $tunnelIdSt = (string)($cfg['tunnel_id'] ?? '');
-        if ($tunnelIdSt !== '' && trim((string)($cfg['api_token'] ?? '')) !== '') {
+        $accountIdSt = trim((string)($cfg['account_id'] ?? ''));
+        if ($tunnelIdSt !== '' && $accountIdSt !== '' && trim((string)($cfg['api_token'] ?? '')) !== '') {
             try {
-                $ingCfg = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelIdSt . '/configurations');
+                $ingCfg = $this->api('GET', '/accounts/' . $accountIdSt . '/cfd_tunnel/' . $tunnelIdSt . '/configurations');
                 foreach ((array)(($ingCfg['config'] ?? [])['ingress'] ?? []) as $rule) {
                     $hn = (string)($rule['hostname'] ?? '');
                     if ($hn !== '') { $ingressReal[strtolower($hn)] = (string)($rule['service'] ?? ''); }

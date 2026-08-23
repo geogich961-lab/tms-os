@@ -9,6 +9,7 @@
   const $ = (selector) => document.querySelector(selector);
   const csrf = () => $('#cfd-token-form input[name="csrf"]')?.value || $('#cfd-attach-form input[name="csrf"]')?.value || '';
   const alertBox = $('#cfd-alert');
+  let latestStatus = null;
   const text = (selector, value) => { const node = $(selector); if (node) node.textContent = value || '—'; };
   const hidden = (selector, value) => { const node = $(selector); if (node) node.hidden = value; };
   const request = async (url, options = {}) => {
@@ -28,6 +29,20 @@
     alertBox.className = `alert ${type === 'error' ? 'alert-error' : 'alert-success'}`;
     alertBox.textContent = message;
     window.setTimeout(() => { alertBox.hidden = true; }, 7000);
+  };
+  const setZoneWarning = (message) => {
+    if (!alertBox) return;
+    if (!message) {
+      if (alertBox.dataset.cfdZoneWarning === '1') {
+        alertBox.hidden = true;
+        delete alertBox.dataset.cfdZoneWarning;
+      }
+      return;
+    }
+    alertBox.dataset.cfdZoneWarning = '1';
+    alertBox.hidden = false;
+    alertBox.className = 'alert alert-error';
+    alertBox.textContent = `Danh sách domain chưa thể làm mới. ${message} Tunnel và các hostname hiện có vẫn được giữ nguyên.`;
   };
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>'"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
   const confirmAction = (message) => window.confirm(message);
@@ -78,6 +93,7 @@
   }
 
   function applyStatus(status) {
+    latestStatus = status || {};
     const configured = Boolean(status.configured);
     const running = Boolean(status.running);
     const health = status.health || {};
@@ -102,6 +118,7 @@
     text('#cfd-account-id', status.account_id || 'Đã lưu, đang tải thông tin');
     text('#cfd-zones-count', Array.isArray(status.zones) ? String(status.zones.length) : '—');
     populateZones(status.zones || []);
+    setZoneWarning(status.zone_warn || '');
     renderHostnames(status.hostnames || []);
 
     const urlCard = $('#cfd-url-card');
@@ -123,12 +140,31 @@
     if (hostnameInput && status.panel_hostname && !hostnameInput.value) hostnameInput.value = status.panel_hostname;
   }
 
-  async function loadAccount() {
-    const data = await request('/api/cloudflare-domain/account-info');
-    text('#cfd-account-id', data.account_id || '—');
-    const zones = data.zones || [];
-    text('#cfd-zones-count', String(zones.length));
-    populateZones(zones);
+  async function loadAccount({ interactive = false } = {}) {
+    try {
+      const data = await request('/api/cloudflare-domain/account-info');
+      text('#cfd-account-id', data.account_id || '—');
+      const apiZones = Array.isArray(data.zones) ? data.zones : [];
+      const statusZones = Array.isArray(latestStatus?.zones) ? latestStatus.zones : [];
+      const zones = data.zone_warn && apiZones.length === 0 ? statusZones : apiZones;
+      text('#cfd-zones-count', String(zones.length));
+      populateZones(zones);
+      setZoneWarning(data.zone_warn || '');
+      if (interactive && data.zone_warn) {
+        throw new Error(`API Token đã lưu nhưng chưa thể đọc danh sách domain: ${data.zone_warn}`);
+      }
+      return data;
+    } catch (error) {
+      const statusZones = Array.isArray(latestStatus?.zones) ? latestStatus.zones : [];
+      if (statusZones.length > 0) {
+        text('#cfd-zones-count', String(statusZones.length));
+        populateZones(statusZones);
+      }
+      const message = error.message || 'Không thể đọc danh sách domain.';
+      setZoneWarning(message);
+      if (interactive) throw error;
+      return { success: false, zones: statusZones, zone_warn: message };
+    }
   }
 
   async function loadSites() {
@@ -140,8 +176,20 @@
     try {
       const status = await request(statusUrl);
       applyStatus(status);
-      if (status.configured) await Promise.all([loadAccount(), loadSites()]);
-      if (!silent) show('Đã làm mới trạng thái Cloudflare Hosting.');
+      if (status.configured) {
+        const statusHasZones = Array.isArray(status.zones) && status.zones.length > 0;
+        const accountTask = statusHasZones && status.account_id
+          ? Promise.resolve({ success: true, zones: status.zones })
+          : loadAccount();
+        const results = await Promise.allSettled([accountTask, loadSites()]);
+        const sitesResult = results[1];
+        if (sitesResult.status === 'rejected') {
+          show(sitesResult.reason?.message || 'Không thể làm mới danh sách website nội bộ.', 'error');
+        }
+      }
+      if (!silent && alertBox?.dataset.cfdZoneWarning !== '1') {
+        show('Đã làm mới trạng thái Cloudflare Hosting.');
+      }
     } catch (error) {
       show(error.message || 'Không thể đọc trạng thái Cloudflare Hosting.', 'error');
     }
@@ -186,7 +234,7 @@
       return false;
     }
     return true;
-  }, async () => { await Promise.all([loadAccount(), loadSites()]); });
+  }, async () => { await Promise.all([loadAccount({ interactive: true }), loadSites()]); });
   bindForm('#cfd-tunnel-form', '/api/cloudflare-domain/create-tunnel', () => confirmAction('Tạo Cloudflare Tunnel mới? Chỉ thực hiện khi chưa có tunnel cần dùng.'));
   bindForm('#cfd-attach-form', '/api/cloudflare-domain/attach');
   bindForm('#cfd-remote-form', '/api/cloudflare-domain/attach-panel');

@@ -166,3 +166,10 @@
 - [x] Đối chiếu điều kiện giao diện hiển thị token/trạng thái với dữ liệu cấu hình thực tế.
 - [x] Xác định cách khôi phục dữ liệu hiển thị mà không tạo hoặc xóa tunnel đang hoạt động.
 - [x] Chuẩn bị hướng dẫn kiểm tra an toàn trên điện thoại và phương án sửa lỗi bền vững; phát hành GitHub Release V16.1.7.
+
+## Khẩn cấp: Cloudflare account-info HTTP 400 sau V16.1.7
+
+- [x] Đối chiếu phản hồi `account-info` 400 với trạng thái UI/tunnel/route đã khôi phục.
+- [x] Sửa endpoint hoặc xử lý phản hồi lỗi để không làm mất các trạng thái Cloudflare hợp lệ.
+- [x] Thêm hồi quy và xác minh không tác động tunnel, domain, Remote Access hoặc cấu hình tối ưu.
+- [ ] Đóng gói hotfix và hướng dẫn cập nhật an toàn.
