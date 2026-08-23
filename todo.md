@@ -172,4 +172,4 @@
 - [x] Đối chiếu phản hồi `account-info` 400 với trạng thái UI/tunnel/route đã khôi phục.
 - [x] Sửa endpoint hoặc xử lý phản hồi lỗi để không làm mất các trạng thái Cloudflare hợp lệ.
 - [x] Thêm hồi quy và xác minh không tác động tunnel, domain, Remote Access hoặc cấu hình tối ưu.
-- [ ] Đóng gói hotfix và hướng dẫn cập nhật an toàn.
+- [x] Đóng gói hotfix, phát hành GitHub Release V16.1.8 và chuẩn bị hướng dẫn cập nhật an toàn.
