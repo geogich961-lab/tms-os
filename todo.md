@@ -159,3 +159,10 @@
 - [x] Sửa thao tác xóa default theo quy tắc an toàn, không tác động website khác.
 - [x] Thêm hồi quy cho xóa website default và website có registry bình thường.
 - [x] Kiểm thử package rồi phát hành hotfix cùng hướng dẫn thao tác trong panel.
+
+## Khẩn cấp: Cloudflare Hosting trống cấu hình tại V16.1.6
+
+- [x] Xác định tệp cấu hình và đường dẫn lưu API Token, tunnel và hostname Cloudflare.
+- [x] Đối chiếu điều kiện giao diện hiển thị token/trạng thái với dữ liệu cấu hình thực tế.
+- [x] Xác định cách khôi phục dữ liệu hiển thị mà không tạo hoặc xóa tunnel đang hoạt động.
+- [ ] Chuẩn bị hướng dẫn kiểm tra an toàn trên điện thoại và phương án sửa lỗi bền vững.
