@@ -241,7 +241,7 @@ final class CloudflareDomainService
         try {
             $current = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations');
         } catch (Throwable $e) {
-            $current = ['config' => ['ingress' => [['service' => 'http_status:404']]]];
+            throw new RuntimeException('Không thể đọc route tunnel hiện có; chưa thay đổi DNS hoặc hostname. Vui lòng thử lại sau.');
         }
         $ingress = (array)(($current['config'] ?? [])['ingress'] ?? []);
         foreach ($ingress as $rule) {
@@ -257,7 +257,16 @@ final class CloudflareDomainService
             'httpHostHeader' => $hostname,
         ]];
         $ingress[] = ['service' => 'http_status:404'];
-        // V15.3.8: xác nhận rule thực sự được thêm trên Cloudflare (retry 1 lần nếu chưa thấy)
+        // Ghi ingress đã đọc được trước khi xác minh route mới; không dùng cấu hình rỗng
+        // khi GET thất bại để tránh làm mất các route đang hoạt động.
+        try {
+            $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
+                'config' => ['ingress' => $ingress],
+            ]);
+        } catch (Throwable $e) {
+            throw new RuntimeException('Không thể cập nhật route tunnel; chưa thay đổi DNS hoặc hostname. ' . $e->getMessage());
+        }
+        // Xác nhận rule thực sự được thêm trên Cloudflare (retry 1 lần nếu chưa thấy).
         $verified = false;
         for ($attempt = 0; $attempt <= 1; $attempt++) {
             if ($attempt === 1) { usleep(1500000); }

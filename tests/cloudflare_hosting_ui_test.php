@@ -43,6 +43,9 @@ foreach ([
     "'zone_warn' => \$zoneWarn",
     "\$accountIdSt = trim((string)(\$cfg['account_id'] ?? ''));",
     "if (\$tunnelIdSt !== '' && \$accountIdSt !== ''",
+    "Không thể đọc route tunnel hiện có; chưa thay đổi DNS hoặc hostname.",
+    "'config' => ['ingress' => \$ingress]",
+    "Không thể cập nhật route tunnel; chưa thay đổi DNS hoặc hostname.",
 ] as $required) {
     if (!str_contains($service, $required)) {
         fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");
@@ -50,4 +53,4 @@ foreach ([
     }
 }
 
-echo "OK: Cloudflare Hosting safely keeps UI/tunnel state when Zone loading is unavailable.\n";
+echo "OK: Cloudflare Hosting safely keeps UI/tunnel state and writes ingress before verifying new hostnames.\n";

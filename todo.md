@@ -173,3 +173,20 @@
 - [x] Sửa endpoint hoặc xử lý phản hồi lỗi để không làm mất các trạng thái Cloudflare hợp lệ.
 - [x] Thêm hồi quy và xác minh không tác động tunnel, domain, Remote Access hoặc cấu hình tối ưu.
 - [x] Đóng gói hotfix, phát hành GitHub Release V16.1.8 và chuẩn bị hướng dẫn cập nhật an toàn.
+
+## Hướng dẫn quyền Cloudflare API Token sau V16.1.8
+
+- [x] Đối chiếu lỗi xác thực Zone từ giao diện với các quyền API Token Cloudflare cần có.
+- [x] Hướng dẫn tạo token tối thiểu có Zone Read, DNS Edit và Cloudflare Tunnel Edit đúng phạm vi account/zone.
+- [ ] Hướng dẫn thay token an toàn trong TMS OS và xác minh dropdown Domain mà không thay đổi tunnel hoặc DNS đang hoạt động.
+
+## Khẩn cấp: Token Cloudflare đã lộ và báo Invalid access token
+
+- [x] Hướng dẫn thu hồi token đã lộ và tạo token thay thế với đúng quyền/phạm vi.
+- [ ] Xác minh token mới trong TMS OS mà không thay đổi tunnel token, route DNS hoặc hostname đang chạy.
+
+## Khẩn cấp: Gắn thc.io.vn vào website cổng 8083 trả HTTP 400
+
+- [x] Truy vết điều kiện backend làm endpoint attach từ chối hostname gốc dù token và Zone đã hợp lệ.
+- [x] Sửa an toàn luồng gắn hostname, bảo toàn tunnel, game.thc.io.vn, panel và DNS hiện có.
+- [ ] Kiểm thử attach hostname gốc/subdomain và phát hành hotfix nếu cần.
