@@ -207,4 +207,4 @@
 
 - [x] Truy vết phản hồi PUT/GET cấu hình tunnel và cơ chế đồng bộ route sau khi token đã đủ quyền.
 - [x] Xử lý độ trễ hoặc khác biệt phản hồi Cloudflare mà không tự ghi đè ingress, DNS hay hostname cũ.
-- [ ] Thêm hồi quy, phát hành hotfix và xác minh gắn `thc.io.vn` vào cổng 8083.
+- [x] Thêm hồi quy, phát hành hotfix V16.1.11 và xác minh ZIP/checksum; chờ xác nhận gắn `thc.io.vn` vào cổng 8083 trên thiết bị.
