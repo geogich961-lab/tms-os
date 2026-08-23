@@ -245,4 +245,5 @@
 - [x] Rà soát tuyến public, service Cloudflare và dữ liệu trạng thái có thể công bố an toàn.
 - [x] Tạo trang và API trạng thái chỉ đọc cho tunnel cùng các hostname đã quản lý.
 - [x] Thêm hồi quy không lộ token/cấu hình riêng, kiểm tra cú pháp/toàn bộ test suite và đóng gói bản cập nhật.
-- [ ] Phát hành V16.1.15 và xác nhận trang `/status` trên thiết bị thật.
+- [x] Phát hành V16.1.15, tải lại ZIP/manifest từ GitHub và xác minh checksum công khai.
+- [ ] Xác nhận trang `/status` trên thiết bị thật sau khi cập nhật.
