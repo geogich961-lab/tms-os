@@ -443,10 +443,77 @@ final class CloudflareDomainService
         return ['message' => 'Đã tách tên host "' . $target . '" khỏi tunnel.'];
     }
 
+    /** Tạo rule ingress chuẩn cho một hostname nội bộ của TMS OS. */
+    private function tunnelIngressRule(string $hostname, string $service): array
+    {
+        return ['hostname' => $hostname, 'service' => $service, 'originRequest' => (object)[
+            'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
+            'httpHostHeader' => $hostname,
+        ]];
+    }
+
+    /**
+     * Tập hợp tất cả website mà TMS OS đang quản lý, bao gồm cấu hình đơn-host
+     * của các phiên bản cũ. Không dùng riêng `hostname` vì nó chỉ là giá trị
+     * mặc định tương thích ngược và có thể không phải website mới nhất.
+     *
+     * @return array<string,array>
+     */
+    private function managedWebsiteIngress(array $cfg): array
+    {
+        $managed = [];
+        foreach ((array)($cfg['hostnames'] ?? []) as $site) {
+            if (!is_array($site)) { continue; }
+            $hostname = strtolower(trim((string)($site['hostname'] ?? '')));
+            $service = trim((string)($site['service'] ?? ''));
+            if ($hostname === '' || $service === '') { continue; }
+            try {
+                $managed[$hostname] = $this->tunnelIngressRule($hostname, $this->normalizeTunnelService($service));
+            } catch (Throwable $e) { /* Bỏ qua bản ghi cũ không hợp lệ, không làm mất route khác. */ }
+        }
+        // Tương thích cấu hình trước multi-site: chỉ thêm legacy khi danh sách mới chưa có hostname đó.
+        $legacyHostname = strtolower(trim((string)($cfg['hostname'] ?? '')));
+        $legacyService = trim((string)($cfg['service'] ?? ''));
+        if ($legacyHostname !== '' && $legacyService !== '' && !isset($managed[$legacyHostname])) {
+            try {
+                $managed[$legacyHostname] = $this->tunnelIngressRule($legacyHostname, $this->normalizeTunnelService($legacyService));
+            } catch (Throwable $e) { /* Bản ghi legacy không hợp lệ không được dùng để ghi đè ingress hiện hữu. */ }
+        }
+        return $managed;
+    }
+
+    /**
+     * Hợp nhất ingress thật của Cloudflare và inventory local trước mỗi lần ghi.
+     * Điều này bảo toàn hostname tạo thủ công, đồng thời khôi phục website đã có
+     * trong `hostnames[]` nếu một bản TMS OS cũ từng ghi thiếu rule khi bật panel.
+     */
+    private function mergedTunnelIngress(array $cfg, array $currentIngress, string $panelHostname = '', bool $includePanel = false): array
+    {
+        $rules = [];
+        $oldPanelHostname = strtolower(trim((string)($cfg['panel_hostname'] ?? '')));
+        $newPanelHostname = strtolower(trim($panelHostname));
+        $excluded = array_filter([$oldPanelHostname, $newPanelHostname]);
+        foreach ($currentIngress as $rule) {
+            if (!is_array($rule)) { continue; }
+            $hostname = strtolower(trim((string)($rule['hostname'] ?? '')));
+            if ($hostname === '' || in_array($hostname, $excluded, true)) { continue; }
+            $rules[$hostname] = $rule;
+        }
+        // Bản ghi TMS OS quản lý là nguồn ưu tiên cho chính hostname của nó;
+        // các hostname chỉ có trên Cloudflare vẫn được giữ nguyên ở vòng lặp trên.
+        foreach ($this->managedWebsiteIngress($cfg) as $hostname => $rule) {
+            $rules[$hostname] = $rule;
+        }
+        if ($includePanel && $newPanelHostname !== '') {
+            $rules[$newPanelHostname] = $this->tunnelIngressRule($newPanelHostname, 'http://127.0.0.1:8888');
+        }
+        $rules[] = ['service' => 'http_status:404'];
+        return array_values($rules);
+    }
+
     /**
      * Remote Access (V15.2.0): bật truy cập panel từ xa qua tunnel.
-     * Thêm ingress rule cho panel hostname (trỏ vào localhost:8888) và CNAME DNS.
-     * Giữ nguyên rule website đang có (không phá kết nối hiện tại).
+     * Hợp nhất toàn bộ route website trước khi thêm panel, không thay thế ingress.
      */
     public function attachPanelHostname(string $panelHostname): array
     {
@@ -454,8 +521,6 @@ final class CloudflareDomainService
         $cfg = $info['cfg'];
         $tunnelId = (string)($cfg['tunnel_id'] ?? '');
         $zoneId = (string)($cfg['zone_id'] ?? '');
-        $websiteHostname = (string)($cfg['hostname'] ?? '');
-        $websiteService = (string)($cfg['service'] ?? 'http://localhost:8080');
         if ($tunnelId === '') {
             throw new RuntimeException('Chưa có tunnel. Hãy bấm "Tạo Cloudflare Tunnel" trước.');
         }
@@ -466,22 +531,17 @@ final class CloudflareDomainService
         if ($panelHostname === '' || strpos($panelHostname, '.') === false) {
             throw new RuntimeException('Hostname không hợp lệ. Ví dụ: panel.thc.io.vn');
         }
-        if ($panelHostname === strtolower($websiteHostname)) {
+        if (isset($this->managedWebsiteIngress($cfg)[$panelHostname])) {
             throw new RuntimeException('Hostname panel không được trùng với tên miền website.');
         }
-        // 1. Ingress: giữ rule website (nếu có), thêm rule panel, catch-all 404 cuối
-        $ingress = [];
-        if ($websiteHostname !== '') {
-            $ingress[] = ['hostname' => $websiteHostname, 'service' => $websiteService, 'originRequest' => (object)[
-                'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
-                'httpHostHeader' => $websiteHostname,
-            ]];
-        }
-        $ingress[] = ['hostname' => $panelHostname, 'service' => 'http://localhost:8888', 'originRequest' => (object)[
-            'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
-            'httpHostHeader' => $panelHostname,
-        ]];
-        $ingress[] = ['service' => 'http_status:404'];
+        // 1. Luôn đọc ingress thật trước. Nếu Cloudflare tạm thời không phản hồi,
+        // inventory local vẫn đủ để khôi phục mọi hostname TMS OS đã lưu.
+        $currentIngress = [];
+        try {
+            $current = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', null, true);
+            $currentIngress = (array)(($current['config'] ?? [])['ingress'] ?? []);
+        } catch (Throwable $e) { /* Không ghi cấu hình trống; mergedTunnelIngress dùng hostnames[] an toàn. */ }
+        $ingress = $this->mergedTunnelIngress($cfg, $currentIngress, $panelHostname, true);
         $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
             'config' => ['ingress' => $ingress],
         ]);
@@ -523,16 +583,13 @@ final class CloudflareDomainService
         $zoneId = (string)($cfg['zone_id'] ?? '');
         $panelHostname = (string)($cfg['panel_hostname'] ?? '');
         $panelRecordId = (string)($cfg['panel_record_id'] ?? '');
-        $websiteHostname = (string)($cfg['hostname'] ?? '');
-        $websiteService = (string)($cfg['service'] ?? '');
         if ($tunnelId !== '') {
-            $ingress = [['service' => 'http_status:404']];
-            if ($websiteHostname !== '') {
-                array_unshift($ingress, ['hostname' => $websiteHostname, 'service' => $websiteService, 'originRequest' => (object)[
-                    'connectTimeout' => 10, 'tcpKeepAlive' => 60, 'noHappyEyeballs' => true,
-                    'httpHostHeader' => $websiteHostname,
-                ]]);
-            }
+            $currentIngress = [];
+            try {
+                $current = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', null, true);
+                $currentIngress = (array)(($current['config'] ?? [])['ingress'] ?? []);
+            } catch (Throwable $e) { /* Dùng inventory local, không xóa các route website đã lưu. */ }
+            $ingress = $this->mergedTunnelIngress($cfg, $currentIngress, $panelHostname, false);
             try {
                 $this->api('PUT', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', [
                     'config' => ['ingress' => $ingress],

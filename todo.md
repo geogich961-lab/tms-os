@@ -226,3 +226,9 @@
 - [x] Phân tích: helper đã chủ động che toàn bộ stdout/stderr, vì vậy không báo connector có chạy hay lỗi sau cập nhật.
 - [x] Sửa helper để kiểm tra cấu hình/PHP/mã nguồn, báo PID hoặc lỗi khởi động rõ ràng và phát hiện cloudflared thoát sớm mà không làm thay đổi tunnel/DNS/token.
 - [ ] Xác nhận lại `panel.thc.io.vn` và các route hoạt động sau khôi phục connector.
+
+## Khẩn cấp: Bật Remote Access làm mất route website gốc
+
+- [x] Tái hiện và xác định vì sao ghi ingress cho `panel.thc.io.vn` làm `thc.io.vn` ngừng phục vụ dù tunnel vẫn healthy.
+- [x] Sửa luồng Remote Access để hợp nhất và bảo toàn tất cả ingress hostname hiện có, gồm `thc.io.vn`, `game.thc.io.vn` và `panel.thc.io.vn`.
+- [ ] Thêm hồi quy, kiểm thử package/release và xác nhận ba hostname hoạt động đồng thời trên thiết bị thật.

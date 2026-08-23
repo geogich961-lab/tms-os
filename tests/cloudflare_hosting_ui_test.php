@@ -61,6 +61,10 @@ foreach ([
     'Đã có Cloudflare Tunnel được lưu trong TMS OS.',
     'Cloudflared đã thoát ngay sau khi khởi động.',
     'usleep(500000)',
+    'private function managedWebsiteIngress(array $cfg): array',
+    'private function mergedTunnelIngress(array $cfg, array $currentIngress, string $panelHostname = \'\', bool $includePanel = false): array',
+    "foreach ((array)(\$cfg['hostnames'] ?? []) as \$site)",
+    'Hợp nhất toàn bộ route website trước khi thêm panel, không thay thế ingress.',
 ] as $required) {
     if (!str_contains($service, $required)) {
         fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");
