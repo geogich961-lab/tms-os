@@ -87,7 +87,7 @@
     box.innerHTML = hostnames.map((item) => {
       const hostname = escapeHtml(item.hostname);
       const url = escapeHtml(item.url || `https://${item.hostname}`);
-      const route = item.route_status === 'ok' ? 'Đã đồng bộ' : item.route_status === 'missing' ? 'Cần đồng bộ route' : 'Chưa kiểm tra';
+      const route = item.route_status === 'ok' ? 'Đã đồng bộ' : item.route_status === 'pending' ? 'Đang đồng bộ Cloudflare' : item.route_status === 'missing' ? 'Cần đồng bộ route' : 'Chưa kiểm tra';
       return `<article class="cfh-hostname-item"><div><strong>${hostname}</strong><small>${escapeHtml(item.service || '')} · ${route}</small></div><div class="cfh-hostname-actions"><a class="btn btn-ghost btn-small" href="${url}" target="_blank" rel="noopener">Mở</a><button class="btn btn-danger-soft btn-small" type="button" data-cfd-detach-host="${hostname}">Tách</button></div></article>`;
     }).join('');
   }

@@ -55,10 +55,10 @@ final class CloudflareDomainService
     private static array $apiCache = [];
     private static array $apiCacheAt = [];
 
-    private function api(string $method, string $path, ?array $json = null): array
+    private function api(string $method, string $path, ?array $json = null, bool $fresh = false): array
     {
         // V15.4.0: cache kết quả GET đọc trạng thái — giảm gấp nhiều lần số lần gọi API
-        if ($method === 'GET' && $json === null && $this->isCacheablePath($path)) {
+        if (!$fresh && $method === 'GET' && $json === null && $this->isCacheablePath($path)) {
             $key = $method . '|' . $path;
             $at = (float)($this::$apiCacheAt[$key] ?? 0);
             if (($at > 0) && (microtime(true) - $at) < 60.0 && isset($this::$apiCache[$key])) {
@@ -103,6 +103,12 @@ final class CloudflareDomainService
             throw new RuntimeException($msg);
         }
         $result = (array)($data['result'] ?? []);
+        // Một PUT/PATCH/DELETE vào cấu hình tunnel làm dữ liệu GET đã cache trở nên
+        // cũ. Bỏ cache ngay để bước xác minh route đọc đúng cấu hình Cloudflare vừa
+        // nhận, thay vì thấy ingress trước đó trong tối đa 60 giây.
+        if ($method !== 'GET' && $this->isCacheablePath($path)) {
+            $this->cacheForget('GET', $path);
+        }
         $this->cachePut($method, $path, $result);
         return $result;
     }
@@ -119,6 +125,12 @@ final class CloudflareDomainService
             $this::$apiCache[$key] = $result;
             $this::$apiCacheAt[$key] = microtime(true);
         }
+    }
+
+    private function cacheForget(string $method, string $path): void
+    {
+        $key = $method . '|' . $path;
+        unset($this::$apiCache[$key], $this::$apiCacheAt[$key]);
     }
 
     /**
@@ -270,12 +282,13 @@ final class CloudflareDomainService
         } catch (Throwable $e) {
             throw new RuntimeException('Không thể cập nhật route tunnel; chưa thay đổi DNS hoặc hostname. ' . $e->getMessage());
         }
-        // Xác nhận rule thực sự được thêm trên Cloudflare (retry 1 lần nếu chưa thấy).
+        // Xác nhận rule thực sự được thêm trên Cloudflare. Luôn ép đọc mới: cấu hình
+        // vừa PUT có thể vẫn đang nằm trong cache GET cũ của tiến trình hiện tại.
         $verified = false;
-        for ($attempt = 0; $attempt <= 1; $attempt++) {
-            if ($attempt === 1) { usleep(1500000); }
+        for ($attempt = 0; $attempt < 4; $attempt++) {
+            if ($attempt > 0) { usleep(1000000); }
             try {
-                $verify = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations');
+                $verify = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations', null, true);
             } catch (Throwable $e) { $verify = []; }
             foreach ((array)(($verify['config'] ?? [])['ingress'] ?? []) as $rule) {
                 if (strcasecmp((string)($rule['hostname'] ?? ''), $hostname) === 0) {
@@ -284,9 +297,10 @@ final class CloudflareDomainService
                 }
             }
         }
-        if (!$verified) {
-            throw new RuntimeException('Route cho "' . $hostname . '" chưa được thêm vào tunnel trên Cloudflare. Vui lòng thử lại, nếu vẫn lỗi hãy kiểm tra API Token có quyền Tunnel:Edit.');
-        }
+        // Cloudflare đã chấp nhận PUT ở trên. GET cấu hình có thể nhất thời trả về
+        // ingress cũ do đồng bộ control-plane, nên không được phủ nhận một PUT thành
+        // công, cũng không được bỏ qua DNS/cấu hình local rồi buộc người dùng gắn lại.
+        $routeStatus = $verified ? 'ok' : 'pending';
         // 2. DNS CNAME → <tunnel_id>.cfargotunnel.com
         $existing = $this->dnsRecords($zoneId);
         $recordId = '';
@@ -313,15 +327,14 @@ final class CloudflareDomainService
             'zone_id' => $zoneId,
             'record_id' => $recordId,
             'url' => 'https://' . $hostname,
+            'route_status' => $routeStatus,
+            'route_pending_at' => $verified ? 0 : time(),
         ];
         $hostnames = (array)($cfg['hostnames'] ?? []);
         $already = false;
-        foreach ($hostnames as $h) {
+        foreach ($hostnames as $index => $h) {
             if (strcasecmp((string)($h['hostname'] ?? ''), $hostname) === 0) {
-                $h['service'] = $site['service'];
-                $h['zone_id'] = $site['zone_id'];
-                $h['record_id'] = $site['record_id'];
-                $h['url'] = $site['url'];
+                $hostnames[$index] = $site;
                 $already = true;
                 break;
             }
@@ -339,7 +352,9 @@ final class CloudflareDomainService
         }
         $this->writeJson($this->configFile, $cfg);
         @chmod($this->configFile, 0600);
-        return $site;
+        return $site + ['message' => $verified
+            ? 'Đã gắn route và tạo record DNS cho ' . $hostname . '.'
+            : 'Cloudflare đã nhận route và DNS đã được tạo. Route đang đồng bộ; hãy làm mới trạng thái sau ít phút.'];
     }
 
     /** Chuẩn hóa service website nội bộ thành địa chỉ hợp lệ cho Cloudflare Tunnel. */
@@ -637,8 +652,15 @@ final class CloudflareDomainService
         foreach ((array)($cfg['hostnames'] ?? []) as $h) {
             $hn = (string)($h['hostname'] ?? '');
             $hnLow = strtolower($hn);
+            $pendingAt = (int)($h['route_pending_at'] ?? 0);
             $routeStatus = $ingressReal !== [] ? 'missing' : 'unknown';
-            if (isset($ingressReal[$hnLow]) && $ingressReal[$hnLow] !== '') { $routeStatus = 'ok'; }
+            if (isset($ingressReal[$hnLow]) && $ingressReal[$hnLow] !== '') {
+                $routeStatus = 'ok';
+            } elseif (($h['route_status'] ?? '') === 'pending' && $pendingAt > 0 && (time() - $pendingAt) < 300) {
+                // Chờ tối đa 5 phút để Cloudflare hiển thị ingress đã trả về PUT.
+                // Sau mốc này trạng thái thật từ Cloudflare vẫn là "missing" để syncRoutes() có thể sửa.
+                $routeStatus = 'pending';
+            }
             $hostnamesOut[] = [
                 'hostname' => $hn,
                 'service' => (string)($h['service'] ?? ''),

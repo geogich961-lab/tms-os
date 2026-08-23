@@ -31,6 +31,7 @@ foreach ([
     'latestStatus',
     'setZoneWarning',
     'refresh({ silent: true })',
+    'Đang đồng bộ Cloudflare',
 ] as $required) {
     if (!str_contains($script, $required)) {
         fwrite(STDERR, "Cloudflare Hosting controller lacks required integration: {$required}\n");
@@ -48,6 +49,10 @@ foreach ([
     "return 'http://127.0.0.1:' . \$port;",
     "'config' => ['ingress' => \$ingress]",
     "Không thể cập nhật route tunnel; chưa thay đổi DNS hoặc hostname.",
+    "\$this->cacheForget('GET', \$path);",
+    "null, true);",
+    "'route_status' => \$routeStatus",
+    "'route_pending_at' => \$verified ? 0 : time()",
 ] as $required) {
     if (!str_contains($service, $required)) {
         fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");
@@ -55,4 +60,4 @@ foreach ([
     }
 }
 
-echo "OK: Cloudflare Hosting safely keeps UI/tunnel state and writes ingress before verifying new hostnames.\n";
+echo "OK: Cloudflare Hosting safely keeps UI/tunnel state, invalidates ingress cache, and preserves accepted routes while Cloudflare synchronizes.\n";

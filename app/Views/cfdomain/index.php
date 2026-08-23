@@ -95,5 +95,5 @@ $csrf=tms_csrf_token();
 <section class="panel-card cfd-section" data-panel="hosting"><div class="section-title-row"><h2>Nhật ký Tunnel</h2></div><pre id="cfd-log" class="terminal-output"><?=tms_h('')?></pre></section>
 
 <script>window.TMS_CF_DOMAIN_STATUS_URL='/api/cloudflare-domain/status';</script>
-<script src="/assets/cfdomain.js?v=16.1.10"></script>
+<script src="/assets/cfdomain.js?v=16.1.11"></script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

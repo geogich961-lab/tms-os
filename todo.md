@@ -202,3 +202,9 @@
 - [x] Chuẩn hóa service website nội bộ thành URL loopback có scheme trước khi ghi ingress.
 - [x] Thêm hồi quy cho website registry cũ trả về dạng `tên-site:cổng` và URL hợp lệ sẵn có.
 - [x] Kiểm thử và phát hành hotfix V16.1.10; chờ người dùng xác minh gắn hostname gốc vào cổng 8083.
+
+## Khẩn cấp: Route chưa hiển thị ngay sau khi Cloudflare nhận ingress
+
+- [x] Truy vết phản hồi PUT/GET cấu hình tunnel và cơ chế đồng bộ route sau khi token đã đủ quyền.
+- [x] Xử lý độ trễ hoặc khác biệt phản hồi Cloudflare mà không tự ghi đè ingress, DNS hay hostname cũ.
+- [ ] Thêm hồi quy, phát hành hotfix và xác minh gắn `thc.io.vn` vào cổng 8083.
