@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.14,
-  "build": "20260823-0659",
+  "internal_version": 16.15,
+  "build": "20260823-0954",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.4",
-  "version": "16.1.4",
-  "notes": "V16.1.4 hotfix: repair và startup tự khôi phục Cloudflare Tunnel đã cấu hình, tránh Cloudflare 1033 sau cập nhật.",
+  "name": "TMS OS V16.1.5",
+  "version": "16.1.5",
+  "notes": "V16.1.5 hotfix: đổi mật khẩu quản trị giữ nguyên username hiện có và ghi credential atomically để tránh mất quyền đăng nhập.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "8f8c30b2c5d7ac9f6dc9e2270c3f8e8e7ce68434086810469f45dd425f84dfc1",
+  "checksum_sha256": "5b22a2562c3992ba59015cc44b975f1d1239bd0d8c3e2e6a43f9381882b40a2c",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.4",
-  "changelog": "V16.1.4: Restore an already configured Cloudflare Tunnel after repair, normal startup, and Termux session recovery without exposing connector credentials.",
+  "version_display": "TMS OS V16.1.5",
+  "changelog": "V16.1.5: Preserve the existing panel username when changing a password and atomically replace the credential file to prevent lockouts.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
