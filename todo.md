@@ -253,4 +253,5 @@
 - [x] Đối chiếu header, palette, typography và card trang `/status` với giao diện panel TMS OS hiện hành.
 - [x] Thiết kế lại điều hướng/chỉ dẫn công khai và các khối trạng thái để đồng bộ trải nghiệm TMS OS trên điện thoại và tablet.
 - [x] Kiểm thử mã PHP/JS, hồi quy dữ liệu API công khai và cache PWA sau khi đồng bộ giao diện.
-- [ ] Phát hành V16.1.16 và xác nhận giao diện trang `/status` trên thiết bị.
+- [x] Phát hành V16.1.16, tải lại ZIP/RELEASE.json từ GitHub và xác minh checksum cùng asset giao diện.
+- [ ] Xác nhận giao diện trang `/status` trên thiết bị sau khi cập nhật.
