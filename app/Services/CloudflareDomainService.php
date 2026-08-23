@@ -20,6 +20,7 @@ final class CloudflareDomainService
     private string $configFile;
     private string $pidFile;
     private string $logFile;
+    private string $publicStatusFile;
 
     public function __construct()
     {
@@ -28,6 +29,7 @@ final class CloudflareDomainService
         $this->configFile = $this->dir . '/config.json';
         $this->pidFile = $this->dir . '/tunnel.pid';
         $this->logFile = $this->dir . '/tunnel.log';
+        $this->publicStatusFile = $this->dir . '/public-status.json';
         @mkdir($this->dir, 0700, true);
     }
 
@@ -757,6 +759,81 @@ final class CloudflareDomainService
             'zone_warn' => $zoneWarn,
             'log' => $log,
         ];
+    }
+
+    /**
+     * Bản tóm tắt an toàn cho trang trạng thái công khai.
+     * Không bao giờ trả token, account/tunnel ID, port nội bộ, DNS, log hoặc lỗi API.
+     * Cache trên đĩa 45 giây để một trang public không thể khuếch đại số lần gọi API Cloudflare.
+     */
+    public function publicStatus(): array
+    {
+        $cached = $this->readJson($this->publicStatusFile);
+        $checkedAt = (int)($cached['checked_at_unix'] ?? 0);
+        if ($checkedAt > 0 && (time() - $checkedAt) < 45 && isset($cached['tunnel'], $cached['hostnames'])) {
+            unset($cached['checked_at_unix']);
+            return $cached;
+        }
+
+        $summary = [
+            'configured' => false,
+            'tunnel' => ['state' => 'unknown', 'connections' => 0],
+            'hostnames' => [],
+            'updated_at' => gmdate('c'),
+        ];
+        try {
+            $status = $this->status();
+            $health = (array)($status['health'] ?? []);
+            $cloudflareState = strtolower((string)($health['status'] ?? 'unknown'));
+            $summary['configured'] = !empty($status['configured']);
+            $summary['tunnel'] = [
+                'state' => $this->publicTunnelState($cloudflareState, !empty($health['running'])),
+                'connections' => max(0, (int)($health['connections'] ?? 0)),
+            ];
+            foreach ((array)($status['hostnames'] ?? []) as $host) {
+                $hostname = strtolower(trim((string)($host['hostname'] ?? '')));
+                if ($hostname === '' || !preg_match('/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i', $hostname)) { continue; }
+                $summary['hostnames'][$hostname] = [
+                    'hostname' => $hostname,
+                    'url' => 'https://' . $hostname,
+                    'state' => $this->publicRouteState((string)($host['route_status'] ?? 'unknown')),
+                ];
+            }
+            $panelHostname = strtolower(trim((string)($status['panel_hostname'] ?? '')));
+            if ($panelHostname !== '' && !isset($summary['hostnames'][$panelHostname])) {
+                $summary['hostnames'][$panelHostname] = [
+                    'hostname' => $panelHostname,
+                    'url' => 'https://' . $panelHostname,
+                    'state' => $summary['tunnel']['state'] === 'operational' ? 'configured' : 'unknown',
+                ];
+            }
+            $summary['hostnames'] = array_values($summary['hostnames']);
+        } catch (Throwable $e) {
+            // Không rò rỉ chi tiết mạng/API sang trang public.
+            $summary['tunnel'] = ['state' => 'unknown', 'connections' => 0];
+        }
+        $toCache = $summary + ['checked_at_unix' => time()];
+        $this->writeJson($this->publicStatusFile, $toCache);
+        @chmod($this->publicStatusFile, 0600);
+        return $summary;
+    }
+
+    private function publicTunnelState(string $cloudflareState, bool $running): string
+    {
+        if (!$running) { return 'offline'; }
+        if (in_array($cloudflareState, ['healthy', 'active'], true)) { return 'operational'; }
+        if ($cloudflareState === 'inactive') { return 'offline'; }
+        return 'unknown';
+    }
+
+    private function publicRouteState(string $state): string
+    {
+        return match (strtolower($state)) {
+            'ok' => 'operational',
+            'pending' => 'syncing',
+            'missing' => 'attention',
+            default => 'unknown',
+        };
     }
 
     private function running(): bool

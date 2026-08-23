@@ -233,3 +233,16 @@
 - [x] Sửa luồng Remote Access để hợp nhất và bảo toàn tất cả ingress hostname hiện có, gồm `thc.io.vn`, `game.thc.io.vn` và `panel.thc.io.vn`.
 - [x] Thêm hồi quy, kiểm thử package/release và xác minh ZIP/manifest checksum công khai của V16.1.14.
 - [ ] Xác nhận trên thiết bị thật rằng `thc.io.vn`, `game.thc.io.vn` và `panel.thc.io.vn` hoạt động đồng thời sau Repair.
+
+## Khẩn cấp: Asset landing website tại thc.io.vn bị 404
+
+- [ ] Xác định các asset landing đang tham chiếu nhầm `/manus-storage/...` trong môi trường Termux cổng 8083.
+- [ ] Đóng gói logo, icon và ảnh hero theo đường dẫn được web server TMS OS phục vụ trực tiếp.
+- [ ] Kiểm thử không còn 404 asset/lỗi script trên website sau khi cập nhật, không ảnh hưởng các hostname Cloudflare.
+
+## Trang trạng thái công khai
+
+- [x] Rà soát tuyến public, service Cloudflare và dữ liệu trạng thái có thể công bố an toàn.
+- [x] Tạo trang và API trạng thái chỉ đọc cho tunnel cùng các hostname đã quản lý.
+- [x] Thêm hồi quy không lộ token/cấu hình riêng, kiểm tra cú pháp/toàn bộ test suite và đóng gói bản cập nhật.
+- [ ] Phát hành V16.1.15 và xác nhận trang `/status` trên thiết bị thật.

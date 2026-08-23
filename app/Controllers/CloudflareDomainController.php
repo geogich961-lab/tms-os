@@ -60,6 +60,18 @@ final class CloudflareDomainController
         $this->json(array_merge(['success' => true], $this->cfDomain->status()));
     }
 
+    /** GET /status — trang theo dõi công khai, không yêu cầu đăng nhập. */
+    public function publicStatusPage(): void
+    {
+        tms_view('status.public');
+    }
+
+    /** GET /api/public-status — dữ liệu đã lọc, chỉ đọc cho trang trạng thái. */
+    public function publicStatus(): void
+    {
+        $this->json(['success' => true] + $this->cfDomain->publicStatus());
+    }
+
     /** GET /api/cloudflare-domain/account-info (kiểm tra token + lấy account + zones) */
     public function accountInfo(): void
     {
