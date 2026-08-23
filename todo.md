@@ -269,5 +269,5 @@
 - [x] Truy vết trạng thái cài đặt AdGuard Home với service, cổng truy cập và điểm mở ứng dụng trong Marketplace; xác định thiếu xác minh runtime và thiếu điểm hiển thị.
 - [x] Sửa luồng cài đặt/khởi động và hiển thị cần thiết, không thay đổi Cloudflare Tunnel, DNS, token hay cấu hình dịch vụ đang chạy.
 - [x] Thêm hồi quy và chạy toàn bộ test suite, lint PHP/JS/Bash cùng kiểm tra diff.
-- [ ] Phát hành V16.1.18, tải lại ZIP/RELEASE.json để xác minh checksum công khai.
+- [x] Phát hành V16.1.18, tải lại ZIP/RELEASE.json để xác minh checksum công khai.
 - [ ] Xác nhận AdGuard Home khởi chạy và hiển thị trên thiết bị sau khi cập nhật.
