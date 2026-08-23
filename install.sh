@@ -122,12 +122,10 @@ echo '[OK] Đã cài đủ các thành phần.'
 # ---------- Bước 4: tải và kiểm tra bộ nguồn TMS OS ----------
 echo 'Bước 4/7: Tải bộ nguồn TMS OS mới nhất...'
 ZIP="$WORK/TMS_OS.zip"
-# Cơ chế xác minh checksum 3 lớp, chống race condition GitHub CDN:
-#   Lớp 1: checksum ONLINE từ RELEASE.json (phiên bản phát hành)
-#   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
-#   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
-# Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
-EMBED_SHA256="941315a2c1bd2ee258beb7954cc5aad2787f5c1339f6097c68d4abc7ec83f65b"
+# Chữ ký luôn lấy từ RELEASE.json nằm CÙNG GitHub Release với ZIP. Không dùng
+# checksum nhúng: checksum nhúng sẽ cũ ở release sau và tự chặn gói hợp lệ.
+# Nếu GitHub đang đồng bộ hai asset, bộ cài tải lại tối đa 4 lần rồi dừng an toàn.
+RELEASE_MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/RELEASE.json"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do
@@ -137,27 +135,19 @@ for VERIFY_ATTEMPT in 1 2 3 4; do
     exit 1
   fi
   ACTUAL="$(sha256sum "$ZIP" | awk '{print $1}')"
-  # Lớp 1: checksum online
-  EXPECTED="$(curl -fsSL -m 30 "https://raw.githubusercontent.com/${REPO}/main/RELEASE.json?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]*\)".*/\1/p')"
+  EXPECTED="$(curl -fsSL -m 30 "${RELEASE_MANIFEST_URL}?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]\{64\}\)".*/\1/p')"
   if [ "$ACTUAL" = "$EXPECTED" ] && [ -n "$EXPECTED" ]; then
-    VERIFY_OK=1; VERIFY_SOURCE="online"
+    VERIFY_OK=1; VERIFY_SOURCE="GitHub Release"
     break
   fi
-  # Lớp 2: checksum embed trong installer (ghithub CDN cache RELEASE.json cũ)
-  if [ "$ACTUAL" = "$EMBED_SHA256" ] && [ "$EMBED_SHA256" != "__EMBED_SHA256_PLACEHOLDER__" ]; then
-    VERIFY_OK=1; VERIFY_SOURCE="embedded"
-    echo '[THÔNG BÁO] Chữ ký online chưa cập nhật trên GitHub — dùng chữ ký nhúng trong bộ cài (đã xác minh).'
-    break
-  fi
-  # V16.0.15: Thêm nocache vào URL tải ZIP để bẻ gãy cache của GitHub CDN
+  # Thêm nocache vào ZIP để bẻ cache nếu GitHub đang đồng bộ asset mới.
   RELEASE_URL="${RELEASE_URL}?nocache=$RANDOM"
-  echo "[THỬ LẠI] File tải về (try $VERIFY_ATTEMPT) chưa khớp chữ ký SHA-256 — GitHub đang cập nhật release. Tải lại sau 5 giây..."
+  echo "[THỬ LẠI] ZIP hoặc RELEASE.json (try $VERIFY_ATTEMPT) chưa đồng bộ trên GitHub. Tải lại sau 5 giây..."
   sleep 5
 done
 if [ "$VERIFY_OK" -ne 1 ]; then
   echo "[LỖI] File tải về không khớp chữ ký SHA-256 sau 4 lần thử. Dừng cài đặt vì lý do an toàn."
-  echo "        EXPECTED (online) : ${EXPECTED:-'(không đọc được)'}"
-  echo "        EXPECTED (embed)  : ${EMBED_SHA256:-'(không có)'}"
+  echo "        EXPECTED (GitHub Release) : ${EXPECTED:-'(không đọc được)'}"
   echo "        ACTUAL            : $ACTUAL"
   echo '        Nếu lỗi tiếp diễn, hãy chạy lại cùng lệnh sau 5 phút hoặc báo lỗi tại GitHub issues.'
   exit 1
