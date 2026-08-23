@@ -15,7 +15,7 @@
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "acf7d9043acd93d7323062b891b39ec41008b5cf6c7de0e83203366bded71eef",
+  "checksum_sha256": "cbe7237514b062de1d528c41d93fb185b368559187cab9d5e3af73fef2dc8a36",
   "build_date": "2026-08-23",
   "version_display": "TMS OS V16.1.14",
   "changelog": "V16.1.14: Bật hoặc tắt Remote Access luôn hợp nhất và bảo toàn thc.io.vn, game.thc.io.vn, panel.thc.io.vn cùng các route Cloudflare hiện hữu; bổ sung hồi quy chống mất route.",
