@@ -165,4 +165,4 @@
 - [x] Xác định tệp cấu hình và đường dẫn lưu API Token, tunnel và hostname Cloudflare.
 - [x] Đối chiếu điều kiện giao diện hiển thị token/trạng thái với dữ liệu cấu hình thực tế.
 - [x] Xác định cách khôi phục dữ liệu hiển thị mà không tạo hoặc xóa tunnel đang hoạt động.
-- [ ] Chuẩn bị hướng dẫn kiểm tra an toàn trên điện thoại và phương án sửa lỗi bền vững.
+- [x] Chuẩn bị hướng dẫn kiểm tra an toàn trên điện thoại và phương án sửa lỗi bền vững; phát hành GitHub Release V16.1.7.
