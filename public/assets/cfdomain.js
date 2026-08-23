@@ -68,7 +68,7 @@
     select.innerHTML = '<option value="">— chọn website nội bộ —</option>';
     (sites || []).forEach((site) => {
       const option = document.createElement('option');
-      option.value = `${site.name}:${site.port}`;
+      option.value = site.service_url || `http://127.0.0.1:${site.port}`;
       option.textContent = `${site.name} · cổng ${site.port}`;
       select.appendChild(option);
     });

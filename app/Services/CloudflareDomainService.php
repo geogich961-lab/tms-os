@@ -237,6 +237,10 @@ final class CloudflareDomainService
         if ($hostname === '' || strpos($hostname, '.') === false) {
             throw new RuntimeException('Tên host không hợp lệ. Ví dụ: shop.thc.io.vn');
         }
+        // Website inventory cũ từng gửi dạng "ten-site:port". Cloudflare Tunnel
+        // chỉ chấp nhận service có scheme + hostname, nên chỉ chuẩn hóa route MỚI
+        // về loopback; ingress hiện hữu vẫn được giữ nguyên khi đọc/ghi lại.
+        $service = $this->normalizeTunnelService($service);
         // 1. Đọc ingress hiện tại, thêm rule mới (giữ nguyên rule cũ — multi-site)
         try {
             $current = $this->api('GET', '/accounts/' . $info['account_id'] . '/cfd_tunnel/' . $tunnelId . '/configurations');
@@ -336,6 +340,22 @@ final class CloudflareDomainService
         $this->writeJson($this->configFile, $cfg);
         @chmod($this->configFile, 0600);
         return $site;
+    }
+
+    /** Chuẩn hóa service website nội bộ thành địa chỉ hợp lệ cho Cloudflare Tunnel. */
+    private function normalizeTunnelService(string $service): string
+    {
+        $service = trim($service);
+        $port = 0;
+        if (preg_match('#^https?://(?:127\.0\.0\.1|localhost):(\d{1,5})/?$#i', $service, $matches)) {
+            $port = (int)$matches[1];
+        } elseif (preg_match('/^(?:[a-z0-9][a-z0-9._-]*|127\.0\.0\.1|localhost):(\d{1,5})$/i', $service, $matches)) {
+            $port = (int)$matches[1];
+        }
+        if ($port < 1 || $port > 65535) {
+            throw new RuntimeException('Địa chỉ website nội bộ không hợp lệ. Hãy chọn lại website trong danh sách.');
+        }
+        return 'http://127.0.0.1:' . $port;
     }
 
     /**

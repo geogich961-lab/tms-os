@@ -76,6 +76,7 @@ final class CloudflareDomainController
             $out[] = [
                 'name' => (string)$site['name'],
                 'port' => (int)$site['port'],
+                'service_url' => 'http://127.0.0.1:' . (int)$site['port'],
                 'root' => (string)($site['root'] ?? ''),
                 'status' => (string)($site['status'] ?? 'unknown'),
             ];

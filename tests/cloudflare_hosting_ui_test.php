@@ -44,6 +44,8 @@ foreach ([
     "\$accountIdSt = trim((string)(\$cfg['account_id'] ?? ''));",
     "if (\$tunnelIdSt !== '' && \$accountIdSt !== ''",
     "Không thể đọc route tunnel hiện có; chưa thay đổi DNS hoặc hostname.",
+    "\$service = \$this->normalizeTunnelService(\$service);",
+    "return 'http://127.0.0.1:' . \$port;",
     "'config' => ['ingress' => \$ingress]",
     "Không thể cập nhật route tunnel; chưa thay đổi DNS hoặc hostname.",
 ] as $required) {
