@@ -213,4 +213,4 @@
 
 - [x] Truy vết luồng dừng/khởi động Cloudflare Tunnel: panel đang chạy qua chính tunnel sẽ mất đường trả HTTP ngay khi connector bị dừng, dẫn tới 502/530.
 - [x] Sửa lỗi điều khiển tunnel: chặn dừng từ panel công khai, cho phép dừng trực tiếp từ localhost/LAN, chặn tạo tunnel trùng và bổ sung đồng bộ route không phá hủy.
-- [ ] Thêm hồi quy, kiểm thử và phát hành bản sửa sau khi xác định nguyên nhân.
+- [x] Thêm hồi quy, kiểm thử toàn bộ và phát hành V16.1.12; ZIP/RELEASE.json tải lại từ GitHub có checksum khớp.
