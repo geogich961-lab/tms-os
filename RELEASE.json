@@ -1,23 +1,22 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.119,
+  "internal_version": 16.120,
   "build": "20260823-1616",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.19",
-  "version": "16.1.19",
-  "notes": "V16.1.19 khắc phục việc Marketplace chỉ hiện toast cài AdGuard Home nhưng làm khuất trạng thái, cổng và điểm mở ở cuối trang trên mobile.",
+  "name": "TMS OS V16.1.20",
+  "version": "16.1.20",
+  "notes": "V16.1.20 tạm loại bỏ AdGuard Home khỏi App Marketplace do gói binary chưa tương thích ổn định trên thiết bị Android/Termux.",
   "features": [
-    "App Marketplace chỉ báo cài AdGuard Home thành công sau khi cổng giao diện nội bộ phản hồi thực tế.",
-    "Ứng dụng đã cài được đưa lên ngay trước danh mục để luôn nhìn thấy trạng thái hoạt động, cổng và nút mở cục bộ an toàn trên mobile.",
-    "AdGuard Home được khôi phục sau khi TMS OS khởi động lại; không thay đổi Tunnel, DNS, token, Remote Access hoặc hostname hiện có."
+    "App Marketplace chỉ giữ các ứng dụng đang được hỗ trợ ổn định.",
+    "Không thay đổi Cloudflare Tunnel, DNS, token, Remote Access, hostname hoặc dữ liệu ứng dụng hiện có."
   ],
-  "checksum_sha256": "10647910252ed523305a8daa998787dc44281ff559b22fe4ec7bd211c067f47b",
+  "checksum_sha256": "e3edc1722a153728a317fbcca306f88aa53e4a635a76e3b631fa6f5a59ee85f3",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.19",
-  "changelog": "V16.1.19: Đưa mục ứng dụng đã cài lên đầu Marketplace để AdGuard Home không còn bị khuất sau danh mục; giữ xác minh binary/cổng, trạng thái, lối mở nội bộ và cache PWA mới. Không đổi cấu hình Cloudflare hoặc dữ liệu sẵn có.",
+  "version_display": "TMS OS V16.1.20",
+  "changelog": "V16.1.20: Tạm loại bỏ AdGuard Home khỏi catalog và luồng khởi động Marketplace do gói binary chưa tương thích ổn định trên Android/Termux; giữ tài liệu lịch sử để tích hợp lại sau. Không đổi cấu hình Cloudflare hoặc dữ liệu sẵn có.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }

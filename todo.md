@@ -278,3 +278,16 @@
 - [x] Sửa phản hồi/thông báo và render Marketplace để hiển thị rõ trạng thái, cổng và điểm mở AdGuard Home.
 - [x] Bổ sung test hồi quy cho thứ tự hiển thị mục ứng dụng đã cài, cache version và chạy lại toàn bộ test suite.
 - [x] Phát hành V16.1.19 sau khi xác minh checksum công khai; giữ lại bước người dùng xác nhận thiết bị.
+
+## Lỗi mới: gói AdGuard Home không giải nén trên Android
+
+- [ ] Đối chiếu URL, HTTP response, định dạng archive và asset ARM64 thực tế mà trình cài tải xuống.
+- [ ] Kiểm tra tương thích Android/Termux và sửa trình cài để phân biệt archive hỏng, asset sai nền tảng và binary không chạy.
+- [ ] Bổ sung hồi quy cho tải xuống/giải nén AdGuard Home; không báo thành công nếu chưa cài và khởi chạy được.
+- [ ] Đóng gói/phát hành bản vá sau khi kiểm thử và xác nhận lại trên thiết bị.
+
+## Yêu cầu mới: tạm loại bỏ AdGuard Home
+
+- [x] Xóa AdGuard Home khỏi catalog App Marketplace và các luồng khởi động/khôi phục liên quan.
+- [x] Giữ lại tài liệu và lịch sử lỗi để có thể tích hợp lại ở giai đoạn sau; không xóa dữ liệu ứng dụng khác.
+- [x] Kiểm thử xác nhận Marketplace, File Browser, WordPress, Typecho và Cloudflare không bị ảnh hưởng.

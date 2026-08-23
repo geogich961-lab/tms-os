@@ -35,7 +35,7 @@ pgrep -x sshd >/dev/null 2>&1 || sshd
 # Cron Jobs chạy bằng crond trong user-space Termux; thiếu cronie không làm panel dừng.
 [ -f "$HOME/tms-os/scripts/tms-cron-engine.sh" ] && bash "$HOME/tms-os/scripts/tms-cron-engine.sh" start >>"$HOME/logs/services/cron.log" 2>&1 || true
 # Khôi phục dịch vụ do Marketplace quản lý; từng script tự tránh khởi động trùng.
-for service_script in "$HOME"/.tms-os/scripts/start-adguard-*.sh; do
+for service_script in "$HOME"/.tms-os/scripts/start-filebrowser-*.sh; do
   [ -f "$service_script" ] || continue
   bash "$service_script" >>"$HOME/logs/services/marketplace-services.log" 2>&1 || true
 done

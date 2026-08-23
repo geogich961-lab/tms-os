@@ -2,6 +2,8 @@
 $title = 'App Marketplace · TMS OS';
 $showShell = true;
 require __DIR__ . '/../layouts/header.php';
+$catalogIds = array_flip(array_map(static fn($item) => (string)($item['id'] ?? ''), $catalog));
+$installed = array_values(array_filter($installed, static fn($item) => isset($catalogIds[(string)($item['app'] ?? '')])));
 $installedIds = array_flip(array_filter(array_map(static fn($item) => $item['app'] ?? null, $installed)));
 $installedCount = count($installedIds);
 ?>

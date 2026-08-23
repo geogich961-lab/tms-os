@@ -20,7 +20,6 @@ final class AppInstallerService
         return [
             ['id' => 'wordpress', 'name' => 'WordPress', 'description' => 'CMS phổ biến cho blog và website doanh nghiệp. Hỗ trợ cấu hình tự động.', 'requirements' => 'PHP, MariaDB', 'database' => true, 'type' => 'web'],
             ['id' => 'typecho-vn', 'name' => 'Typecho VN', 'description' => 'Bản Typecho Việt Hóa bởi THCGaming. Siêu nhẹ, phù hợp cho mini VPS.', 'requirements' => 'PHP, SQLite', 'database' => true, 'type' => 'web'],
-            ['id' => 'adguard-home', 'name' => 'AdGuard Home', 'description' => 'Trình chặn quảng cáo và theo dõi toàn mạng, quản lý DNS an toàn.', 'requirements' => 'Binary ARM64 · DNS cần cổng >1024 trên Termux', 'database' => false, 'type' => 'service'],
             ['id' => 'file-browser', 'name' => 'File Browser', 'description' => 'Quản lý file qua giao diện web hiện đại, hỗ trợ nhiều người dùng.', 'requirements' => 'Binary (ARM64)', 'database' => false, 'type' => 'service'],
             ['id' => 'adminer', 'name' => 'Adminer', 'description' => 'Quản trị MariaDB bằng một file PHP nhỏ gọn.', 'requirements' => 'PHP', 'database' => false, 'type' => 'web'],
             ['id' => 'phpinfo', 'name' => 'PHP Info', 'description' => 'Trang kiểm tra cấu hình PHP trên website riêng.', 'requirements' => 'PHP', 'database' => false, 'type' => 'web'],
@@ -81,9 +80,7 @@ final class AppInstallerService
                 if ($this->isPortAccepting($port)) {
                     throw new RuntimeException('Cổng ' . $port . ' đang được dịch vụ khác sử dụng. Hãy chọn cổng khác.');
                 }
-                if ($app === 'adguard-home') {
-                    $this->installAdGuardHome($name, $port);
-                } elseif ($app === 'file-browser') {
+                if ($app === 'file-browser') {
                     $this->installFileBrowser($name, $port);
                 }
             }
@@ -146,32 +143,6 @@ final class AppInstallerService
         
         $this->extractZip($zip, $root);
         @chmod($root . '/usr', 0777);
-    }
-
-    private function installAdGuardHome(string $name, int $port): void
-    {
-        $dir = $this->home . '/services/adguard-' . $name;
-        @mkdir($dir, 0700, true);
-        
-        $url = "https://github.com/AdguardTeam/AdGuardHome/releases/latest/download/AdGuardHome_linux_arm64.tar.gz";
-        $tar = $dir . '/adguard.tar.gz';
-        $this->download($url, $tar);
-        
-        exec("cd " . escapeshellarg($dir) . " && tar -xzf adguard.tar.gz --strip-components=1 && rm adguard.tar.gz", $output, $code);
-        if ($code !== 0 || !is_file($dir . '/AdGuardHome')) {
-            throw new RuntimeException('Không thể giải nén AdGuard Home. Gói tải xuống không hợp lệ hoặc không tương thích với thiết bị.');
-        }
-        @chmod($dir . '/AdGuardHome', 0700);
-        
-        $startScript = $this->home . '/.tms-os/scripts/start-adguard-' . $name . '.sh';
-        $content = "#!/data/data/com.termux/files/usr/bin/bash\nset -eu\ncd " . escapeshellarg($dir) . "\nif pgrep -f " . escapeshellarg($dir . '/AdGuardHome') . " >/dev/null 2>&1; then exit 0; fi\nnohup ./AdGuardHome -p " . $port . " --no-check-update > adguard.log 2>&1 < /dev/null &\n";
-        file_put_contents($startScript, $content);
-        @chmod($startScript, 0700);
-        
-        exec("bash " . escapeshellarg($startScript), $startOutput, $startCode);
-        if ($startCode !== 0 || !$this->waitForHttpPort($port, 10)) {
-            throw new RuntimeException('AdGuard Home chưa khởi động được; cổng giao diện ' . $port . ' không phản hồi. ' . $this->serviceLogHint($dir . '/adguard.log'));
-        }
     }
 
     private function installFileBrowser(string $name, int $port): void
