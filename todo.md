@@ -231,4 +231,5 @@
 
 - [x] Tái hiện và xác định vì sao ghi ingress cho `panel.thc.io.vn` làm `thc.io.vn` ngừng phục vụ dù tunnel vẫn healthy.
 - [x] Sửa luồng Remote Access để hợp nhất và bảo toàn tất cả ingress hostname hiện có, gồm `thc.io.vn`, `game.thc.io.vn` và `panel.thc.io.vn`.
-- [ ] Thêm hồi quy, kiểm thử package/release và xác nhận ba hostname hoạt động đồng thời trên thiết bị thật.
+- [x] Thêm hồi quy, kiểm thử package/release và xác minh ZIP/manifest checksum công khai của V16.1.14.
+- [ ] Xác nhận trên thiết bị thật rằng `thc.io.vn`, `game.thc.io.vn` và `panel.thc.io.vn` hoạt động đồng thời sau Repair.
