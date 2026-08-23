@@ -6,6 +6,7 @@ $view = (string) file_get_contents($root . '/app/Views/cfdomain/index.php');
 $scriptPath = $root . '/public/assets/cfdomain.js';
 $script = (string) file_get_contents($scriptPath);
 $service = (string) file_get_contents($root . '/app/Services/CloudflareDomainService.php');
+$controller = (string) file_get_contents($root . '/app/Controllers/CloudflareDomainController.php');
 
 if (!str_contains($view, '/assets/cfdomain.js')) {
     fwrite(STDERR, "Cloudflare Hosting view does not load its page controller.\n");
@@ -27,11 +28,15 @@ foreach ([
     '/api/cloudflare-domain/attach',
     '/api/cloudflare-domain/attach-panel',
     '/api/cloudflare-domain/perf-optimize',
+    '/api/cloudflare-domain/sync-routes',
     'Promise.allSettled',
     'latestStatus',
     'setZoneWarning',
     'refresh({ silent: true })',
     'Đang đồng bộ Cloudflare',
+    'Không thể dừng tunnel từ panel đang chạy qua chính tunnel.',
+    'Dừng Tunnel (chỉ từ localhost/LAN)',
+    '<br><small>',
 ] as $required) {
     if (!str_contains($script, $required)) {
         fwrite(STDERR, "Cloudflare Hosting controller lacks required integration: {$required}\n");
@@ -53,6 +58,7 @@ foreach ([
     "null, true);",
     "'route_status' => \$routeStatus",
     "'route_pending_at' => \$verified ? 0 : time()",
+    'Đã có Cloudflare Tunnel được lưu trong TMS OS.',
 ] as $required) {
     if (!str_contains($service, $required)) {
         fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");
@@ -60,4 +66,15 @@ foreach ([
     }
 }
 
-echo "OK: Cloudflare Hosting safely keeps UI/tunnel state, invalidates ingress cache, and preserves accepted routes while Cloudflare synchronizes.\n";
+foreach ([
+    'private function isPublicPanelRequest(): bool',
+    'Không thể dừng Cloudflare Tunnel từ panel đang chạy qua chính tunnel.',
+    '$this->cfDomain->stopTunnel()',
+] as $required) {
+    if (!str_contains($controller, $required)) {
+        fwrite(STDERR, "Cloudflare Hosting controller lacks tunnel-stop safety: {$required}\n");
+        exit(1);
+    }
+}
+
+echo "OK: Cloudflare Hosting safely preserves routes, blocks destructive remote tunnel stops, and supports non-destructive route synchronization.\n";

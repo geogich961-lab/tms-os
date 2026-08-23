@@ -208,3 +208,9 @@
 - [x] Truy vết phản hồi PUT/GET cấu hình tunnel và cơ chế đồng bộ route sau khi token đã đủ quyền.
 - [x] Xử lý độ trễ hoặc khác biệt phản hồi Cloudflare mà không tự ghi đè ingress, DNS hay hostname cũ.
 - [x] Thêm hồi quy, phát hành hotfix V16.1.11 và xác minh ZIP/checksum; chờ xác nhận gắn `thc.io.vn` vào cổng 8083 trên thiết bị.
+
+## Khẩn cấp: Điều khiển Tunnel trả HTTP 502/530
+
+- [x] Truy vết luồng dừng/khởi động Cloudflare Tunnel: panel đang chạy qua chính tunnel sẽ mất đường trả HTTP ngay khi connector bị dừng, dẫn tới 502/530.
+- [x] Sửa lỗi điều khiển tunnel: chặn dừng từ panel công khai, cho phép dừng trực tiếp từ localhost/LAN, chặn tạo tunnel trùng và bổ sung đồng bộ route không phá hủy.
+- [ ] Thêm hồi quy, kiểm thử và phát hành bản sửa sau khi xác định nguyên nhân.

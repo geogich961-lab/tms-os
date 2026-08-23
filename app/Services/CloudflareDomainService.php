@@ -212,6 +212,10 @@ final class CloudflareDomainService
     public function createTunnel(): array
     {
         $info = $this->cf();
+        $existingTunnelId = trim((string)($info['cfg']['tunnel_id'] ?? ''));
+        if ($existingTunnelId !== '') {
+            throw new RuntimeException('Đã có Cloudflare Tunnel được lưu trong TMS OS. Không tạo tunnel mới vì có thể làm gián đoạn các hostname hiện tại. Hãy khởi động lại tunnel này từ Termux nếu nó đang offline.');
+        }
         $name = 'tms-os-' . substr(hash('sha256', (string)time() . random_int(0, 999999)), 0, 6);
         $tunnel = $this->api('POST', '/accounts/' . $info['account_id'] . '/cfd_tunnel', [
             'name' => $name, 'config_src' => 'cloudflare',

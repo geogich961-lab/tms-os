@@ -30,6 +30,13 @@ final class CloudflareDomainController
         $this->json(['success' => false, 'error' => $e->getMessage()]);
     }
 
+    private function isPublicPanelRequest(): bool
+    {
+        $panelHost = strtolower((string)parse_url($this->cfDomain->publicPanelUrl(), PHP_URL_HOST));
+        $requestHost = strtolower(trim(explode(':', (string)($_SERVER['HTTP_HOST'] ?? ''))[0]));
+        return $panelHost !== '' && $requestHost !== '' && $panelHost === $requestHost;
+    }
+
     /** GET /cf-hosting */
     public function index(): void
     {
@@ -160,6 +167,11 @@ final class CloudflareDomainController
     {
         $this->guard();
         if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        if ($this->isPublicPanelRequest()) {
+            http_response_code(409);
+            $this->json(['success' => false, 'error' => 'Không thể dừng Cloudflare Tunnel từ panel đang chạy qua chính tunnel. Hãy mở panel bằng localhost/LAN trên điện thoại nếu thực sự cần dừng tunnel.']);
+            return;
+        }
         $this->json(array_merge(['success' => true], $this->cfDomain->stopTunnel()));
     }
 

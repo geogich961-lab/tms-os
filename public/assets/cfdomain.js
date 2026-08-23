@@ -88,7 +88,7 @@
       const hostname = escapeHtml(item.hostname);
       const url = escapeHtml(item.url || `https://${item.hostname}`);
       const route = item.route_status === 'ok' ? 'Đã đồng bộ' : item.route_status === 'pending' ? 'Đang đồng bộ Cloudflare' : item.route_status === 'missing' ? 'Cần đồng bộ route' : 'Chưa kiểm tra';
-      return `<article class="cfh-hostname-item"><div><strong>${hostname}</strong><small>${escapeHtml(item.service || '')} · ${route}</small></div><div class="cfh-hostname-actions"><a class="btn btn-ghost btn-small" href="${url}" target="_blank" rel="noopener">Mở</a><button class="btn btn-danger-soft btn-small" type="button" data-cfd-detach-host="${hostname}">Tách</button></div></article>`;
+      return `<article class="cfh-hostname-item"><div><strong>${hostname}</strong><br><small>${escapeHtml(item.service || '')} · ${route}</small></div><div class="cfh-hostname-actions"><a class="btn btn-ghost btn-small" href="${url}" target="_blank" rel="noopener">Mở</a><button class="btn btn-danger-soft btn-small" type="button" data-cfd-detach-host="${hostname}">Tách</button></div></article>`;
     }).join('');
   }
 
@@ -99,8 +99,9 @@
     const health = status.health || {};
     const pill = $('#cfd-status-pill');
     if (pill) {
-      pill.textContent = configured ? (running ? 'Đang chạy' : 'Đã cấu hình') : 'Chưa cấu hình';
-      pill.className = `status-pill ${running ? 'running' : configured ? 'warning' : 'stopped'}`;
+      const cloudflareConnected = ['healthy', 'active'].includes(String(health.status || '').toLowerCase());
+      pill.textContent = configured ? (cloudflareConnected ? 'Đang kết nối' : running ? 'Đang chờ kết nối' : 'Đã cấu hình') : 'Chưa cấu hình';
+      pill.className = `status-pill ${cloudflareConnected ? 'running' : configured ? 'warning' : 'stopped'}`;
     }
     text('#cfd-tunnel-name', status.tunnel_name || (configured ? 'Chưa tạo' : 'Chưa cấu hình'));
     text('#cfd-tunnel-status', health.status || (configured ? 'Chưa kiểm tra' : '—'));
@@ -138,6 +139,22 @@
     if (remoteOpen) remoteOpen.href = panelUrl || '#';
     const hostnameInput = $('#cfd-panel-hostname');
     if (hostnameInput && status.panel_hostname && !hostnameInput.value) hostnameInput.value = status.panel_hostname;
+
+    const createButton = $('#cfd-tunnel-form button[type="submit"]');
+    if (createButton) {
+      const tunnelExists = Boolean(status.tunnel_id);
+      createButton.disabled = tunnelExists;
+      createButton.title = tunnelExists ? 'Tunnel hiện hữu đang được giữ an toàn; không tạo tunnel mới.' : '';
+      createButton.textContent = tunnelExists ? 'Tunnel hiện hữu đang được giữ' : 'Tạo Cloudflare Tunnel mới';
+    }
+    const stopButton = $('#cfd-stop');
+    const panelHost = (() => { try { return new URL(status.panel_url || '').hostname; } catch (_) { return ''; } })();
+    const openedViaPublicPanel = Boolean(panelHost && panelHost === window.location.hostname);
+    if (stopButton && openedViaPublicPanel) {
+      stopButton.disabled = true;
+      stopButton.title = 'Không thể dừng tunnel từ panel đang chạy qua chính tunnel.';
+      stopButton.textContent = 'Dừng Tunnel (chỉ từ localhost/LAN)';
+    }
   }
 
   async function loadAccount({ interactive = false } = {}) {
@@ -257,7 +274,8 @@
   });
 
   action('#cfd-start', '/api/cloudflare-domain/start');
-  action('#cfd-stop', '/api/cloudflare-domain/stop', 'Dừng tunnel? Website công khai sẽ tạm thời không truy cập được.');
+  action('#cfd-stop', '/api/cloudflare-domain/stop', 'Dừng tunnel? Website công khai và panel từ xa sẽ tạm thời không truy cập được.');
+  action('#cfd-sync-routes', '/api/cloudflare-domain/sync-routes', 'Kiểm tra và thêm lại các route đang thiếu? Các hostname, DNS và route hiện có sẽ được giữ nguyên.');
   action('#cfd-detach', '/api/cloudflare-domain/detach', 'Tách tên miền chính khỏi tunnel? Tunnel và các tên miền khác vẫn được giữ.');
   action('#cfd-delete-tunnel', '/api/cloudflare-domain/delete-tunnel', 'Xóa tunnel khỏi Cloudflare? Tất cả website gắn với tunnel này sẽ ngừng hoạt động.');
   action('#cfd-uninstall', '/api/cloudflare-domain/uninstall', 'Xóa toàn bộ cấu hình Cloudflare Hosting? Chỉ tiếp tục khi bạn muốn gỡ cấu hình hiện tại.');

@@ -25,7 +25,7 @@ $csrf=tms_csrf_token();
 <div class="cfh-stat"><span>Tunnel</span><strong id="cfd-tunnel-name">Chưa tạo</strong></div>
 <div class="cfh-stat"><span>Trạng thái</span><strong id="cfd-tunnel-status">—</strong></div>
 <div class="cfh-stat"><span>Kết nối</span><strong id="cfd-tunnel-conns">—</strong></div>
-<div class="cfh-stat"><span>Đang chạy</span><strong id="cfd-tunnel-running">—</strong></div>
+	<div class="cfh-stat"><span>Tiến trình cục bộ</span><strong id="cfd-tunnel-running">—</strong></div>
 </div>
 <form class="form-stack cfd-form" id="cfd-tunnel-form"><button type="submit" class="btn btn-secondary">Tạo Cloudflare Tunnel mới</button></form>
 </section>
@@ -50,8 +50,9 @@ $csrf=tms_csrf_token();
 <button type="submit" class="btn btn-primary">Gắn tên miền &amp; tạo record DNS</button>
 </form>
 
-<!-- Danh sách tên miền đang hoạt động (multi-site) -->
-<div id="cfd-hostnames-list" class="cfd-hostnames" hidden></div>
+	<!-- Danh sách tên miền đang hoạt động (multi-site) -->
+	<div id="cfd-hostnames-list" class="cfd-hostnames" hidden></div>
+	<div class="form-stack cfd-form"><button type="button" class="btn btn-secondary btn-block" id="cfd-sync-routes">Đồng bộ route đang thiếu</button></div>
 
 <div id="cfd-url-card" class="cf-url-card" hidden><span>Website công khai của bạn</span><a id="cfd-public-url" href="#" target="_blank" rel="noopener"></a><div class="cf-url-actions"><a id="cfd-open-url" class="btn btn-primary btn-small" href="#" target="_blank" rel="noopener">Mở liên kết</a><button type="button" id="cfd-copy-url" class="btn btn-secondary btn-small">Sao chép</button></div></div>
 <div class="form-stack cfd-form"><button type="button" class="btn btn-danger-soft btn-block" id="cfd-detach">Tách tên miền chính (giữ tunnel)</button></div>
@@ -95,5 +96,5 @@ $csrf=tms_csrf_token();
 <section class="panel-card cfd-section" data-panel="hosting"><div class="section-title-row"><h2>Nhật ký Tunnel</h2></div><pre id="cfd-log" class="terminal-output"><?=tms_h('')?></pre></section>
 
 <script>window.TMS_CF_DOMAIN_STATUS_URL='/api/cloudflare-domain/status';</script>
-<script src="/assets/cfdomain.js?v=16.1.11"></script>
+<script src="/assets/cfdomain.js?v=16.1.12"></script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>
