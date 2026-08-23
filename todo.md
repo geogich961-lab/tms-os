@@ -261,4 +261,5 @@
 - [x] Tích hợp tóm tắt Tunnel/hostname và liên kết chia sẻ `/status` vào đầu Cloudflare Hosting, không tạo menu/chức năng rời rạc.
 - [x] Đồng bộ App Marketplace với shell, header, card, typography, spacing và responsive layout hiện hành của TMS OS.
 - [x] Bổ sung hồi quy, kiểm tra cú pháp, toàn bộ test suite và responsive rule mobile/tablet; xác nhận logic cài đặt không thay đổi.
-- [ ] Phát hành V16.1.17 và xác nhận trải nghiệm trên thiết bị.
+- [x] Phát hành V16.1.17, tải lại ZIP/RELEASE.json từ GitHub và xác minh checksum công khai.
+- [ ] Xác nhận Cloudflare Hosting và App Marketplace trên thiết bị sau khi cập nhật.
