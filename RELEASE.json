@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.116,
-  "build": "20260823-1525",
+  "internal_version": 16.117,
+  "build": "20260823-1558",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.16",
-  "version": "16.1.16",
-  "notes": "V16.1.16 đồng bộ giao diện trang trạng thái công khai với TMS OS: dùng shell, palette, card và điều hướng responsive quen thuộc nhưng vẫn giữ dữ liệu chỉ đọc đã lọc.",
+  "name": "TMS OS V16.1.17",
+  "version": "16.1.17",
+  "notes": "V16.1.17 đưa tóm tắt Tunnel/hostname vào Cloudflare Hosting để gọn hơn và đồng bộ toàn bộ App Marketplace với giao diện TMS OS.",
   "features": [
-    "Trang /status dùng chung shell, typography, palette và card với TMS OS trên desktop, tablet và điện thoại.",
-    "Điều hướng công khai rõ ràng: Trạng thái hệ thống, Trang chủ và Đăng nhập quản trị.",
-    "API /api/public-status vẫn chỉ trả dữ liệu vận hành đã lọc, không cần đăng nhập."
+    "Cloudflare Hosting có tóm tắt Tunnel, số hostname và liên kết chia sẻ /status; không tạo mục chức năng quản trị mới.",
+    "App Marketplace dùng chung shell, header, card, trạng thái ứng dụng và bố cục responsive của TMS OS.",
+    "Luồng cài đặt Marketplace và API trạng thái công khai chỉ đọc vẫn giữ nguyên dữ liệu vận hành an toàn."
   ],
-  "checksum_sha256": "414194eac4d1c1f42a5aa03eef32144eaac156fbef6a704fa5e54a7ce5f45934",
+  "checksum_sha256": "6e0b5a5933f894c110b2b73f6b05a4697154ca338eab4811a212dbcfe0c90a74",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.16",
-  "changelog": "V16.1.16: Đồng bộ /status với giao diện TMS OS gồm shell điều hướng, card, màu sắc và responsive mobile/tablet; giữ nguyên API công khai chỉ đọc, không công bố token, service, DNS, port hay log.",
+  "version_display": "TMS OS V16.1.17",
+  "changelog": "V16.1.17: Tích hợp tóm tắt trạng thái Tunnel/hostname vào Cloudflare Hosting và tái cấu trúc App Marketplace theo shell, card, typography, spacing cùng responsive mobile/tablet của TMS OS; không đổi dữ liệu cài đặt hoặc API công khai.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
