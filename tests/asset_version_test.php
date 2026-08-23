@@ -4,8 +4,8 @@ declare(strict_types=1);
 require dirname(__DIR__) . '/app/Core/helpers.php';
 
 $version = tms_asset_version();
-if (!str_starts_with($version, '16.1.17') || str_contains($version, '-test')) {
-    fwrite(STDERR, "Expected a stable V16.1.17 asset version, received: {$version}\n");
+if (!str_starts_with($version, '16.1.18') || str_contains($version, '-test')) {
+    fwrite(STDERR, "Expected a stable V16.1.18 asset version, received: {$version}\n");
     exit(1);
 }
 

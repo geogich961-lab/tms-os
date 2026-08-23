@@ -20,7 +20,7 @@ final class AppInstallerService
         return [
             ['id' => 'wordpress', 'name' => 'WordPress', 'description' => 'CMS phổ biến cho blog và website doanh nghiệp. Hỗ trợ cấu hình tự động.', 'requirements' => 'PHP, MariaDB', 'database' => true, 'type' => 'web'],
             ['id' => 'typecho-vn', 'name' => 'Typecho VN', 'description' => 'Bản Typecho Việt Hóa bởi THCGaming. Siêu nhẹ, phù hợp cho mini VPS.', 'requirements' => 'PHP, SQLite', 'database' => true, 'type' => 'web'],
-            ['id' => 'adguard-home', 'name' => 'AdGuard Home', 'description' => 'Trình chặn quảng cáo và theo dõi toàn mạng, quản lý DNS an toàn.', 'requirements' => 'Binary (ARM64)', 'database' => false, 'type' => 'service'],
+            ['id' => 'adguard-home', 'name' => 'AdGuard Home', 'description' => 'Trình chặn quảng cáo và theo dõi toàn mạng, quản lý DNS an toàn.', 'requirements' => 'Binary ARM64 · DNS cần cổng >1024 trên Termux', 'database' => false, 'type' => 'service'],
             ['id' => 'file-browser', 'name' => 'File Browser', 'description' => 'Quản lý file qua giao diện web hiện đại, hỗ trợ nhiều người dùng.', 'requirements' => 'Binary (ARM64)', 'database' => false, 'type' => 'service'],
             ['id' => 'adminer', 'name' => 'Adminer', 'description' => 'Quản trị MariaDB bằng một file PHP nhỏ gọn.', 'requirements' => 'PHP', 'database' => false, 'type' => 'web'],
             ['id' => 'phpinfo', 'name' => 'PHP Info', 'description' => 'Trang kiểm tra cấu hình PHP trên website riêng.', 'requirements' => 'PHP', 'database' => false, 'type' => 'web'],
@@ -30,7 +30,16 @@ final class AppInstallerService
     public function installed(): array
     {
         $data = @json_decode((string)@file_get_contents($this->appsFile), true);
-        return is_array($data) ? array_values($data) : [];
+        if (!is_array($data)) return [];
+        $items = array_values($data);
+        foreach ($items as &$item) {
+            if (($item['type'] ?? '') !== 'service') continue;
+            $port = (int)($item['port'] ?? 0);
+            $item['health'] = $port > 0 && $this->isPortAccepting($port) ? 'running' : 'stopped';
+            $item['access_url'] = $port > 0 ? 'http://127.0.0.1:' . $port : '';
+        }
+        unset($item);
+        return $items;
     }
 
     public function install(array $input): array
@@ -69,6 +78,9 @@ final class AppInstallerService
                     $this->installTypechoVN($root, $name, $port, $input);
                 }
             } elseif ($appInfo['type'] === 'service') {
+                if ($this->isPortAccepting($port)) {
+                    throw new RuntimeException('Cổng ' . $port . ' đang được dịch vụ khác sử dụng. Hãy chọn cổng khác.');
+                }
                 if ($app === 'adguard-home') {
                     $this->installAdGuardHome($name, $port);
                 } elseif ($app === 'file-browser') {
@@ -82,7 +94,7 @@ final class AppInstallerService
                 'name' => $name,
                 'port' => $port,
                 'installed_at' => date('c'),
-                'health' => 'ready',
+                'health' => $appInfo['type'] === 'service' ? 'running' : 'ready',
                 'type' => $appInfo['type']
             ];
             file_put_contents($this->appsFile, json_encode($items, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
@@ -145,15 +157,21 @@ final class AppInstallerService
         $tar = $dir . '/adguard.tar.gz';
         $this->download($url, $tar);
         
-        exec("cd " . escapeshellarg($dir) . " && tar -xzf adguard.tar.gz --strip-components=1 && rm adguard.tar.gz");
+        exec("cd " . escapeshellarg($dir) . " && tar -xzf adguard.tar.gz --strip-components=1 && rm adguard.tar.gz", $output, $code);
+        if ($code !== 0 || !is_file($dir . '/AdGuardHome')) {
+            throw new RuntimeException('Không thể giải nén AdGuard Home. Gói tải xuống không hợp lệ hoặc không tương thích với thiết bị.');
+        }
         @chmod($dir . '/AdGuardHome', 0700);
         
         $startScript = $this->home . '/.tms-os/scripts/start-adguard-' . $name . '.sh';
-        $content = "#!/bin/bash\ncd " . $dir . " && ./AdGuardHome -p " . $port . " --no-check-update > adguard.log 2>&1 &\n";
+        $content = "#!/data/data/com.termux/files/usr/bin/bash\nset -eu\ncd " . escapeshellarg($dir) . "\nif pgrep -f " . escapeshellarg($dir . '/AdGuardHome') . " >/dev/null 2>&1; then exit 0; fi\nnohup ./AdGuardHome -p " . $port . " --no-check-update > adguard.log 2>&1 < /dev/null &\n";
         file_put_contents($startScript, $content);
         @chmod($startScript, 0700);
         
-        exec("bash " . escapeshellarg($startScript));
+        exec("bash " . escapeshellarg($startScript), $startOutput, $startCode);
+        if ($startCode !== 0 || !$this->waitForHttpPort($port, 10)) {
+            throw new RuntimeException('AdGuard Home chưa khởi động được; cổng giao diện ' . $port . ' không phản hồi. ' . $this->serviceLogHint($dir . '/adguard.log'));
+        }
     }
 
     private function installFileBrowser(string $name, int $port): void
@@ -185,12 +203,19 @@ final class AppInstallerService
             CURLOPT_FILE => $fp,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT => 300,
+            CURLOPT_CONNECTTIMEOUT => 20,
+            CURLOPT_FAILONERROR => true,
             CURLOPT_USERAGENT => 'TMS-OS-V16'
         ]);
         $ok = curl_exec($ch);
+        $status = (int)curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+        $error = (string)curl_error($ch);
         curl_close($ch);
         fclose($fp);
-        if (!$ok) throw new RuntimeException('Tải xuống thất bại: ' . $url);
+        if (!$ok || $status < 200 || $status >= 300 || !is_file($dest) || (int)@filesize($dest) < 1024) {
+            @unlink($dest);
+            throw new RuntimeException('Tải xuống gói ứng dụng thất bại' . ($error !== '' ? ': ' . $error : '.') );
+        }
     }
 
     private function extractZip(string $zip, string $dest): void
@@ -224,5 +249,32 @@ final class AppInstallerService
     {
         $d = @json_decode((string)@file_get_contents($this->appsFile), true);
         return is_array($d) ? $d : [];
+    }
+
+    private function isPortAccepting(int $port): bool
+    {
+        if ($port < 1024 || $port > 65535) return false;
+        $socket = @fsockopen('127.0.0.1', $port, $errno, $error, 0.35);
+        if (!is_resource($socket)) return false;
+        fclose($socket);
+        return true;
+    }
+
+    private function waitForHttpPort(int $port, int $seconds): bool
+    {
+        $until = microtime(true) + max(1, $seconds);
+        do {
+            if ($this->isPortAccepting($port)) return true;
+            usleep(250000);
+        } while (microtime(true) < $until);
+        return false;
+    }
+
+    private function serviceLogHint(string $path): string
+    {
+        $lines = @file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+        $last = trim((string)end($lines));
+        if ($last === '') return 'Hãy xem log dịch vụ trong Service Manager sau khi cập nhật.';
+        return 'Chi tiết gần nhất: ' . mb_substr(preg_replace('/\s+/', ' ', $last) ?: '', 0, 180);
     }
 }

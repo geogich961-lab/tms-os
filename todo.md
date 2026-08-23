@@ -263,3 +263,11 @@
 - [x] Bổ sung hồi quy, kiểm tra cú pháp, toàn bộ test suite và responsive rule mobile/tablet; xác nhận logic cài đặt không thay đổi.
 - [x] Phát hành V16.1.17, tải lại ZIP/RELEASE.json từ GitHub và xác minh checksum công khai.
 - [x] Xác nhận Cloudflare Hosting và App Marketplace trên thiết bị sau khi cập nhật.
+
+## Khẩn cấp: AdGuard Home báo cài thành công nhưng không hiển thị
+
+- [x] Truy vết trạng thái cài đặt AdGuard Home với service, cổng truy cập và điểm mở ứng dụng trong Marketplace; xác định thiếu xác minh runtime và thiếu điểm hiển thị.
+- [x] Sửa luồng cài đặt/khởi động và hiển thị cần thiết, không thay đổi Cloudflare Tunnel, DNS, token hay cấu hình dịch vụ đang chạy.
+- [x] Thêm hồi quy và chạy toàn bộ test suite, lint PHP/JS/Bash cùng kiểm tra diff.
+- [ ] Phát hành V16.1.18, tải lại ZIP/RELEASE.json để xác minh checksum công khai.
+- [ ] Xác nhận AdGuard Home khởi chạy và hiển thị trên thiết bị sau khi cập nhật.
