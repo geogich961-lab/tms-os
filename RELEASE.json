@@ -1,22 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.120,
-  "build": "20260823-1616",
+  "internal_version": 16.121,
+  "build": "20260823-1725",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.20",
-  "version": "16.1.20",
-  "notes": "V16.1.20 tạm loại bỏ AdGuard Home khỏi App Marketplace do gói binary chưa tương thích ổn định trên thiết bị Android/Termux.",
+  "name": "TMS OS V16.1.21",
+  "version": "16.1.21",
+  "notes": "V16.1.21 sửa lỗi Update Center tải asset cũ nhưng báo cập nhật thành công; bổ sung xác minh phiên bản thực tế sau khi áp dụng và cập nhật cache mobile.",
   "features": [
-    "App Marketplace chỉ giữ các ứng dụng đang được hỗ trợ ổn định.",
+    "ZIP phát hành chứa đúng Platform V16.1.21 và được kiểm tra trực tiếp trước khi tải lên.",
+    "Update Center chỉ báo thành công sau khi xác nhận phiên bản đang chạy đã thay đổi.",
     "Không thay đổi Cloudflare Tunnel, DNS, token, Remote Access, hostname hoặc dữ liệu ứng dụng hiện có."
   ],
-  "checksum_sha256": "e3edc1722a153728a317fbcca306f88aa53e4a635a76e3b631fa6f5a59ee85f3",
+  "checksum_sha256": "b01cc64d51dc5161cf9d263850e0daa5b64c604813c7d06af65e06184f228f40",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.20",
-  "changelog": "V16.1.20: Tạm loại bỏ AdGuard Home khỏi catalog và luồng khởi động Marketplace do gói binary chưa tương thích ổn định trên Android/Termux; giữ tài liệu lịch sử để tích hợp lại sau. Không đổi cấu hình Cloudflare hoặc dữ liệu sẵn có.",
+  "version_display": "TMS OS V16.1.21",
+  "changelog": "V16.1.21: khắc phục lỗi asset GitHub không khớp phiên bản nguồn khiến Update Center vẫn hiển thị V16.1.19; bổ sung kiểm tra sau áp dụng, tăng cache version và giữ nguyên phạm vi cấu hình vận hành.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
