@@ -59,6 +59,8 @@ foreach ([
     "'route_status' => \$routeStatus",
     "'route_pending_at' => \$verified ? 0 : time()",
     'Đã có Cloudflare Tunnel được lưu trong TMS OS.',
+    'Cloudflared đã thoát ngay sau khi khởi động.',
+    'usleep(500000)',
 ] as $required) {
     if (!str_contains($service, $required)) {
         fwrite(STDERR, "Cloudflare Hosting service lacks safe Zone fallback: {$required}\n");

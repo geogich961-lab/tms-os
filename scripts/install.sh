@@ -484,8 +484,12 @@ fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
 # Repair giữ cấu hình Tunnel tại ~/.tms-os; khởi động lại connector nếu đã có
 # cấu hình để tên miền công khai không rơi vào Cloudflare 1033 sau cập nhật.
-if [ -x "$TARGET/scripts/tms-cloudflare-tunnel.sh" ]; then
-  bash "$TARGET/scripts/tms-cloudflare-tunnel.sh" start >> "$HOME/logs/services/cloudflare-tunnel.log" 2>&1 || true
+if [ -x "$TARGET/scripts/tms-cloudflare-tunnel.sh" ] && [ -f "$HOME/.tms-os/cloudflare-hosting/config.json" ]; then
+  if bash "$TARGET/scripts/tms-cloudflare-tunnel.sh" start >> "$HOME/logs/services/cloudflare-tunnel.log" 2>&1; then
+    echo '[OK] Đã kiểm tra khởi động Cloudflare connector.'
+  else
+    echo '[CẢNH BÁO] Cloudflare connector chưa khởi động. Xem: ~/logs/services/cloudflare-tunnel.log'
+  fi
 fi
 sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
 # ---------- Bước phụ: tự khởi động máy chủ khi mở phiên Termux (session hook) ----------

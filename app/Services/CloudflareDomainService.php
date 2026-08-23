@@ -605,6 +605,12 @@ final class CloudflareDomainService
         $pid = trim((string)shell_exec($shell));
         if (!ctype_digit($pid)) { throw new RuntimeException('Không thể khởi động cloudflared.'); }
         file_put_contents($this->pidFile, $pid, LOCK_EX);
+        // cloudflared có thể thoát ngay vì binary/token/mạng có vấn đề. Chờ ngắn
+        // để helper Termux báo lỗi thay vì trả thành công giả rồi biến mất.
+        usleep(500000);
+        if (!$this->running()) {
+            throw new RuntimeException('Cloudflared đã thoát ngay sau khi khởi động. Kiểm tra cloudflared và nhật ký tunnel.');
+        }
         return ['pid' => $pid, 'running' => true];
     }
 

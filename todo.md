@@ -220,3 +220,9 @@
 - [x] Đối chiếu checksum nhúng trong `install.sh` với `RELEASE.json` và asset V16.1.12.
 - [x] Sửa bộ cài để đọc checksum phát hành hiện hành từ RELEASE.json cùng GitHub Release thay vì giữ checksum tĩnh cũ.
 - [x] Kiểm thử cú pháp, toàn bộ hồi quy, manifest/ZIP GitHub Release và install.sh tải lại từ nhánh main trước khi yêu cầu chạy lại.
+
+## Khẩn cấp: Connector Cloudflare chưa kết nối sau cập nhật
+
+- [x] Phân tích: helper đã chủ động che toàn bộ stdout/stderr, vì vậy không báo connector có chạy hay lỗi sau cập nhật.
+- [x] Sửa helper để kiểm tra cấu hình/PHP/mã nguồn, báo PID hoặc lỗi khởi động rõ ràng và phát hiện cloudflared thoát sớm mà không làm thay đổi tunnel/DNS/token.
+- [ ] Xác nhận lại `panel.thc.io.vn` và các route hoạt động sau khôi phục connector.
