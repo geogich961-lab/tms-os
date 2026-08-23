@@ -144,4 +144,4 @@
 - [x] Đối chiếu luồng repair/start-tms với điều kiện khởi động cloudflared và file cấu hình Tunnel.
 - [x] Sửa cơ chế phục hồi connector sau cập nhật, không đọc hoặc ghi lộ token/certificate Tunnel.
 - [x] Thêm hồi quy trạng thái dịch vụ và hướng dẫn khôi phục tức thời an toàn.
-- [ ] Kiểm thử package rồi phát hành hotfix nếu lỗi thuộc mã nguồn.
+- [x] Kiểm thử package rồi phát hành hotfix nếu lỗi thuộc mã nguồn.
