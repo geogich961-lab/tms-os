@@ -271,3 +271,10 @@
 - [x] Thêm hồi quy và chạy toàn bộ test suite, lint PHP/JS/Bash cùng kiểm tra diff.
 - [x] Phát hành V16.1.18, tải lại ZIP/RELEASE.json để xác minh checksum công khai.
 - [ ] Xác nhận AdGuard Home khởi chạy và hiển thị trên thiết bị sau khi cập nhật.
+
+## Hồi quy mới: AdGuard Home chỉ hiện toast, không hiển thị mục đã cài
+
+- [ ] Tái hiện lỗi sau POST cài đặt và kiểm tra vì sao dữ liệu `Ứng dụng đang cài` không xuất hiện sau reload.
+- [ ] Sửa phản hồi/thông báo và render Marketplace để hiển thị rõ trạng thái, cổng và điểm mở AdGuard Home.
+- [ ] Bổ sung test hồi quy cho toast, reload và mục ứng dụng đã cài; kiểm thử lại trên mobile.
+- [ ] Phát hành bản vá mới chỉ sau khi xác minh checksum và người dùng xác nhận thiết bị.

@@ -10,4 +10,7 @@ foreach (['.marketplace-grid', '@media (max-width: 560px)', '.marketplace-modal-
     if (!str_contains($css, $needle)) { fwrite(STDERR, "Marketplace responsive style missing {$needle}\n"); exit(1); }
 }
 if (str_contains($view, 'openInstallModal(') || str_contains($view, 'style="display: none;"')) { fwrite(STDERR, "Legacy Marketplace UI should not remain.\n"); exit(1); }
+$installedPos = strpos($view, 'marketplace-installed"');
+$catalogPos = strpos($view, 'marketplace-grid"');
+if ($installedPos === false || $catalogPos === false || $installedPos > $catalogPos) { fwrite(STDERR, "Installed apps must appear before the catalog.\n"); exit(1); }
 echo "Marketplace UI test passed.\n";

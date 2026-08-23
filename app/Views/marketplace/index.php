@@ -14,21 +14,6 @@ $installedCount = count($installedIds);
   </div>
 </div>
 
-<section class="marketplace-grid" aria-label="Danh mục ứng dụng">
-<?php foreach ($catalog as $app):
-  $isInstalled = isset($installedIds[$app['id']]);
-  $initial = strtoupper(substr((string)$app['name'], 0, 1));
-?>
-  <article class="panel-card marketplace-card">
-    <div class="marketplace-card-head"><div class="marketplace-icon" aria-hidden="true"><?= tms_h($initial) ?></div><span class="status-pill <?= $isInstalled ? 'running' : 'stopped' ?>"><?= $isInstalled ? 'Đã cài' : 'Có sẵn' ?></span></div>
-    <h2><?= tms_h($app['name']) ?></h2>
-    <p><?= tms_h($app['description']) ?></p>
-    <div class="marketplace-requirement"><span class="badge badge-info-soft">Yêu cầu</span><span><?= tms_h($app['requirements']) ?></span></div>
-    <button class="btn <?= $isInstalled ? 'btn-secondary' : 'btn-primary' ?>" type="button" data-marketplace-install data-app-id="<?= tms_h($app['id']) ?>" data-app-name="<?= tms_h($app['name']) ?>" data-app-database="<?= $app['database'] ? '1' : '0' ?>"><?= $isInstalled ? 'Cài thêm phiên bản mới' : 'Cài đặt ứng dụng' ?></button>
-  </article>
-<?php endforeach; ?>
-</section>
-
 <section class="panel-card marketplace-installed" aria-labelledby="installedAppsTitle">
   <div class="marketplace-installed-head"><div><p class="eyebrow">Đã triển khai</p><h2 id="installedAppsTitle">Ứng dụng đang cài</h2></div><span class="status-pill <?= $installedCount ? 'running' : 'stopped' ?>"><?= $installedCount ?: 0 ?> ứng dụng</span></div>
   <?php if (!$installed): ?>
@@ -44,6 +29,21 @@ $installedCount = count($installedIds);
       <?php endforeach; ?>
     </div>
   <?php endif; ?>
+</section>
+
+<section class="marketplace-grid" aria-label="Danh mục ứng dụng">
+<?php foreach ($catalog as $app):
+  $isInstalled = isset($installedIds[$app['id']]);
+  $initial = strtoupper(substr((string)$app['name'], 0, 1));
+?>
+  <article class="panel-card marketplace-card">
+    <div class="marketplace-card-head"><div class="marketplace-icon" aria-hidden="true"><?= tms_h($initial) ?></div><span class="status-pill <?= $isInstalled ? 'running' : 'stopped' ?>"><?= $isInstalled ? 'Đã cài' : 'Có sẵn' ?></span></div>
+    <h2><?= tms_h($app['name']) ?></h2>
+    <p><?= tms_h($app['description']) ?></p>
+    <div class="marketplace-requirement"><span class="badge badge-info-soft">Yêu cầu</span><span><?= tms_h($app['requirements']) ?></span></div>
+    <button class="btn <?= $isInstalled ? 'btn-secondary' : 'btn-primary' ?>" type="button" data-marketplace-install data-app-id="<?= tms_h($app['id']) ?>" data-app-name="<?= tms_h($app['name']) ?>" data-app-database="<?= $app['database'] ? '1' : '0' ?>"><?= $isInstalled ? 'Cài thêm phiên bản mới' : 'Cài đặt ứng dụng' ?></button>
+  </article>
+<?php endforeach; ?>
 </section>
 
 <div id="installModal" class="marketplace-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
@@ -66,7 +66,7 @@ $installedCount = count($installedIds);
   </div>
 </div>
 
-<link rel="stylesheet" href="/assets/marketplace.css?v=16.1.17">
+<link rel="stylesheet" href="/assets/marketplace.css?v=16.1.19">
 <script>
 (() => {
   const modal = document.getElementById('installModal'); const form = document.getElementById('installForm'); const csrf = <?= json_encode($csrf, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
