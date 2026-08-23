@@ -25,12 +25,13 @@ final class SettingsController
             tms_flash('error','Mật khẩu phải từ 8 ký tự và xác nhận phải khớp.');
             tms_redirect('/settings');
         }
-        $home=getenv('HOME')?:'/data/data/com.termux/files/home';
-        $dir=$home.'/.tms-os/config'; @mkdir($dir,0700,true); @chmod($dir,0700); $file=$dir.'/panel-secret.php';
-        $hash=password_hash($new,PASSWORD_DEFAULT);
-        $data="<?php\nreturn ['username'=>'admin','password_hash'=>".var_export($hash,true)."]\n;";
-        file_put_contents($file,$data,LOCK_EX);
-        chmod($file,0600);
+        try {
+            $this->auth->changePassword($new);
+        } catch (Throwable $error) {
+            tms_flash('error', 'Không thể đổi mật khẩu. Vui lòng thử lại.');
+            tms_redirect('/settings');
+            return;
+        }
         tms_flash('success','Đã đổi mật khẩu.');
         tms_redirect('/settings');
     }

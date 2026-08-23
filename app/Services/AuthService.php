@@ -4,6 +4,7 @@ declare(strict_types=1);
 final class AuthService
 {
     private array $credentials;
+    private string $credentialsFile;
 
     public function __construct()
     {
@@ -30,10 +31,12 @@ final class AuthService
             @chmod($dir, 0700);
             if (@copy($legacyFile, $newFile)) {
                 @chmod($newFile, 0600);
+                $file = $newFile;
             }
         }
 
         $this->credentials = $credentials;
+        $this->credentialsFile = $file;
     }
 
     public function attempt(string $username, string $password): bool
@@ -71,5 +74,36 @@ final class AuthService
             );
         }
         session_destroy();
+    }
+
+    /**
+     * Đổi mật khẩu nhưng giữ nguyên username đã được cài đặt. Việc ghi dùng file
+     * tạm và rename cùng filesystem để tránh tạo file secret dở dang khi mất điện.
+     */
+    public function changePassword(string $password): void
+    {
+        $username = (string)($this->credentials['username'] ?? '');
+        if ($username === '') {
+            throw new RuntimeException('Tài khoản quản trị không hợp lệ.');
+        }
+
+        $hash = password_hash($password, PASSWORD_DEFAULT);
+        if (!is_string($hash) || $hash === '') {
+            throw new RuntimeException('Không thể tạo hash mật khẩu mới.');
+        }
+
+        $data = "<?php\nreturn ['username'=>" . var_export($username, true)
+            . ",'password_hash'=>" . var_export($hash, true) . "];\n";
+        $tmp = $this->credentialsFile . '.tmp-' . bin2hex(random_bytes(8));
+        if (@file_put_contents($tmp, $data, LOCK_EX) === false) {
+            throw new RuntimeException('Không thể lưu mật khẩu mới.');
+        }
+        @chmod($tmp, 0600);
+        if (!@rename($tmp, $this->credentialsFile)) {
+            @unlink($tmp);
+            throw new RuntimeException('Không thể kích hoạt mật khẩu mới.');
+        }
+        @chmod($this->credentialsFile, 0600);
+        $this->credentials['password_hash'] = $hash;
     }
 }

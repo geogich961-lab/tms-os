@@ -145,3 +145,10 @@
 - [x] Sửa cơ chế phục hồi connector sau cập nhật, không đọc hoặc ghi lộ token/certificate Tunnel.
 - [x] Thêm hồi quy trạng thái dịch vụ và hướng dẫn khôi phục tức thời an toàn.
 - [x] Kiểm thử package rồi phát hành hotfix nếu lỗi thuộc mã nguồn.
+
+## Khắc phục đổi mật khẩu quản trị làm mất quyền đăng nhập
+
+- [x] Tái hiện đổi mật khẩu và đăng nhập lại bằng kho dữ liệu kiểm thử cô lập.
+- [x] Đối chiếu nơi ghi, định dạng hash và nơi xác minh thông tin quản trị.
+- [x] Sửa lỗi cùng hồi quy cho mật khẩu cũ/mới và lệnh khôi phục an toàn.
+- [ ] Kiểm thử package rồi phát hành hotfix có hướng dẫn khôi phục truy cập panel.
