@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.115,
-  "build": "20260823-1715",
+  "internal_version": 16.116,
+  "build": "20260823-1525",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.15",
-  "version": "16.1.15",
-  "notes": "V16.1.15 bổ sung trang trạng thái công khai chỉ đọc cho Cloudflare Tunnel và hostname; dữ liệu được lọc, không lộ token, cấu hình nội bộ, DNS hoặc IP riêng.",
+  "name": "TMS OS V16.1.16",
+  "version": "16.1.16",
+  "notes": "V16.1.16 đồng bộ giao diện trang trạng thái công khai với TMS OS: dùng shell, palette, card và điều hướng responsive quen thuộc nhưng vẫn giữ dữ liệu chỉ đọc đã lọc.",
   "features": [
-    "Trang /status theo dõi Cloudflare Tunnel và các hostname đã gắn.",
-    "API /api/public-status chỉ trả dữ liệu vận hành đã lọc, không cần đăng nhập.",
-    "Cache trạng thái ngắn để giảm tải Cloudflare API khi nhiều người xem trang công khai."
+    "Trang /status dùng chung shell, typography, palette và card với TMS OS trên desktop, tablet và điện thoại.",
+    "Điều hướng công khai rõ ràng: Trạng thái hệ thống, Trang chủ và Đăng nhập quản trị.",
+    "API /api/public-status vẫn chỉ trả dữ liệu vận hành đã lọc, không cần đăng nhập."
   ],
-  "checksum_sha256": "5163cf7681e82c1055c8b574455a38474a7a777f41824215d648b68c08f6ec61",
+  "checksum_sha256": "414194eac4d1c1f42a5aa03eef32144eaac156fbef6a704fa5e54a7ce5f45934",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.15",
-  "changelog": "V16.1.15: Thêm /status và /api/public-status để theo dõi Cloudflare Tunnel cùng hostname công khai mà không yêu cầu đăng nhập và không công bố token, service, DNS, port hay log.",
+  "version_display": "TMS OS V16.1.16",
+  "changelog": "V16.1.16: Đồng bộ /status với giao diện TMS OS gồm shell điều hướng, card, màu sắc và responsive mobile/tablet; giữ nguyên API công khai chỉ đọc, không công bố token, service, DNS, port hay log.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
