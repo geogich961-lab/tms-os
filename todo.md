@@ -274,7 +274,7 @@
 
 ## Hồi quy mới: AdGuard Home chỉ hiện toast, không hiển thị mục đã cài
 
-- [ ] Tái hiện lỗi sau POST cài đặt và kiểm tra vì sao dữ liệu `Ứng dụng đang cài` không xuất hiện sau reload.
-- [ ] Sửa phản hồi/thông báo và render Marketplace để hiển thị rõ trạng thái, cổng và điểm mở AdGuard Home.
-- [ ] Bổ sung test hồi quy cho toast, reload và mục ứng dụng đã cài; kiểm thử lại trên mobile.
-- [ ] Phát hành bản vá mới chỉ sau khi xác minh checksum và người dùng xác nhận thiết bị.
+- [x] Tái hiện lỗi sau POST cài đặt và kiểm tra vì sao dữ liệu `Ứng dụng đang cài` không xuất hiện sau reload.
+- [x] Sửa phản hồi/thông báo và render Marketplace để hiển thị rõ trạng thái, cổng và điểm mở AdGuard Home.
+- [x] Bổ sung test hồi quy cho thứ tự hiển thị mục ứng dụng đã cài, cache version và chạy lại toàn bộ test suite.
+- [x] Phát hành V16.1.19 sau khi xác minh checksum công khai; giữ lại bước người dùng xác nhận thiết bị.
