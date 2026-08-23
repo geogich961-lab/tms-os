@@ -297,7 +297,7 @@
 
 ## Khẩn cấp: Update Center không áp dụng V16.1.20
 
-- [ ] Tái hiện và truy vết vì sao Update Center vẫn giữ V16.1.19 sau khi bấm Cập nhật ngay.
-- [ ] Đối chiếu release metadata, tên asset, checksum và bước thay thế mã nguồn/ghi phiên bản trên thiết bị.
-- [ ] Sửa luồng cập nhật một chạm để chỉ báo thành công sau khi phiên bản thực tế đổi, không xóa dữ liệu hoặc cấu hình Cloudflare.
-- [ ] Bổ sung hồi quy, phát hành bản vá và hướng dẫn Repair option 1 nếu updater tiếp tục thất bại.
+- [x] Tái hiện và truy vết vì sao Update Center vẫn giữ V16.1.19 sau khi bấm Cập nhật ngay; xác định ZIP V16.1.20 chứa config V16.1.19.
+- [x] Đối chiếu release metadata, tên asset, checksum và bước thay thế mã nguồn/ghi phiên bản trên thiết bị.
+- [x] Sửa luồng cập nhật một chạm để chỉ báo thành công sau khi phiên bản thực tế đổi, không xóa dữ liệu hoặc cấu hình Cloudflare.
+- [x] Bổ sung hồi quy và phát hành V16.1.21; asset công khai đã được tải trực tiếp, ZIP chứa Platform V16.1.21 và checksum khớp.
