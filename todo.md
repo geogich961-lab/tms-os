@@ -246,4 +246,11 @@
 - [x] Tạo trang và API trạng thái chỉ đọc cho tunnel cùng các hostname đã quản lý.
 - [x] Thêm hồi quy không lộ token/cấu hình riêng, kiểm tra cú pháp/toàn bộ test suite và đóng gói bản cập nhật.
 - [x] Phát hành V16.1.15, tải lại ZIP/manifest từ GitHub và xác minh checksum công khai.
-- [ ] Xác nhận trang `/status` trên thiết bị thật sau khi cập nhật.
+- [x] Xác nhận trang `/status` hoạt động trên thiết bị thật sau khi cập nhật.
+
+## Đồng bộ giao diện trang trạng thái
+
+- [x] Đối chiếu header, palette, typography và card trang `/status` với giao diện panel TMS OS hiện hành.
+- [x] Thiết kế lại điều hướng/chỉ dẫn công khai và các khối trạng thái để đồng bộ trải nghiệm TMS OS trên điện thoại và tablet.
+- [x] Kiểm thử mã PHP/JS, hồi quy dữ liệu API công khai và cache PWA sau khi đồng bộ giao diện.
+- [ ] Phát hành V16.1.16 và xác nhận giao diện trang `/status` trên thiết bị.

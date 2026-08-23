@@ -14,7 +14,7 @@ foreach (['publicStatus(): array', 'public-status.json', 'Cache trên đĩa 45 g
 foreach (['publicStatusPage', 'publicStatus(): void', "'/api/public-status'", "'/status'"] as $needle) {
     if (!str_contains($controller . $routes, $needle)) { fwrite(STDERR, "Missing public status route/controller: $needle\n"); exit(1); }
 }
-foreach (['api/public-status', 'Cloudflare Tunnel', 'Hostname công khai'] as $needle) {
+foreach (['api/public-status', 'Cloudflare Tunnel', 'Hostname công khai', 'app.css', 'Đăng nhập quản trị', 'public-status.css'] as $needle) {
     if (!str_contains($view . $script, $needle)) { fwrite(STDERR, "Missing public status UI: $needle\n"); exit(1); }
 }
 $publicMethod = (string)strstr($service, 'public function publicStatus(): array');
