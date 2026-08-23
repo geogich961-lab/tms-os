@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.112,
-  "build": "20260823-1405",
+  "internal_version": 16.114,
+  "build": "20260823-1438",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.12",
-  "version": "16.1.12",
-  "notes": "V16.1.12 hotfix: bảo vệ điều khiển Cloudflare Tunnel từ panel công khai, đồng bộ route an toàn và sửa checksum bộ cài theo manifest release.",
+  "name": "TMS OS V16.1.14",
+  "version": "16.1.14",
+  "notes": "V16.1.14 hotfix: Remote Access hợp nhất route Cloudflare hiện có với toàn bộ hostname TMS OS đã quản lý, không còn làm mất thc.io.vn hoặc subdomain khi bật/tắt panel.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "2048a3b3d7bcd51815f6caceec28c5ade965f621c496a4da72bc4876a26cad21",
+  "checksum_sha256": "acf7d9043acd93d7323062b891b39ec41008b5cf6c7de0e83203366bded71eef",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.12",
-  "changelog": "V16.1.12: Chặn dừng Cloudflare Tunnel từ panel đang truy cập qua chính tunnel; Đồng bộ route an toàn; install.sh lấy checksum từ RELEASE.json cùng GitHub Release thay vì checksum nhúng cũ.",
+  "version_display": "TMS OS V16.1.14",
+  "changelog": "V16.1.14: Bật hoặc tắt Remote Access luôn hợp nhất và bảo toàn thc.io.vn, game.thc.io.vn, panel.thc.io.vn cùng các route Cloudflare hiện hữu; bổ sung hồi quy chống mất route.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
