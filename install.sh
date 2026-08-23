@@ -1,9 +1,11 @@
 #!/data/data/com.termux/files/usr/bin/bash
 # ============================================================
-# TMS OS — Bộ cài 1 dòng lệnh (V16.1.5)
+# TMS OS — Bộ cài 1 dòng lệnh (V16.1.6)
 # Cách dùng: curl -fsSL URL/install.sh | bash
 # Chỉ cần Termux + quyền truy cập bộ nhớ (termux-setup-storage).
 # Tương thích Android 7.0+ (API 24+).
+# V16.1.6: Website Control Center nhận đúng website đang dừng (.conf.disabled)
+#          để có thể xóa website default sau khi tạo snapshot an toàn.
 # V16.1.5: đổi mật khẩu panel giữ nguyên username quản trị hiện có;
 #          ghi tệp secret atomically để không tạo xác thực dở dang.
 # V16.1.4: repair/startup tự khôi phục Cloudflare Tunnel đã cấu hình;
@@ -125,7 +127,7 @@ ZIP="$WORK/TMS_OS.zip"
 #   Lớp 2: checksum EMBED sẵn trong chính installer này (fallback khi online cache cũ)
 #   Lớp 3: tự tải lại tối đa 4 lần khi hai lớp lệch nhau do GitHub đang cập nhật
 # Mỗi release mới: checksum embed được cập nhật tự động cùng lúc đóng gói ZIP.
-EMBED_SHA256="5b22a2562c3992ba59015cc44b975f1d1239bd0d8c3e2e6a43f9381882b40a2c"
+EMBED_SHA256="941315a2c1bd2ee258beb7954cc5aad2787f5c1339f6097c68d4abc7ec83f65b"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do

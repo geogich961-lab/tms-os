@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.15,
-  "build": "20260823-0954",
+  "internal_version": 16.16,
+  "build": "20260823-1017",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.5",
-  "version": "16.1.5",
-  "notes": "V16.1.5 hotfix: đổi mật khẩu quản trị giữ nguyên username hiện có và ghi credential atomically để tránh mất quyền đăng nhập.",
+  "name": "TMS OS V16.1.6",
+  "version": "16.1.6",
+  "notes": "V16.1.6 hotfix: Website Control Center nhận đúng website đang dừng để xóa website default an toàn.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "5b22a2562c3992ba59015cc44b975f1d1239bd0d8c3e2e6a43f9381882b40a2c",
+  "checksum_sha256": "941315a2c1bd2ee258beb7954cc5aad2787f5c1339f6097c68d4abc7ec83f65b",
   "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.5",
-  "changelog": "V16.1.5: Preserve the existing panel username when changing a password and atomically replace the credential file to prevent lockouts.",
+  "version_display": "TMS OS V16.1.6",
+  "changelog": "V16.1.6: Allow Website Control Center to safely remove a stopped website whose Nginx configuration is stored as .conf.disabled.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-23"
 }
