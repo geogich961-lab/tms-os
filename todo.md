@@ -262,4 +262,4 @@
 - [x] Đồng bộ App Marketplace với shell, header, card, typography, spacing và responsive layout hiện hành của TMS OS.
 - [x] Bổ sung hồi quy, kiểm tra cú pháp, toàn bộ test suite và responsive rule mobile/tablet; xác nhận logic cài đặt không thay đổi.
 - [x] Phát hành V16.1.17, tải lại ZIP/RELEASE.json từ GitHub và xác minh checksum công khai.
-- [ ] Xác nhận Cloudflare Hosting và App Marketplace trên thiết bị sau khi cập nhật.
+- [x] Xác nhận Cloudflare Hosting và App Marketplace trên thiết bị sau khi cập nhật.
