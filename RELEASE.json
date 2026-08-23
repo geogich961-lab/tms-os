@@ -1,24 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.13,
-  "build": "20260822-2347",
+  "internal_version": 16.14,
+  "build": "20260823-0659",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-22",
-  "name": "TMS OS V16.1.3",
-  "version": "16.1.3",
-  "notes": "V16.1.3 hotfix: worker báo cáo tự nạp đủ service khi Cron chạy độc lập; không gửi stack trace worker báo cáo qua Telegram.",
+  "released_at": "2026-08-23",
+  "name": "TMS OS V16.1.4",
+  "version": "16.1.4",
+  "notes": "V16.1.4 hotfix: repair và startup tự khôi phục Cloudflare Tunnel đã cấu hình, tránh Cloudflare 1033 sau cập nhật.",
   "features": [
     "Cron Jobs: Lập lịch tác vụ thực tế trên Termux, theo dõi lần chạy và gửi thông báo Telegram.",
     "Telegram /status: Webhook HTTPS có secret, chỉ trả lời Chat ID đã cấu hình và báo cáo an toàn trạng thái thiết bị.",
     "Access Report: Tổng hợp theo giờ truy cập panel/website, mã HTTP và IP khách thật qua Cloudflare Tunnel.",
     "Security: Xác thực CSRF cho các thao tác quản trị Cron/Telegram; không dùng quyền Root."
   ],
-  "checksum_sha256": "c7ad14ce04d1b2f5c2732a2c318b6eb48ac07ec29b78cff0b818698502f9815e",
-  "build_date": "2026-08-22",
-  "version_display": "TMS OS V16.1.3",
-  "changelog": "V16.1.3: Fix the scheduled access-report worker bootstrap and suppress raw worker stack traces in Cron Telegram notifications.",
+  "checksum_sha256": "8f8c30b2c5d7ac9f6dc9e2270c3f8e8e7ce68434086810469f45dd425f84dfc1",
+  "build_date": "2026-08-23",
+  "version_display": "TMS OS V16.1.4",
+  "changelog": "V16.1.4: Restore an already configured Cloudflare Tunnel after repair, normal startup, and Termux session recovery without exposing connector credentials.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
-  "release_date": "2026-08-22"
+  "release_date": "2026-08-23"
 }
