@@ -219,4 +219,4 @@
 
 - [x] Đối chiếu checksum nhúng trong `install.sh` với `RELEASE.json` và asset V16.1.12.
 - [x] Sửa bộ cài để đọc checksum phát hành hiện hành từ RELEASE.json cùng GitHub Release thay vì giữ checksum tĩnh cũ.
-- [ ] Kiểm thử lệnh tải/cập nhật và phát hành bộ cài đã sửa trước khi yêu cầu chạy lại.
+- [x] Kiểm thử cú pháp, toàn bộ hồi quy, manifest/ZIP GitHub Release và install.sh tải lại từ nhánh main trước khi yêu cầu chạy lại.
