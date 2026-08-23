@@ -178,15 +178,15 @@
 
 - [x] Đối chiếu lỗi xác thực Zone từ giao diện với các quyền API Token Cloudflare cần có.
 - [x] Hướng dẫn tạo token tối thiểu có Zone Read, DNS Edit và Cloudflare Tunnel Edit đúng phạm vi account/zone.
-- [ ] Hướng dẫn thay token an toàn trong TMS OS và xác minh dropdown Domain mà không thay đổi tunnel hoặc DNS đang hoạt động.
+- [x] Hướng dẫn thay token an toàn trong TMS OS và xác minh dropdown Domain mà không thay đổi tunnel hoặc DNS đang hoạt động.
 
 ## Khẩn cấp: Token Cloudflare đã lộ và báo Invalid access token
 
 - [x] Hướng dẫn thu hồi token đã lộ và tạo token thay thế với đúng quyền/phạm vi.
-- [ ] Xác minh token mới trong TMS OS mà không thay đổi tunnel token, route DNS hoặc hostname đang chạy.
+- [x] Xác minh token mới trong TMS OS mà không thay đổi tunnel token, route DNS hoặc hostname đang chạy.
 
 ## Khẩn cấp: Gắn thc.io.vn vào website cổng 8083 trả HTTP 400
 
 - [x] Truy vết điều kiện backend làm endpoint attach từ chối hostname gốc dù token và Zone đã hợp lệ.
 - [x] Sửa an toàn luồng gắn hostname, bảo toàn tunnel, game.thc.io.vn, panel và DNS hiện có.
-- [ ] Kiểm thử attach hostname gốc/subdomain và phát hành hotfix nếu cần.
+- [x] Kiểm thử hồi quy attach hostname gốc/subdomain và phát hành hotfix V16.1.9 nếu cần.
