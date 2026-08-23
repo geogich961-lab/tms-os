@@ -1,147 +1,73 @@
 <?php
-$title = 'App Marketplace';
+$title = 'App Marketplace · TMS OS';
+$showShell = true;
 require __DIR__ . '/../layouts/header.php';
+$installedIds = array_flip(array_filter(array_map(static fn($item) => $item['app'] ?? null, $installed)));
+$installedCount = count($installedIds);
 ?>
-<div class="os-content">
-    <div class="content-header">
-        <div>
-            <h1>App Marketplace</h1>
-            <p>Cài đặt ứng dụng phổ biến chỉ với một chạm.</p>
-        </div>
-    </div>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <?php foreach ($catalog as $app): 
-            $isInstalled = false;
-            foreach ($installed as $inst) {
-                if ($inst['app'] === $app['id']) {
-                    $isInstalled = true;
-                    break;
-                }
-            }
-        ?>
-            <div class="card app-card">
-                <div class="card-body">
-                    <div class="app-icon-wrapper mb-4">
-                        <div class="app-icon-placeholder"><?= strtoupper(substr($app['id'], 0, 1)) ?></div>
-                    </div>
-                    <h3 class="mb-2"><?= tms_h($app['name']) ?></h3>
-                    <p class="text-muted mb-4" style="font-size: 14px; min-height: 60px;"><?= tms_h($app['description']) ?></p>
-                    <div class="app-meta mb-4">
-                        <span class="badge badge-info-soft">Yêu cầu: <?= tms_h($app['requirements']) ?></span>
-                    </div>
-                    <button class="btn btn-primary btn-block" onclick="openInstallModal('<?= tms_h($app['id']) ?>', '<?= tms_h($app['name']) ?>', <?= $app['database'] ? 'true' : 'false' ?>)">
-                        <?= $isInstalled ? 'Cài đặt thêm' : 'Cài đặt ngay' ?>
-                    </button>
-                </div>
-            </div>
-        <?php endforeach; ?>
-    </div>
+<div class="page-head marketplace-intro">
+  <div>
+    <p class="eyebrow">App Marketplace</p>
+    <h1>Ứng dụng cho mini VPS</h1>
+    <p class="muted">Chọn ứng dụng phù hợp, hệ thống sẽ đưa bạn qua các bước cài đặt cần thiết. Không thay đổi dữ liệu hoặc dịch vụ đang chạy khi bạn chỉ xem danh mục.</p>
+    <div class="marketplace-summary"><span class="status-pill running"><?= count($catalog) ?> ứng dụng sẵn sàng</span><span class="status-pill <?= $installedCount ? 'warning' : 'stopped' ?>"><?= $installedCount ? $installedCount . ' ứng dụng đã cài' : 'Chưa có ứng dụng cài thêm' ?></span></div>
+  </div>
 </div>
 
-<!-- Install Modal -->
-<div id="installModal" class="modal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 id="modalTitle">Cài đặt ứng dụng</h3>
-            <button class="close-modal" onclick="closeInstallModal()">&times;</button>
+<section class="marketplace-grid" aria-label="Danh mục ứng dụng">
+<?php foreach ($catalog as $app):
+  $isInstalled = isset($installedIds[$app['id']]);
+  $initial = strtoupper(substr((string)$app['name'], 0, 1));
+?>
+  <article class="panel-card marketplace-card">
+    <div class="marketplace-card-head"><div class="marketplace-icon" aria-hidden="true"><?= tms_h($initial) ?></div><span class="status-pill <?= $isInstalled ? 'running' : 'stopped' ?>"><?= $isInstalled ? 'Đã cài' : 'Có sẵn' ?></span></div>
+    <h2><?= tms_h($app['name']) ?></h2>
+    <p><?= tms_h($app['description']) ?></p>
+    <div class="marketplace-requirement"><span class="badge badge-info-soft">Yêu cầu</span><span><?= tms_h($app['requirements']) ?></span></div>
+    <button class="btn <?= $isInstalled ? 'btn-secondary' : 'btn-primary' ?>" type="button" data-marketplace-install data-app-id="<?= tms_h($app['id']) ?>" data-app-name="<?= tms_h($app['name']) ?>" data-app-database="<?= $app['database'] ? '1' : '0' ?>"><?= $isInstalled ? 'Cài thêm phiên bản mới' : 'Cài đặt ứng dụng' ?></button>
+  </article>
+<?php endforeach; ?>
+</section>
+
+<div id="installModal" class="marketplace-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="marketplace-modal-dialog">
+    <div class="marketplace-modal-header"><h2 id="modalTitle">Cài đặt ứng dụng</h2><button class="marketplace-close" type="button" data-marketplace-close aria-label="Đóng">×</button></div>
+    <form id="installForm">
+      <input type="hidden" id="appId" name="app">
+      <div class="marketplace-modal-body">
+        <div class="marketplace-form-group"><label for="appName">Tên định danh (không dấu)</label><input type="text" name="name" id="appName" placeholder="ví dụ: my-site" autocomplete="off" required></div>
+        <div class="marketplace-form-group"><label for="appPort">Cổng truy cập (1024–65535)</label><input type="number" name="port" id="appPort" min="1024" max="65535" placeholder="8080" required></div>
+        <div id="dbFields" class="marketplace-db-fields" hidden>
+          <h3>Cấu hình Database</h3>
+          <div class="marketplace-form-group"><label for="dbName">Tên Database</label><input type="text" name="db_name" id="dbName" placeholder="wp_db"></div>
+          <div class="marketplace-form-group"><label for="dbUser">Tên User</label><input type="text" name="db_user" id="dbUser" placeholder="wp_user"></div>
+          <div class="marketplace-form-group"><label for="dbPass">Mật khẩu User</label><input type="password" name="db_pass" id="dbPass" placeholder="Tối thiểu 8 ký tự" autocomplete="new-password"></div>
         </div>
-        <form id="installForm" onsubmit="handleInstall(event)">
-            <input type="hidden" id="appId" name="app">
-            <div class="modal-body">
-                <div class="form-group">
-                    <label>Tên định danh (không dấu)</label>
-                    <input type="text" name="name" id="appName" class="form-control" placeholder="ví dụ: my-site" required>
-                </div>
-                <div class="form-group">
-                    <label>Cổng truy cập (1024-65535)</label>
-                    <input type="number" name="port" id="appPort" class="form-control" placeholder="8080" required>
-                </div>
-                
-                <div id="dbFields" style="display: none;">
-                    <hr class="my-4">
-                    <h4 class="mb-3">Cấu hình Database</h4>
-                    <div class="form-group">
-                        <label>Tên Database</label>
-                        <input type="text" name="db_name" class="form-control" placeholder="wp_db">
-                    </div>
-                    <div class="form-group">
-                        <label>Tên User</label>
-                        <input type="text" name="db_user" class="form-control" placeholder="wp_user">
-                    </div>
-                    <div class="form-group">
-                        <label>Mật khẩu User</label>
-                        <input type="password" name="db_pass" class="form-control" placeholder="Tối thiểu 8 ký tự">
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-ghost" onclick="closeInstallModal()">Hủy</button>
-                <button type="submit" class="btn btn-primary" id="installBtn">Bắt đầu cài đặt</button>
-            </div>
-        </form>
-    </div>
+      </div>
+      <div class="marketplace-modal-footer"><button type="button" class="btn btn-ghost" data-marketplace-close>Hủy</button><button type="submit" class="btn btn-primary" id="installBtn">Bắt đầu cài đặt</button></div>
+    </form>
+  </div>
 </div>
 
-<style>
-.app-card { transition: transform 0.2s; border: 1px solid rgba(0,0,0,0.05); }
-.app-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-.app-icon-placeholder { width: 48px; height: 48px; background: var(--primary); color: white; display: grid; place-items: center; border-radius: 12px; font-weight: 800; font-size: 20px; }
-.modal { display: none; position: fixed; z-index: 99999; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); }
-.modal-content { background: white; margin: 5% auto; padding: 0; border-radius: 24px; width: 90%; max-width: 500px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); overflow: hidden; }
-.modal-header { padding: 20px 24px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; }
-.modal-body { padding: 24px; max-height: 70vh; overflow-y: auto; }
-.modal-footer { padding: 20px 24px; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 12px; background: #f9f9f9; }
-.close-modal { background: none; border: none; font-size: 28px; cursor: pointer; color: #999; }
-</style>
-
+<link rel="stylesheet" href="/assets/marketplace.css?v=16.1.17">
 <script>
-function openInstallModal(id, name, hasDb) {
-    document.getElementById('appId').value = id;
-    document.getElementById('modalTitle').innerText = 'Cài đặt ' + name;
-    document.getElementById('dbFields').style.display = hasDb ? 'block' : 'none';
-    document.getElementById('installModal').style.display = 'block';
-    
-    // Auto-fill suggested port
-    const ports = [8080, 8081, 8082, 8888, 9000];
-    document.getElementById('appPort').value = 8000 + Math.floor(Math.random() * 1000);
-}
-
-function closeInstallModal() {
-    document.getElementById('installModal').style.display = 'none';
-}
-
-async function handleInstall(e) {
-    e.preventDefault();
-    const btn = document.getElementById('installBtn');
-    const originalText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = 'Đang cài đặt...';
-    
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    
-    try {
-        const res = await fetch('/marketplace/install', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        const result = await res.json();
-        if (result.ok) {
-            tmsToast(result.message, 'success');
-            closeInstallModal();
-            setTimeout(() => location.reload(), 2000);
-        } else {
-            tmsToast(result.message || 'Không thể cài đặt ứng dụng.', 'error');
-        }
-    } catch (err) {
-        tmsToast('Lỗi kết nối máy chủ', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalText;
-    }
-}
+(() => {
+  const modal = document.getElementById('installModal'); const form = document.getElementById('installForm');
+  const close = () => { modal.setAttribute('aria-hidden', 'true'); document.body.style.overflow = ''; };
+  document.querySelectorAll('[data-marketplace-close]').forEach((btn) => btn.addEventListener('click', close));
+  modal.addEventListener('click', (event) => { if (event.target === modal) close(); });
+  document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && modal.getAttribute('aria-hidden') === 'false') close(); });
+  document.querySelectorAll('[data-marketplace-install]').forEach((button) => button.addEventListener('click', () => {
+    document.getElementById('appId').value = button.dataset.appId; document.getElementById('modalTitle').textContent = `Cài đặt ${button.dataset.appName}`;
+    document.getElementById('dbFields').hidden = button.dataset.appDatabase !== '1'; document.getElementById('appPort').value = 8000 + Math.floor(Math.random() * 1000);
+    modal.setAttribute('aria-hidden', 'false'); document.body.style.overflow = 'hidden'; document.getElementById('appName').focus();
+  }));
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault(); const button = document.getElementById('installBtn'); const original = button.textContent; button.disabled = true; button.textContent = 'Đang cài đặt…';
+    try { const response = await fetch('/marketplace/install', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form).entries())) }); const result = await response.json();
+      if (result.ok) { (window.TMS?.toast || window.tmsToast)(result.message, 'success'); close(); setTimeout(() => location.reload(), 1200); } else { (window.TMS?.toast || window.tmsToast)(result.message || 'Không thể cài đặt ứng dụng.', 'error'); }
+    } catch (_) { (window.TMS?.toast || window.tmsToast)('Lỗi kết nối máy chủ', 'error'); } finally { button.disabled = false; button.textContent = original; }
+  });
+})();
 </script>
-
 <?php require __DIR__ . '/../layouts/footer.php'; ?>

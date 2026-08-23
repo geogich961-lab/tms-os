@@ -5,6 +5,16 @@ $csrf=tms_csrf_token();
 <div class="page-head"><div><p class="eyebrow">Cloudflare Hosting</p><h1>Cloudflare Hosting</h1><p class="muted">Kết nối TMS OS với Cloudflare để đưa website lên Internet bằng <strong>tên miền riêng</strong>, như một hosting thực thụ. Không còn tunnel tạm thời — website của bạn luôn online tại tên miền bạn chọn.</p></div><span id="cfd-status-pill" class="status-pill stopped" data-cfd-status-pill>Chưa cấu hình</span></div>
 <div id="cfd-alert" class="alert alert-error" hidden></div>
 
+<section class="panel-card cfd-overview" aria-label="Tóm tắt kết nối công khai">
+  <div class="section-title-row"><div><p class="eyebrow">TỔNG QUAN KẾT NỐI</p><h2>Trạng thái Cloudflare</h2></div><a class="btn btn-ghost btn-small" href="/status" target="_blank" rel="noopener">Mở trang chia sẻ ↗</a></div>
+  <div class="cfd-overview-grid">
+    <div class="cfh-stat"><span>Tunnel</span><strong id="cfd-overview-tunnel">Đang kiểm tra…</strong><small id="cfd-overview-conns">Chưa có dữ liệu kết nối</small></div>
+    <div class="cfh-stat"><span>Hostname công khai</span><strong id="cfd-overview-host-count">—</strong><small>Được quản lý trên cùng tunnel</small></div>
+  </div>
+  <div class="cfd-overview-hosts" id="cfd-overview-hosts"><span class="muted">Đang tải hostname…</span></div>
+  <p class="muted cfd-overview-note">Xem nhanh tình trạng kết nối tại đây. Trang <strong>/status</strong> chỉ dùng để chia sẻ trạng thái công khai, không phải một chức năng quản trị riêng.</p>
+</section>
+
 <!-- ========== BƯỚC 1 · TÀI KHOẢN ========== -->
 <section class="panel-card cfd-section" data-panel="hosting">
 <div class="section-title-row"><div><p class="eyebrow">BƯỚC 1 · TÀI KHOẢN</p><h2>Cấu hình tài khoản Cloudflare</h2></div></div>
@@ -96,5 +106,5 @@ $csrf=tms_csrf_token();
 <section class="panel-card cfd-section" data-panel="hosting"><div class="section-title-row"><h2>Nhật ký Tunnel</h2></div><pre id="cfd-log" class="terminal-output"><?=tms_h('')?></pre></section>
 
 <script>window.TMS_CF_DOMAIN_STATUS_URL='/api/cloudflare-domain/status';</script>
-<script src="/assets/cfdomain.js?v=16.1.14"></script>
+<script src="/assets/cfdomain.js?v=16.1.17"></script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>

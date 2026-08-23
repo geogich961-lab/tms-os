@@ -92,6 +92,34 @@
     }).join('');
   }
 
+  function renderOverview(status) {
+    const health = status.health || {};
+    const cloudflareConnected = ['healthy', 'active'].includes(String(health.status || '').toLowerCase());
+    const tunnel = $('#cfd-overview-tunnel');
+    const connections = $('#cfd-overview-conns');
+    const hostCount = $('#cfd-overview-host-count');
+    const hostBox = $('#cfd-overview-hosts');
+    if (tunnel) tunnel.textContent = !status.configured ? 'Chưa cấu hình' : cloudflareConnected ? 'Hoạt động' : status.running ? 'Đang chờ kết nối' : 'Ngoại tuyến';
+    if (connections) connections.textContent = cloudflareConnected ? `${health.connections ?? health.conns ?? 0} kết nối Cloudflare` : 'Kiểm tra kết nối từ Cloudflare';
+    const byHost = new Map();
+    (status.hostnames || []).forEach((item) => {
+      if (item?.hostname) byHost.set(item.hostname, item);
+    });
+    if (status.panel_hostname && !byHost.has(status.panel_hostname)) {
+      byHost.set(status.panel_hostname, { hostname: status.panel_hostname, url: status.panel_url || `https://${status.panel_hostname}`, route_status: status.panel_configured ? 'ok' : 'missing' });
+    }
+    const hosts = [...byHost.values()];
+    if (hostCount) hostCount.textContent = String(hosts.length);
+    if (!hostBox) return;
+    if (hosts.length === 0) { hostBox.innerHTML = '<span class="muted">Chưa có hostname công khai để hiển thị.</span>'; return; }
+    hostBox.innerHTML = hosts.map((item) => {
+      const state = item.route_status === 'ok' ? 'running' : item.route_status === 'pending' ? 'warning' : 'stopped';
+      const stateText = item.route_status === 'ok' ? 'Hoạt động' : item.route_status === 'pending' ? 'Đang đồng bộ' : 'Cần kiểm tra';
+      const hostname = escapeHtml(item.hostname); const url = escapeHtml(item.url || `https://${item.hostname}`);
+      return `<a class="cfd-overview-host" href="${url}" target="_blank" rel="noopener"><span>${hostname}</span><em class="status-pill ${state}">${stateText}</em></a>`;
+    }).join('');
+  }
+
   function applyStatus(status) {
     latestStatus = status || {};
     const configured = Boolean(status.configured);
@@ -121,6 +149,7 @@
     populateZones(status.zones || []);
     setZoneWarning(status.zone_warn || '');
     renderHostnames(status.hostnames || []);
+    renderOverview(status);
 
     const urlCard = $('#cfd-url-card');
     const url = status.url || '';
