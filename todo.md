@@ -291,3 +291,13 @@
 - [x] Xóa AdGuard Home khỏi catalog App Marketplace và các luồng khởi động/khôi phục liên quan.
 - [x] Giữ lại tài liệu và lịch sử lỗi để có thể tích hợp lại ở giai đoạn sau; không xóa dữ liệu ứng dụng khác.
 - [x] Kiểm thử xác nhận Marketplace, File Browser, WordPress, Typecho và Cloudflare không bị ảnh hưởng.
+- [x] Đóng gói và phát hành V16.1.20 với đúng `TMS_OS_LATEST.zip` và `RELEASE.json`.
+- [x] Tải trực tiếp asset công khai, đối chiếu checksum `e3edc1722a153728a317fbcca306f88aa53e4a635a76e3b631fa6f5a59ee85f3` và kiểm tra ZIP hợp lệ.
+- [ ] Người dùng xác nhận Marketplace trên điện thoại không còn hiển thị AdGuard Home.
+
+## Khẩn cấp: Update Center không áp dụng V16.1.20
+
+- [ ] Tái hiện và truy vết vì sao Update Center vẫn giữ V16.1.19 sau khi bấm Cập nhật ngay.
+- [ ] Đối chiếu release metadata, tên asset, checksum và bước thay thế mã nguồn/ghi phiên bản trên thiết bị.
+- [ ] Sửa luồng cập nhật một chạm để chỉ báo thành công sau khi phiên bản thực tế đổi, không xóa dữ liệu hoặc cấu hình Cloudflare.
+- [ ] Bổ sung hồi quy, phát hành bản vá và hướng dẫn Repair option 1 nếu updater tiếp tục thất bại.

@@ -93,32 +93,48 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
 	    headers: { 'X-Requested-With': 'XMLHttpRequest' }
 	  }).then(function(r) {
 	    return r.json();
-	  }).then(function(d) {
-	    if (d.ok) {
-	      btn.textContent = 'Đang khởi động lại...';
-	      btn.className = 'btn btn-success';
-	      
-	      // Hiển thị thông báo toast nếu có
-	      if (window.tms_toast) {
-	        tms_toast(d.message || 'Cập nhật thành công, đang khởi động lại...', 'success');
-	      }
-	      
-	      // Đợi 8 giây để dịch vụ PHP-CGI và Nginx khởi động lại hoàn toàn trên Termux
-	      setTimeout(function() {
-	        window.location.href = '/dashboard?updated=1';
-	      }, 8000);
-	    } else {
-	      btn.disabled = false;
-	      btn.textContent = 'Cập nhật ngay';
-	      alert('Lỗi: ' + (d.error || 'Không thể áp dụng cập nhật.'));
-	    }
-	  }).catch(function(e) {
-	    // Nếu bị lỗi kết nối (thường do PHP bị kill ngay lập tức), vẫn đợi rồi reload
-	    btn.textContent = 'Đang khởi động lại...';
-	    setTimeout(function() {
-	      window.location.href = '/dashboard?updated=1';
-	    }, 8000);
-	  });
+  }).then(function(d) {
+    if (!d.ok) {
+      throw new Error(d.error || 'Không thể áp dụng cập nhật.');
+    }
+    btn.textContent = 'Đang xác minh phiên bản...';
+    btn.className = 'btn btn-success';
+    if (window.tms_toast) {
+      tms_toast(d.message || 'Gói đã được áp dụng; đang xác minh phiên bản thực tế...', 'success');
+    }
+    verifyAppliedVersion(0);
+  }).catch(function(e) {
+    // PHP-CGI có thể bị khởi động lại trước khi fetch nhận response. Không được
+    // coi trường hợp này là thành công; chỉ xác nhận sau khi đọc phiên bản mới.
+    verifyAppliedVersion(0, e && e.message ? e.message : 'Không nhận được phản hồi từ panel.');
+  });
+
+  function verifyAppliedVersion(attempt, fallbackError) {
+    fetch('/api/updates/check?verify=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
+      .then(function(r) { return r.json(); })
+      .then(function(status) {
+        var current = String(status.current || '');
+        var available = status.available && String(status.available.version || '');
+        if (!status.error && available === '') {
+          btn.textContent = 'Đã cập nhật ' + current;
+          if (window.tms_toast) tms_toast('Đã xác minh phiên bản đang chạy: ' + current, 'success');
+          setTimeout(function() { window.location.href = '/dashboard?updated=1'; }, 1200);
+          return;
+        }
+        if (attempt < 12) {
+          btn.textContent = 'Đang xác minh phiên bản (' + (attempt + 1) + '/12)...';
+          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError); }, 2500);
+          return;
+        }
+        throw new Error(fallbackError || ('Phiên bản thực tế vẫn chưa được xác nhận (đang là ' + current + ').'));
+      })
+      .catch(function(error) {
+        btn.disabled = false;
+        btn.className = 'btn btn-primary';
+        btn.textContent = 'Cập nhật ngay';
+        alert('Chưa xác nhận cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
+      });
+  }
 	});
 	</script>
 <?php require dirname(__DIR__).'/layouts/footer.php';?>
