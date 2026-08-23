@@ -158,4 +158,4 @@
 - [x] Tái hiện sự khác biệt giữa website được phát hiện từ Nginx và registry quản lý.
 - [x] Sửa thao tác xóa default theo quy tắc an toàn, không tác động website khác.
 - [x] Thêm hồi quy cho xóa website default và website có registry bình thường.
-- [ ] Kiểm thử package rồi phát hành hotfix cùng hướng dẫn thao tác trong panel.
+- [x] Kiểm thử package rồi phát hành hotfix cùng hướng dẫn thao tác trong panel.
