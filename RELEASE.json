@@ -17,7 +17,7 @@
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "",
+  "checksum_sha256": "d6e8dc0c0d412cdfdd3ff3ca58bbc4167a7e119cda1410df9c7758ceaf302e43",
   "build_date": "2026-08-24",
   "version_display": "TMS OS V16.1.26",
   "changelog": "V16.1.26: khắc phục PHP Engine bằng PHP-CGI sạch cấu hình (-n), tránh lock từ php.ini hệ thống trên Termux Android cũ; giữ an toàn dữ liệu trong Repair.",
