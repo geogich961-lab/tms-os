@@ -392,3 +392,134 @@
 - [x] Sửa fallback thành `php-cgi -n -b 127.0.0.1:9000`, đồng thời dọn cả biến thể CGI cũ/mới khi stop hoặc restart.
 - [x] Chạy `bash -n` cho toàn bộ script, toàn bộ test PHP trong `tests/*_test.php`, và `git diff --check`; tất cả đạt.
 - [ ] Chưa phát hành bản mới; cần đóng gói từ commit sửa này và xác minh nội dung ZIP cùng checksum trước khi đưa người dùng chạy lại.
+
+- [x] Đóng gói V16.1.26 từ commit d620d1176f1bc7c616c0bfa7e3843d48cec57ebe, tính checksum duy nhất và cập nhật manifest.
+- [x] Phát hành asset đúng tên `TMS_OS_LATEST.zip` cùng `RELEASE.json` trên GitHub.
+- [x] Tải trực tiếp theo URL tag và latest, xác nhận SHA-256 cùng là `d6e8dc0c0d412cdfdd3ff3ca58bbc4167a7e119cda1410df9c7758ceaf302e43`, ZIP giải nén đạt.
+
+## Blocker mới: PHP Engine vẫn thoát trên V16.1.26
+
+- [ ] Thu thập `php-engine.log` ngay sau lần cài sạch V16.1.26 thất bại.
+- [ ] Xác định binary thực tế (`php`, `php-cgi`, `php-fpm`), tiến trình, cổng 9000 và đường dẫn PID/lock trên thiết bị.
+- [ ] Kiểm tra trực tiếp lệnh PHP-CGI sạch cấu hình và phản hồi TCP trước khi sửa engine.
+- [ ] Đối chiếu cấu hình nginx upstream với chế độ PHP thực tế; không phát hành bản mới khi chưa tái hiện được lỗi runtime.
+
+## Bằng chứng mới: PHP binary tự lỗi lock
+
+- [ ] Đối chiếu `php` và `php-cgi` thực tế là binary hay wrapper/script trên Termux.
+- [ ] Tìm toàn bộ đường dẫn lock/session/cache mà PHP hoặc package Termux có thể dùng; không suy đoán từ nginx.
+- [ ] Kiểm tra quyền và mount của `$HOME`, `$PREFIX`, `$TMPDIR`, `~/.cache` và các thư mục PHP liên quan.
+- [ ] Xác định có cần sửa package PHP/Termux trên thiết bị hay chỉ cần thay biến môi trường runtime.
+- [ ] Chỉ cập nhật TMS Engine sau khi phép thử `php-cgi -n` độc lập chạy thành công.
+
+## Blocker môi trường Termux/PHP 8.5.1
+
+- [ ] Xác minh PHP 8.5.1 lỗi độc lập với TMS bằng `php -n -r` và `php-cgi -n`.
+- [ ] Kiểm tra package, wrapper, file cấu hình và nguồn lock của PHP/Termux; không kết luận chỉ từ quyền thư mục.
+- [ ] Xây dựng cách sửa package PHP an toàn, không xóa dữ liệu TMS hoặc dùng `sudo`/`chmod -R 777`.
+- [ ] Thêm preflight vào installer để dừng sớm với hướng dẫn rõ nếu PHP native không tạo lock được.
+- [ ] Chỉ phát hành bản TMS mới sau khi `php -n -r` và `php-cgi -n` trên môi trường kiểm thử đều thành công.
+
+## Phát hiện gốc: Termux thiếu `$PREFIX/var/tmp`
+
+- [x] Thêm khởi tạo `$PREFIX/var/tmp` trước mọi lệnh PHP/engine và đặt quyền tối thiểu an toàn.
+- [x] Ép PHP Engine dùng `$PREFIX/tmp` hoặc runtime temp riêng có thể ghi, không phụ thuộc thư mục bị thiếu.
+- [x] Bổ sung kiểm tra `mktemp` và thông báo lỗi phân biệt `No such file or directory` với `Permission denied`.
+- [x] Kiểm thử trực tiếp `php -n`, `php-cgi -n` và khởi động engine trên môi trường thiếu `var/tmp`.
+- [ ] Chỉ phát hành bản mới sau khi PHP độc lập và toàn bộ installer đạt.
+
+## Blocker mới: panel chưa lắng nghe cổng 8888 sau khi sửa temp
+
+- [ ] Thu thập trạng thái `php-cgi`, `php-fpm`, Nginx và log khởi động trên thiết bị thật.
+- [ ] Xác định lệnh `php-cgi` có hỗ trợ tham số khởi động hiện tại và có tạo upstream cổng 9000 không.
+- [ ] Sửa luồng `start-tms.sh`/PHP Engine nếu dịch vụ chưa khởi động sau preflight temp.
+- [ ] Kiểm thử lại endpoint `127.0.0.1:8888/login` trước khi phát hành V16.1.27.
+
+## 502 sau khi Nginx hợp lệ: PHP upstream không chạy
+
+- [ ] Thu thập exit code và stderr trực tiếp của `php-cgi -n -b 127.0.0.1:9000`, không che lỗi bằng `|| true`.
+- [ ] Xác định PHP đang chạy FPM hay CGI và file/đường dẫn lock thực tế từ log.
+- [ ] Phân biệt lỗi lock của PHP native với lỗi netlink khi lấy thông tin mạng.
+- [ ] Sửa hoặc đưa ra hướng package reinstall an toàn, sau đó xác nhận upstream cổng 9000 và panel HTTP 200.
+
+## Kết luận native PHP-CGI bị lỗi lock
+
+- [ ] Kiểm tra phiên bản package `php`, `php-cgi`, nguồn repo và danh sách file package trên thiết bị.
+- [ ] Kiểm tra các biến môi trường Termux có thể ảnh hưởng tới lock, gồm `TMPDIR`, `PREFIX`, `HOME`, `PHP_INI_SCAN_DIR`.
+- [ ] Thử cài lại riêng package PHP theo cách không xóa dữ liệu TMS, chỉ sau khi lưu thông tin phiên bản/package.
+- [ ] Thêm preflight `php -n -r` và `php-cgi -n` vào installer để dừng sớm với hướng dẫn package rõ ràng.
+- [ ] Chỉ phát hành V16.1.27 khi PHP-CGI native chạy được và endpoint panel không còn 502.
+
+## Phân tích package PHP 8.5.1
+
+- [x] Xác nhận `php`/`php-cgi` cùng thuộc package PHP 8.5.1 từ Termux stable/main aarch64.
+- [x] Xác nhận `$PREFIX/var/tmp`, `$PREFIX/var/run` và `$HOME/.tms-os/tmp` đã tồn tại sau preflight.
+- [x] Xác nhận PHP CLI `php -n -r` chạy được nhưng FastCGI `php-cgi -b` vẫn thoát exit 255 với lỗi lock.
+- [ ] Dùng strace để xác định đường dẫn hoặc syscall gây lỗi trong FastCGI.
+
+## Manh mối LD_PRELOAD/termux-exec
+
+- [ ] So sánh `php-cgi -b` với môi trường mặc định và `env -u LD_PRELOAD`.
+- [ ] Đọc nội dung log strace đầy đủ nếu syscall trace đã được tạo.
+- [ ] Kiểm tra riêng `99-tms-os.ini` bằng PHP-CGI không dùng cấu hình, rồi mới cân nhắc sửa wrapper.
+- [ ] Chỉ vô hiệu hóa preload trong tiến trình PHP nếu thử nghiệm xác nhận nguyên nhân, không sửa profile Termux toàn cục.
+
+## Tái thiết kế bộ cài tương thích nhiều thiết bị
+
+- [ ] Xác định ma trận hỗ trợ theo Android API, kiến trúc CPU, nguồn Termux và phiên bản PHP.
+- [x] Tách installer thành các giai đoạn preflight, download/verify, backup, install, migrate, health-check và commit.
+- [x] Thiết kế rollback an toàn, giữ nguyên website/database/config khi repair thất bại.
+- [ ] Xây dựng lựa chọn engine theo kết quả kiểm thử thực tế, không giả định PHP-CGI/FPM luôn hoạt động.
+- [x] Tạo báo cáo chẩn đoán một lần để người dùng gửi lại, tránh chạy nhiều lệnh lặp.
+- [ ] Kiểm thử trên profile Android/Termux mô phỏng và tối thiểu một thiết bị thật trước khi phát hành.
+
+## Triển khai installer v2: preflight và rollback
+
+- [x] Viết thư viện shell dùng chung cho report, kiểm tra điều kiện và mã lỗi preflight.
+- [x] Viết manifest/staging state để rollback theo từng phiên cài.
+- [x] Tích hợp preflight vào root installer trước download/ghi dữ liệu.
+- [x] Tích hợp backup, staging và rollback vào sub-installer ở chế độ repair/install.
+- [x] Bổ sung test shell cho thiếu temp, PHP-CGI fail, Nginx fail, checksum fail và rollback giữ dữ liệu.
+- [x] Chạy bash syntax, shell regression, kiểm tra package sạch và cập nhật hướng dẫn test Termux.
+
+## Kiểm thử installer trên Termux thật
+
+- [ ] Chạy `tests/installer_safety_test.sh` trực tiếp trên thiết bị Termux.
+- [ ] Chạy probe PHP-CGI native riêng, ghi exit code và stderr không che lỗi.
+- [ ] Lưu báo cáo test một file để phân tích, không xóa dữ liệu TMS OS.
+- [ ] Phân loại kết quả và quyết định sửa wrapper hay repair package PHP.
+
+## Kiểm thử trên thiết bị Android mới hoàn toàn
+
+- [ ] Cài Termux từ một nguồn duy nhất và xác nhận phiên bản Android/ABI.
+- [x] Chạy kiểm tra môi trường không cài TMSản trước khi cài TMS OS.
+- [x] Cài riêng package PHP trên thiết bị mới và kiểm tra `php -n` cùng `php-cgi -n -b`.
+- [ ] Gửi báo cáo thiết bị để phân loại tương thích trước khi cài TMS OS.
+- [ ] Chỉ chạy installer TMS OS sau khi preflight đạt hoặc người dùng xác nhận profile giới hạn.
+
+## PHP 8.5.1 thất bại ở mọi server mode
+
+- [x] Xác nhận `php -S` cũng thoát 255 với `Cannot create lock`, cả có và không có `LD_PRELOAD`.
+- [x] Đặt PHP 8.5.1 server mode vào trạng thái không tương thích, không tiếp tục dùng fallback FPM/CGI/built-in.
+- [ ] Bổ sung compatibility gate kiểm tra `php -S` hoặc probe server tương đương trước khi tạo cấu hình Nginx.
+- [ ] Nghiên cứu package/version PHP thay thế hoặc kiến trúc runtime không phụ thuộc PHP server mode.
+- [ ] Không phát hành V16.1.27 cho đến khi có backend PHP chạy thật trên Termux.
+
+## Universal Compatibility Installer
+
+- [ ] Chuẩn hóa capability profile: Android API, ABI, nguồn Termux, dung lượng, quyền ghi, loopback, battery/background và package manager.
+- [ ] Xây dựng dependency planner phân biệt dependency bắt buộc, tùy chọn và không tương thích.
+- [ ] Tạo preflight report cho biết thiết bị phù hợp với profile nào, còn thiếu gì và lý do từ chối nếu không thể chạy.
+- [ ] Tự cài dependency còn thiếu theo từng transaction, xác minh sau mỗi package và không dùng nguồn không được người dùng chấp thuận.
+- [ ] Bổ sung health gate cho PHP CLI, PHP server mode, Nginx, SQLite/MariaDB và endpoint panel trước activate.
+- [ ] Tích hợp staging, backup, commit và rollback xuyên suốt toàn bộ dependency/install transaction.
+- [ ] Thêm chế độ `--diagnose`, `--plan`, `--install`, `--repair` và `--rollback` cho installer một dòng.
+- [ ] Kiểm thử nhiều profile Android/Termux, đặc biệt profile PHP CLI đạt nhưng server mode thất bại.
+- [ ] Cập nhật tài liệu cài đặt và chỉ phát hành sau khi test trên thiết bị thật đạt.
+- [x] Xóa toàn bộ GitHub Releases ngoại trừ V16.1.21 và xác minh tag/release mục tiêu còn nguyên
+- [x] Tạo và xác minh backup độc lập của mã nguồn đúng release v16.1.21 trước khi tiếp tục phát triển
+- [x] Kiểm thử ma trận Android API/ABI cho v16.1.21 và xác định mức tối thiểu cài đặt thành công
+- [x] Tích hợp Universal Compatibility Installer vào payload V16.1.21, đóng gói và cập nhật asset release có checksum mới
+- [x] Sửa test matrix live để kỳ vọng mã lỗi 10 cho Android API 23 và chạy lại toàn bộ UCI matrix
+- [x] Tạo tập lệnh tự động kiểm tra integrity payload UCI trên nhiều Android API/ABI, có báo cáo và mã thoát rõ ràng
+- [ ] Thiết lập GitHub Actions chạy verify-uci-payload.sh khi có build mới và chặn phát hành khi kiểm tra thất bại

@@ -18,6 +18,30 @@ bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/i
 
 > Khi cài xong, mở trình duyệt: `http://127.0.0.1:8888` (hoặc địa chỉ LAN hiển thị cuối quá trình cài để truy cập từ máy khác trong mạng Wi-Fi).
 
+## Kiểm tra tương thích trước khi cài
+
+Bộ cài Universal Compatibility Installer có hai chế độ chỉ kiểm tra, **không cài gói và không xóa dữ liệu TMS OS**:
+
+```bash
+# Xem Android, ABI, quyền ghi, gói còn thiếu và engine PHP có thể dùng
+bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh) --plan
+
+# Chạy đầy đủ probe PHP CLI/FPM/CGI/built-in HTTP và tạo báo cáo chẩn đoán
+bash <(curl -fsSL https://raw.githubusercontent.com/geogich961-lab/tms-os/main/install.sh) --diagnose
+```
+
+Báo cáo được lưu tại `~/.tms-os-installer-state/compatibility-report.txt` và dữ liệu máy ở dạng key-value tại `~/.tms-os-installer-state/compatibility.env`. Khi cần hỗ trợ, hãy gửi **mã lỗi cùng hai tệp báo cáo**, không gửi mật khẩu, token Cloudflare hoặc dữ liệu website.
+
+| Mã | Ý nghĩa | Hành động khuyến nghị |
+|---:|---|---|
+| 10 | Android/ABI không tương thích | Dùng Android API 24+ và Termux chính thức từ F-Droid |
+| 20 | Termux, PREFIX, package manager hoặc quyền ghi có vấn đề | Mở Termux chính thức, chạy `termux-setup-storage`, kiểm tra lại thư mục `$PREFIX/var/tmp` |
+| 30 | PHP CLI hoặc mọi server mode PHP đều không hoạt động | Chạy `--diagnose`, đọc stderr; không tiếp tục cài đè khi chưa xử lý lỗi |
+| 40 | Nginx hoặc kiểm tra mạng thất bại | Kiểm tra cấu hình Nginx và port loopback |
+| 50 | Không tạo được backup hoặc lỗi transaction | Giữ nguyên backup, không xóa thủ công; chạy rollback theo hướng dẫn bên dưới |
+
+Nếu PHP-FPM/PHP-CGI không chạy nhưng PHP built-in HTTP đã vượt qua probe, installer sẽ chọn engine `php-http`, chạy PHP trên `127.0.0.1` và để Nginx làm reverse proxy. Nếu **tất cả** server mode đều thất bại, installer dừng trước bước backup, staging hoặc ghi cấu hình để bảo vệ dữ liệu hiện có. Lỗi `Cannot create lock - Permission denied (13)` phải được xử lý trong báo cáo trước khi thử cài lại.
+
 ## Đã cài TMS OS rồi? Bộ cài tự nhận biết
 
 Khi máy đã từng cài TMS OS, bộ cài sẽ tự phát hiện và hỏi người dùng chọn một trong hai chế độ:

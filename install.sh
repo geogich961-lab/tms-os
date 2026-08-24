@@ -20,13 +20,58 @@
 # ============================================================
 set -uo pipefail
 
+# Universal Compatibility Installer. Hai cờ này chỉ đọc/kiểm tra, không cài,
+# không xin quyền lưu trữ và không sửa dữ liệu người dùng.
+CLI_MODE="${1:-}"
+export HOME="${HOME:-/data/data/com.termux/files/home}"
+COMPAT_STATE_DIR="${TMS_COMPAT_STATE_DIR:-$HOME/.tms-os-installer-state}"
+COMPAT_LOCAL="$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]}")/scripts/lib" 2>/dev/null && pwd)/installer-compatibility.sh"
+if [ -r "$COMPAT_LOCAL" ]; then
+  # shellcheck disable=SC1090
+  . "$COMPAT_LOCAL"
+elif command -v curl >/dev/null 2>&1; then
+  COMPAT_BOOTSTRAP="$HOME/.tms-os-compatibility-bootstrap-$$.sh"
+  curl -fsSL --retry 2 "https://raw.githubusercontent.com/${TMS_REPO:-geogich961-lab/tms-os}/main/scripts/lib/installer-compatibility.sh" -o "$COMPAT_BOOTSTRAP" 2>/dev/null || true
+  if [ -r "$COMPAT_BOOTSTRAP" ]; then
+    # shellcheck disable=SC1090
+    . "$COMPAT_BOOTSTRAP"
+  fi
+fi
+
+if [ "$CLI_MODE" = "--diagnose" ] || [ "$CLI_MODE" = "--plan" ]; then
+  export TMS_COMPAT_STATE_DIR="$COMPAT_STATE_DIR"
+  export TMS_COMPAT_REPORT="$COMPAT_STATE_DIR/compatibility.env"
+  export TMS_COMPAT_HUMAN_REPORT="$COMPAT_STATE_DIR/compatibility-report.txt"
+  if ! command -v compat_detect_base >/dev/null 2>&1; then
+    echo '[LỖI 20] Không tải được compatibility checker. Kiểm tra mạng và chạy lại.' >&2
+    exit 20
+  fi
+  compat_detect_base
+  if [ "$CLI_MODE" = "--plan" ]; then
+    compat_check_base
+    BASE_RC=$?
+    compat_dependency_plan "${TMS_DB_MODE:-sqlite}"
+    echo "Báo cáo: $TMS_COMPAT_HUMAN_REPORT"
+    if [ "$BASE_RC" -ne 0 ]; then
+      API_LEVEL="$(compat_getprop ro.build.version.sdk)"
+      [ -n "$API_LEVEL" ] && [ "$API_LEVEL" -lt 24 ] 2>/dev/null && exit 10 || exit 20
+    fi
+    exit 0
+  fi
+  compat_full_preflight "${TMS_DB_MODE:-sqlite}"
+  DIAG_RC=$?
+  echo "Báo cáo chẩn đoán: $TMS_COMPAT_HUMAN_REPORT"
+  echo "Mã lỗi: $DIAG_RC (10=Android/ABI, 20=Termux/package, 30=PHP engine, 40=Nginx/network, 50=dữ liệu/backup)"
+  exit "$DIAG_RC"
+fi
+
 # ---------- Kiểm tra môi trường Termux ----------
 if [ -z "${PREFIX:-}" ] || [ ! -d "${PREFIX:-/data/data/com.termux/files/usr}" ]; then
   echo '[LỖI] Bộ cài này chỉ chạy được trong Termux trên Android.'
   echo '        Hãy tải Termux từ F-Droid: https://f-droid.org/packages/com.termux'
   exit 1
 fi
-export HOME="${HOME:-/data/data/com.termux/files/home}"
+# HOME đã được thiết lập ở bootstrap compatibility phía trên.
 
 # ---------- Tương thích Android 7.0+ ----------
 # Termux chỉ hỗ trợ Android 7.0 (API 24) trở lên. Nếu pkg hoặc các lệnh
@@ -114,12 +159,44 @@ echo 'Bước 3/7: Cập nhật kho gói Termux và cài đặt các thành ph�
 export DEBIAN_FRONTEND=noninteractive
 pkg update -y -q
 pkg install -y php nginx mariadb curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl diffutils termux-api psmisc >/dev/null
-for c in php php-cgi nginx curl mariadb mariadb-dump zip unzip sshd; do
+for c in php nginx curl mariadb mariadb-dump zip unzip sshd; do
   command -v "$c" >/dev/null || { echo "[LỖI] Thiếu lệnh sau cài: $c"; exit 1; }
 done
+# PHP trên một số Termux dùng PREFIX/var/tmp cho lock nội bộ; tạo sớm
+# để tránh lỗi mơ hồ Permission denied ở bước khởi động engine.
+if ! mkdir -p "$PREFIX/var/tmp" "$PREFIX/var/run"; then
+  echo '[LỖI] Không thể tạo thư mục runtime của Termux ($PREFIX/var/tmp).' >&2
+  exit 1
+fi
+chmod 700 "$PREFIX/var/tmp" "$PREFIX/var/run" 2>/dev/null || true
+if ! test -w "$PREFIX/var/tmp" || ! mktemp "$PREFIX/var/tmp/tms-installer.XXXXXX" >/dev/null 2>&1; then
+  echo '[LỖI] $PREFIX/var/tmp không ghi được; không tiếp tục để tránh lỗi PHP lock.' >&2
+  exit 1
+fi
+rm -f "$PREFIX/var/tmp"/tms-installer.* 2>/dev/null || true
 echo '[OK] Đã cài đủ các thành phần.'
 
-# ---------- Bước 4: tải và kiểm tra bộ nguồn TMS OS ----------
+# Kiểm tra đúng PHP server binary sau khi package đã sẵn sàng. Nếu PHP-CGI/FPM
+# và PHP built-in HTTP đều fail, dừng trước khi tải source hoặc chạm dữ liệu.
+if command -v compat_full_preflight >/dev/null 2>&1; then
+  export TMS_COMPAT_STATE_DIR="$COMPAT_STATE_DIR"
+  export TMS_COMPAT_REPORT="$COMPAT_STATE_DIR/compatibility.env"
+  export TMS_COMPAT_HUMAN_REPORT="$COMPAT_STATE_DIR/compatibility-report.txt"
+  compat_full_preflight "${TMS_DB_MODE:-sqlite}"
+  COMPAT_RC=$?
+  if [ "$COMPAT_RC" -ne 0 ]; then
+    echo "[DỪNG] Thiết bị chưa có PHP engine hoạt động (mã $COMPAT_RC)."
+    echo "       Báo cáo: $TMS_COMPAT_HUMAN_REPORT"
+    exit "$COMPAT_RC"
+  fi
+  ENGINE_VALUE="$(sed -n 's/^ENGINE=//p' "$TMS_COMPAT_REPORT" | tail -n 1 | tr -d '\"')"
+  echo "[OK] Universal Compatibility profile đã chọn engine: ${ENGINE_VALUE:-unknown}"
+else
+  echo '[LỖI 20] Không có compatibility checker; dừng trước khi tải source.' >&2
+  exit 20
+fi
+
+# ---------- Bước 4: tải và kiểm tra bộ nguồn TMS OS mới nhất ----------
 echo 'Bước 4/7: Tải bộ nguồn TMS OS mới nhất...'
 ZIP="$WORK/TMS_OS.zip"
 # Chữ ký luôn lấy từ RELEASE.json nằm CÙNG GitHub Release với ZIP. Không dùng
@@ -166,15 +243,27 @@ echo '[OK] Bộ nguồn đã tải về và hợp lệ.'
 chmod -R 700 "$SRC/scripts"
 echo 'Bước 5/7: Thiết lập TMS OS (chọn engine database, tài khoản quản trị)...'
 
-# V16.0.15: Nếu kẹt V16.0.6, cưỡng bức xóa sạch thư mục target trước khi chạy sub-installer
-if [ "$INSTALL_MODE" = "clean" ]; then
-  echo '[CẢNH BÁO] Đang thực hiện cài đặt sạch — Xóa toàn bộ dữ liệu cũ...'
-  pkill -9 -f php-cgi 2>/dev/null || true
-  pkill -9 -f nginx 2>/dev/null || true
-  fuser -k 8888/tcp 9000/tcp 2>/dev/null || true
-  rm -rf "$HOME/tms-os" "$HOME/tms-os.previous"
+# Không xóa dữ liệu tại root installer. Sub-installer phải preflight và backup
+# trước, sau đó mới xử lý clean/repair trong transaction có rollback.
+SAFETY_LIB="$SRC/scripts/lib/installer-safety.sh"
+if [ ! -r "$SAFETY_LIB" ]; then
+  echo '[LỖI] Gói cài thiếu installer safety library; dừng trước khi thay đổi dữ liệu.' >&2
+  exit 50
+fi
+# shellcheck disable=SC1090
+. "$SAFETY_LIB"
+TMS_COMPAT_ENGINE="$(sed -n 's/^ENGINE=//p' "$COMPAT_STATE_DIR/compatibility.env" 2>/dev/null | tail -n 1 | tr -d '\"')"
+export TMS_COMPAT_ENGINE
+export TMS_COMPAT_VALID=1
+TMS_PREFLIGHT_REQUIRE_NGINX=0 TMS_INSTALL_MODE="$INSTALL_MODE" tms_preflight
+RC=$?
+if [ "$RC" -ne 0 ]; then
+  echo "[DỪNG] Thiết bị chưa đạt preflight (mã $RC); không xóa dữ liệu cũ."
+  echo "       Báo cáo: $TMS_REPORT"
+  exit "$RC"
 fi
 
+echo "[OK] Root preflight đạt. Báo cáo: $TMS_REPORT"
 RC=0
 if [ "$INSTALL_MODE" = "repair" ]; then
   export TMS_INSTALL_MODE="repair"

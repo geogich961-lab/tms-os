@@ -1,0 +1,125 @@
+name: Verify UCI payload
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'install.sh'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'RELEASE.json'
+      - '.github/workflows/verify-uci-payload.yml'
+  pull_request:
+    paths:
+      - 'install.sh'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'RELEASE.json'
+      - '.github/workflows/verify-uci-payload.yml'
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Tag release cần kiểm tra, ví dụ v16.1.21'
+        required: false
+        default: 'v16.1.21'
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-uci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-validation:
+    name: Validate UCI source scripts
+    if: github.event_name != 'release'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Check Bash syntax and executable contract
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          scripts=(
+            install.sh
+            scripts/install.sh
+            scripts/lib/installer-compatibility.sh
+            scripts/lib/installer-safety.sh
+            scripts/installer-rollback.sh
+            scripts/tms-php-engine.sh
+            scripts/verify-uci-payload.sh
+            tests/v16_1_21_uci_matrix_live_test.sh
+          )
+          for script in "${scripts[@]}"; do
+            test -f "$script"
+            bash -n "$script"
+          done
+          echo "Source syntax validation: PASS"
+
+      - name: Run installer regression tests when available
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          for test_script in \
+            tests/installer_compatibility_test.sh \
+            tests/installer_safety_test.sh \
+            tests/php_engine_temp_smoke.sh \
+            tests/php_engine_http_smoke.sh; do
+            if [ -x "$test_script" ] || [ -f "$test_script" ]; then
+              echo "Running $test_script"
+              bash "$test_script"
+            fi
+          done
+
+  release-payload-validation:
+    name: Validate published UCI payload
+    if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verifier
+        uses: actions/checkout@v4
+
+      - name: Download release payload and metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'release' && github.event.release.tag_name || inputs.release_tag }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          test -n "$RELEASE_TAG"
+          mkdir -p ci/payload
+          gh release download "$RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            --pattern 'TMS_OS_LATEST.zip' \
+            --pattern 'RELEASE.json' \
+            --dir ci/payload
+          test -s ci/payload/TMS_OS_LATEST.zip
+          test -s ci/payload/RELEASE.json
+          printf 'release_tag=%s\n' "$RELEASE_TAG" | tee ci/payload/ci-context.txt
+
+      - name: Run full payload integrity and Android matrix verification
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p ci/reports
+          bash scripts/verify-uci-payload.sh \
+            --payload ci/payload/TMS_OS_LATEST.zip \
+            --release-json ci/payload/RELEASE.json \
+            --report ci/reports/uci-integrity.log
+
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uci-verification-${{ github.run_id }}
+          path: |
+            ci/reports/
+            ci/payload/ci-context.txt
+          if-no-files-found: warn
+          retention-days: 30

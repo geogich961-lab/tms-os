@@ -9,9 +9,36 @@
 set -Eeuo pipefail
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"; HOME="${HOME:-/data/data/com.termux/files/home}"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"; TARGET="$HOME/tms-os"; NGINX="$PREFIX/etc/nginx/nginx.conf"; SITES="$PREFIX/etc/nginx/sites-enabled"; PHP_CONF_DIR="$PREFIX/etc/php/conf.d"
-RUNTIME_ROOT="$HOME/.tms-os"; TMS_TMPDIR="$RUNTIME_ROOT/tmp"
-STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$RUNTIME_ROOT/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$RUNTIME_ROOT/quarantine/$STAMP"
-trap 'echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
+RUNTIME_ROOT="$HOME/.tms-os"; TMS_TMPDIR="$RUNTIME_ROOT/tmp"; TERMUX_VAR_TMP="$PREFIX/var/tmp"
+STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP_ROOT="$HOME/.tms-os-installer-backups"; BACKUP="$BACKUP_ROOT/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$RUNTIME_ROOT/quarantine/$STAMP"
+SAFETY_LIB="$SOURCE_DIR/scripts/lib/installer-safety.sh"
+[ -r "$SAFETY_LIB" ] || { echo '[LỖI] Thiếu thư viện installer safety.' >&2; exit 50; }
+# Transaction state nằm ngoài runtime để clean không thể xóa marker rollback.
+export TMS_STATE_DIR="$HOME/.tms-os-installer-state"
+# shellcheck disable=SC1090
+. "$SAFETY_LIB"
+COMPAT_LIB="$SOURCE_DIR/scripts/lib/installer-compatibility.sh"
+if [ -r "$COMPAT_LIB" ]; then
+  # shellcheck disable=SC1090
+  . "$COMPAT_LIB"
+fi
+if [ "${TMS_COMPAT_VALID:-0}" != 1 ] && [ -z "${TMS_COMPAT_ENGINE:-}" ]; then
+  TMS_COMPAT_ENGINE=''
+fi
+tms_safety_init || { echo '[LỖI] Không khởi tạo được báo cáo preflight.' >&2; exit 50; }
+_tms_install_exit() {
+  local rc=$?
+  if [ "$rc" -ne 0 ] && [ -f "$TMS_TXN_FILE" ] && [ "${TMS_TXN_COMMITTED:-0}" != 1 ]; then
+    echo '[ROLLBACK] Installer thất bại; đang khôi phục bản cài trước...' >&2
+    tms_rollback_active || echo '[CẢNH BÁO] Rollback chưa hoàn tất; backup vẫn được giữ nguyên.' >&2
+  fi
+  exit "$rc"
+}
+_tms_install_error() {
+  echo "[LỖI] Dòng $LINENO. Báo cáo: $TMS_REPORT. Sao lưu: $BACKUP" >&2
+}
+trap _tms_install_exit EXIT
+trap _tms_install_error ERR
 printf '\n============================================\n Welcome to TMS OS by THCGaming\n============================================\n'
 
 if [ -p /dev/stdin ]; then
@@ -69,6 +96,21 @@ if command -v pkg >/dev/null 2>&1; then
     echo '          pkg install php nginx mariadb sqlite curl zip unzip openssh procps coreutils findutils grep sed gawk which openssl cronie'
     exit 1
   fi
+  # Probe compatibility chạy ngay sau package stage, trước mọi clean/backup/activate.
+  # Nếu chạy sub-installer độc lập thì không được bỏ qua gate này.
+  if [ "${TMS_COMPAT_VALID:-0}" != 1 ] && command -v compat_full_preflight >/dev/null 2>&1; then
+    export TMS_COMPAT_STATE_DIR="$HOME/.tms-os-installer-state"
+    export TMS_COMPAT_REPORT="$TMS_COMPAT_STATE_DIR/compatibility.env"
+    export TMS_COMPAT_HUMAN_REPORT="$TMS_COMPAT_STATE_DIR/compatibility-report.txt"
+    if compat_full_preflight "${TMS_DB_MODE:-sqlite}"; then
+      COMPAT_RC=0
+    else
+      COMPAT_RC=$?
+    fi
+    [ "$COMPAT_RC" -ne 0 ] && { echo "[DỪNG] Compatibility preflight thất bại (mã $COMPAT_RC); chưa thay đổi dữ liệu." >&2; exit "$COMPAT_RC"; }
+    TMS_COMPAT_ENGINE="$(sed -n 's/^ENGINE=//p' "$TMS_COMPAT_REPORT" | tail -n 1 | tr -d '\"')"
+    export TMS_COMPAT_ENGINE
+  fi
   # V14.1.3: kiểm tra từng binary thiết yếu — điện thoại thật đôi khi pkg báo OK nhưng thiếu file
   TMS_MISSING=""
   for c in php nginx curl mariadb mariadb-dump zip unzip sshd crond crontab; do command -v "$c" >/dev/null || TMS_MISSING="$TMS_MISSING $c"; done
@@ -79,6 +121,38 @@ if command -v pkg >/dev/null 2>&1; then
     done
     for c in $TMS_MISSING; do command -v "$c" >/dev/null || { echo "[LỖI] Vẫn thiếu: $c — thoát."; exit 1; }; done
   fi
+  # PHP/Termux trên một số thiết bị vẫn dùng PREFIX/var/tmp cho lock nội bộ.
+  # Thư mục này có thể không được tạo sau khi cài mới hoặc cài lại Termux.
+  if ! mkdir -p "$TERMUX_VAR_TMP" "$PREFIX/var/run"; then
+    echo '[LỖI] Không thể tạo $PREFIX/var/tmp — môi trường Termux hoặc quyền PREFIX bị hỏng.' >&2
+    exit 1
+  fi
+  chmod 700 "$TERMUX_VAR_TMP" "$PREFIX/var/run" 2>/dev/null || true
+  if ! test -w "$TERMUX_VAR_TMP"; then
+    echo '[LỖI] Thư mục tạm của Termux không ghi được. Không tiếp tục để tránh lỗi PHP lock.' >&2
+    exit 1
+  fi
+  if ! mktemp "$TERMUX_VAR_TMP/tms-preflight.XXXXXX" >/dev/null 2>&1; then
+    echo '[LỖI] Không thể tạo tệp tạm trong $PREFIX/var/tmp (thiếu thư mục hoặc sai quyền).' >&2
+    exit 1
+  fi
+  rm -f "$TERMUX_VAR_TMP"/tms-preflight.* 2>/dev/null || true
+
+  # Preflight chạy trước mọi thao tác xóa, ghi cấu hình hoặc đổi active target.
+  # Nginx được bỏ qua ở đây vì cài mới chưa có nginx.conf; sẽ kiểm tra sau staging.
+  echo '[PRECHECK] Kiểm tra khả năng chạy thực tế của PHP CLI/FastCGI...'
+  if TMS_PREFLIGHT_REQUIRE_NGINX=0 tms_preflight; then
+    rc=0
+  else
+    rc=$?
+  fi
+  if [ "$rc" -ne 0 ]; then
+    echo "[DỪNG] Preflight thất bại (mã $rc). Không xóa hoặc ghi đè dữ liệu."
+    echo "        Báo cáo đầy đủ: $TMS_REPORT"
+    exit "$rc"
+  fi
+  echo "[OK] Preflight đạt. Báo cáo: $TMS_REPORT"
+
   # PHP ext zip: ZIP handler yêu cầu ext zip — bắt buộc cài php-zip nếu thiếu
   if ! php -m 2>/dev/null | grep -q '^zip$'; then
     pkg install -y php-zip >/dev/null 2>&1 || apt-get install -y --fix-missing php-zip >/dev/null 2>&1 || true
@@ -129,11 +203,20 @@ if command -v pkg >/dev/null 2>&1; then
   # ========== Chế độ cài mới: xóa sạch dữ liệu cũ ==========
   if [ "$INSTALL_MODE" = "clean" ]; then
     echo ''
+    mkdir -p "$BACKUP_ROOT"
+    if ! tms_create_backup "$BACKUP" "$TARGET" "$NGINX" "$RUNTIME_ROOT"; then
+      echo '[LỖI] Không tạo được backup an toàn; hủy cài mới, không xóa dữ liệu.' >&2
+      exit 50
+    fi
+    echo "[OK] Backup cài mới: $BACKUP"
+    tms_init_txn "$STAMP" "$INSTALL_MODE" "$BACKUP" "$STAGING" "$TARGET" "$NGINX" "$RUNTIME_ROOT"
+    tms_set_phase backup
     echo '[CẢNH BÁO] Chế độ CÀI MỚI: sẽ XÓA SẠCH toàn bộ dữ liệu TMS OS cũ'
     echo '  (website, database, tài khoản panel, cấu hình nginx/PHP).'
     printf '  Gõ YES (in hoa) để xác nhận xóa sạch: '
     read -r CONFIRM_CLEAN
     if [ "$CONFIRM_CLEAN" != "YES" ]; then
+      tms_clear_txn
       echo 'Đã hủy — không xóa gì cả.'
       exit 0
     fi
@@ -166,8 +249,8 @@ if command -v pkg >/dev/null 2>&1; then
   fi
 
   # Chỉ tạo runtime sau khi đã chọn chế độ và xử lý Cài mới.
-  export TMPDIR="$TMS_TMPDIR"
-  if ! mkdir -p "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine"; then
+  export TMPDIR="$TMS_TMPDIR" TMP="$TMS_TMPDIR" TEMP="$TMS_TMPDIR"
+  if ! mkdir -p "$TMS_TMPDIR" "$TERMUX_VAR_TMP" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine"; then
     echo '[LỖI] Không thể tạo ~/.tms-os/tmp — quyền thư mục HOME của Termux không hợp lệ.' >&2
     exit 1
   fi
@@ -177,13 +260,14 @@ if command -v pkg >/dev/null 2>&1; then
   if [ "$INSTALL_MODE" = "repair" ]; then
     echo 'Sửa chữa — sao lưu dữ liệu hiện tại trước khi cài đè...'
     printf '[2/7] Chuẩn bị dữ liệu và sao lưu...\n'
-    mkdir -p "$HOME/.tms-os" "$HOME/.tms-os/backups" "$HOME/logs/services" "$BACKUP"
-    if [ -d "$TARGET" ]; then
-      cp -a "$TARGET" "$BACKUP/tms-os" || true
+    mkdir -p "$BACKUP_ROOT" "$HOME/logs/services"
+    if ! tms_create_backup "$BACKUP" "$TARGET" "$NGINX" "$RUNTIME_ROOT"; then
+      echo '[LỖI] Không tạo được backup đầy đủ; dừng trước khi cài đè.' >&2
+      exit 50
     fi
-    [ -f "$HOME/.tms-os/data/db/tms.db" ] && cp "$HOME/.tms-os/data/db/tms.db" "$BACKUP/tms.db.bak" || true
-    [ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
     echo "[OK] Đã sao lưu dữ liệu hiện tại vào $BACKUP"
+    tms_init_txn "$STAMP" "$INSTALL_MODE" "$BACKUP" "$STAGING" "$TARGET" "$NGINX" "$RUNTIME_ROOT"
+    tms_set_phase backup
   fi
 
   # ========== Chọn engine database ==========
@@ -220,10 +304,28 @@ date +%s > "$HOME/.tms-os/runtime_started_at"
 [ -f "$NGINX" ] && cp "$NGINX" "$BACKUP/nginx.conf" || true
 cp -a "$SOURCE_DIR"/{app,config,public,routes,scripts} "$STAGING/"
 [ -d "$SOURCE_DIR/storage" ] && cp -a "$SOURCE_DIR/storage/." "$STAGING/storage/" || true
-mkdir -p "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache"
-chmod -R 700 "$STAGING/storage"
-find "$STAGING" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do php -l "$f" >/dev/null; done
-printf '[3/7] Cấu hình PHP Engine tương thích tự động...\n'
+  mkdir -p "$STAGING/storage/logs" "$STAGING/storage/sessions" "$STAGING/storage/cache"
+  chmod -R 700 "$STAGING/storage"
+  tms_set_phase stage
+
+find "$STAGING" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do TMPDIR="$TMS_TMPDIR" TMP="$TMS_TMPDIR" TEMP="$TMS_TMPDIR" php -n -d "sys_temp_dir=$TMS_TMPDIR" -l "$f" >/dev/null; done
+  tms_set_phase staged
+  printf '[3/7] Cấu hình PHP Engine tương thích tự động...\n'
+  TMS_COMPAT_ENGINE="${TMS_COMPAT_ENGINE:-fastcgi}"
+  case "$TMS_COMPAT_ENGINE" in
+    php-http)
+      echo '[OK] Dùng PHP built-in HTTP server qua loopback (fallback tương thích).'
+      PANEL_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_set_header Host $host; proxy_set_header X-TMS-Root $TARGET/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
+      SITE_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_set_header Host $host; proxy_set_header X-TMS-Root $HOME/websites/default/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
+      ;;
+    fastcgi)
+      echo '[OK] Dùng PHP FastCGI (FPM/CGI đã qua health probe).'
+      PANEL_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }'
+      SITE_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }'
+      ;;
+    *) echo '[LỖI] Engine compatibility không hợp lệ; dừng trước khi ghi Nginx.' >&2; exit 30 ;;
+  esac
+
 cat > "$PHP_CONF_DIR/99-tms-os.ini" <<INI
 memory_limit=256M
 upload_max_filesize=512M
@@ -295,8 +397,7 @@ http {
   include $SITES/*.conf;
 server { listen 127.0.0.1:8888; server_name localhost; root $TARGET/public; index index.php;
 access_log $HOME/logs/nginx/tms-access.log tms_access; error_log $HOME/logs/nginx/tms-error.log;
-location / { try_files \$uri \$uri/ /index.php?\$query_string; }
-location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
+$PANEL_HANDLER
   # Cache browser cho file tĩnh
   location ~* \\.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot|mp3|mp4|webm)$ {
     expires 1y;
@@ -308,8 +409,7 @@ NGINX
 cat > "$SITES/default.conf" <<NGINX
 server { listen 0.0.0.0:8080; server_name _; root $HOME/websites/default/public; index index.php index.html;
 access_log $HOME/logs/nginx/default-access.log tms_access; error_log $HOME/logs/nginx/default-error.log;
-location / { try_files \$uri \$uri/ /index.php?\$query_string; }
-location ~ \.php$ { try_files \$uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }
+$SITE_HANDLER
   location ~* \.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot)$ {
     expires 1y;
     add_header Cache-Control "public, immutable";
@@ -464,6 +564,11 @@ echo '[OK] Đã lưu tài khoản quản trị panel.'
 fi
 
 printf '[6/7] Cài source và khởi động dịch vụ...\n'
+if [ "$TMS_COMPAT_ENGINE" != 'fastcgi' ] && [ "$TMS_COMPAT_ENGINE" != 'php-http' ]; then
+  echo '[LỖI] Engine policy không hợp lệ; dừng trước khi activate.' >&2
+  exit 30
+fi
+export TMS_COMPAT_ENGINE
 # V13.0.1: dọn toàn bộ khóa, hàng đợi và trạng thái pending cũ trước khi thay core.
 rm -f "$HOME/.tms-os/php-engine.lock" "$HOME/.tms-os/service-worker.lock" 2>/dev/null || true
 rm -rf "$HOME/.tms-os/service-core/worker.lock" "$HOME/.tms-os/service-core/queue" "$HOME/.tms-os/service-core/results" 2>/dev/null || true
@@ -471,7 +576,13 @@ mkdir -p "$HOME/.tms-os/service-core/queue" "$HOME/.tms-os/service-core/results"
 if [ -f "$HOME/.tms-os/service-manager.json" ]; then
   php -r '$f=getenv("HOME")."/.tms-os/service-manager.json";$d=json_decode((string)@file_get_contents($f),true);if(!is_array($d))$d=[];$d["pending"]=[];file_put_contents($f,json_encode($d,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE));' || true
 fi
-nginx -t; rm -rf "$TARGET.previous"; [ -d "$TARGET" ] && mv "$TARGET" "$TARGET.previous" || true; mv "$STAGING" "$TARGET"
+  nginx -t
+  tms_set_phase ready-to-activate
+  rm -rf "$TARGET.previous"
+  [ -d "$TARGET" ] && mv "$TARGET" "$TARGET.previous" || true
+  mv "$STAGING" "$TARGET"
+  tms_set_phase activated
+
 PHP_ENGINE_OK=0
 for ATTEMPT in 1 2 3; do
   echo "Khởi động PHP Engine (lần $ATTEMPT/3)..."
@@ -502,7 +613,16 @@ if [ -x "$TARGET/scripts/tms-cloudflare-tunnel.sh" ] && [ -f "$HOME/.tms-os/clou
     echo '[CẢNH BÁO] Cloudflare connector chưa khởi động. Xem: ~/logs/services/cloudflare-tunnel.log'
   fi
 fi
-sleep 3; curl -fsS http://127.0.0.1:8888/login >/dev/null; rm -rf "$TARGET.previous"
+tms_set_phase health-check
+sleep 3
+curl -fsS http://127.0.0.1:8888/login >/dev/null
+# Chỉ lưu policy bền vững sau health check; nếu ghi thất bại EXIT trap vẫn rollback.
+printf '%s\n' "$TMS_COMPAT_ENGINE" > "$HOME/.tms-os/php-engine-policy"
+chmod 600 "$HOME/.tms-os/php-engine-policy"
+TMS_TXN_COMMITTED=1
+tms_set_phase committed
+tms_clear_txn
+rm -rf "$TARGET.previous"
 # ---------- Bước phụ: tự khởi động máy chủ khi mở phiên Termux (session hook) ----------
 # Mỗi lần bạn mở Termux, nếu Nginx hoặc PHP chưa chạy, hệ thống sẽ tự khởi động ngầm
 # (chỉ 1 lần cho mỗi phiên đăng nhập mỗi ngày, không làm chậm mở Termux).
