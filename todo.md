@@ -322,3 +322,11 @@
 - [x] Tách và kiểm tra riêng bước `password_hash`, không gộp với lỗi backup/lock.
 - [x] Sửa cơ chế tạo hash để xử lý được môi trường Termux không tạo được file tạm hoặc lock.
 - [x] Thêm hồi quy xác nhận hash hợp lệ và tạo được `panel-secret.php` trong cài mới lẫn Repair.
+
+## Khẩn cấp: V16.1.22 ZIP/RELEASE.json không khớp SHA-256 sau khi tải GitHub
+
+- [x] Kiểm tra trạng thái commit, tag, release và toàn bộ asset V16.1.22 trên GitHub.
+- [x] Tái hiện bằng URL tag và URL latest, đồng thời kiểm tra redirect/cache và checksum nhiều lần.
+- [x] Truy vết quy trình build để loại bỏ khả năng manifest chứa checksum cũ hoặc asset bị thay thế không đồng bộ.
+- [x] Sửa quy trình đóng gói/phát hành theo nguyên tắc tạo ZIP một lần, tính checksum một lần và upload manifest tương ứng.
+- [x] Xác minh ZIP công khai giải nén được và checksum khớp RELEASE.json trước khi hướng dẫn người dùng cài lại.
