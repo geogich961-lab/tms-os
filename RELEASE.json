@@ -1,23 +1,23 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.121,
-  "build": "20260823-1725",
+  "internal_version": 16.122,
+  "build": "20260824-0000",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-23",
-  "name": "TMS OS V16.1.21",
-  "version": "16.1.21",
-  "notes": "V16.1.21 sửa lỗi Update Center tải asset cũ nhưng báo cập nhật thành công; bổ sung xác minh phiên bản thực tế sau khi áp dụng và cập nhật cache mobile.",
+  "released_at": "2026-08-24",
+  "name": "TMS OS V16.1.22",
+  "version": "16.1.22",
+  "notes": "V16.1.22 sửa lỗi cài mới trên Termux Android khi tạo lock, file tạm và hash mật khẩu bị Permission denied; bổ sung cơ chế hash qua php -n và stdin, đồng thời giữ nguyên dữ liệu và cấu hình hiện có khi Repair.",
   "features": [
-    "ZIP phát hành chứa đúng Platform V16.1.21 và được kiểm tra trực tiếp trước khi tải lên.",
-    "Update Center chỉ báo thành công sau khi xác nhận phiên bản đang chạy đã thay đổi.",
-    "Không thay đổi Cloudflare Tunnel, DNS, token, Remote Access, hostname hoặc dữ liệu ứng dụng hiện có."
+    "Hash mật khẩu quản trị không còn phụ thuộc file tạm hoặc lock của PHP CLI trong môi trường Termux.",
+    "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
+    "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "b01cc64d51dc5161cf9d263850e0daa5b64c604813c7d06af65e06184f228f40",
-  "build_date": "2026-08-23",
-  "version_display": "TMS OS V16.1.21",
-  "changelog": "V16.1.21: khắc phục lỗi asset GitHub không khớp phiên bản nguồn khiến Update Center vẫn hiển thị V16.1.19; bổ sung kiểm tra sau áp dụng, tăng cache version và giữ nguyên phạm vi cấu hình vận hành.",
+  "checksum_sha256": "8de4377b8d1b6eae36643614fd3aaf89a7a9b474d2cbdc152792e5d29a474032",
+  "build_date": "2026-08-24",
+  "version_display": "TMS OS V16.1.22",
+  "changelog": "V16.1.22: khắc phục lỗi Permission denied khi installer tạo lock/file tạm và password_hash trên thiết bị Android Termux mới; xác minh hash hợp lệ và giữ an toàn dữ liệu trong cả cài mới lẫn Repair.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
-  "release_date": "2026-08-23"
+  "release_date": "2026-08-24"
 }
