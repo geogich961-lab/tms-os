@@ -341,15 +341,15 @@
 
 ## Khẩn cấp: V16.1.23 vẫn không cài được trên thiết bị mới
 
-- [ ] Thu thập toàn bộ log quanh dòng lỗi và xác định installer/phiên bản thực tế đang chạy.
-- [ ] Phân biệt lock của apt/pkg với lock `.tms-os` hoặc lock do tiến trình dịch vụ tạo.
-- [ ] Kiểm tra quyền sở hữu/quyền ghi của `$HOME`, `$PREFIX` và các đường dẫn lock trên Termux.
-- [ ] Chỉ sửa và phát hành bản mới sau khi tái hiện đúng nguyên nhân, có test hồi quy tương ứng.
-- [ ] Xác nhận quyền bộ nhớ dùng chung đã cấp nhưng lỗi lock vẫn tái diễn; không coi `termux-setup-storage` là biện pháp sửa lock nội bộ.
+- [x] Thu thập toàn bộ log quanh dòng lỗi và xác định installer/phiên bản thực tế đang chạy.
+- [x] Phân biệt lock của apt/pkg với lock `.tms-os` hoặc lock do tiến trình dịch vụ tạo.
+- [x] Kiểm tra quyền sở hữu/quyền ghi của `$HOME`, `$PREFIX` và các đường dẫn lock trên Termux.
+- [x] Chỉ sửa và phát hành bản mới sau khi tái hiện đúng nguyên nhân, có test hồi quy tương ứng.
+- [x] Xác nhận quyền bộ nhớ dùng chung đã cấp nhưng lỗi lock vẫn tái diễn; không coi `termux-setup-storage` là biện pháp sửa lock nội bộ.
 
 ## Khẩn cấp: lỗi lock tại bước tạo tài khoản quản trị trên Android cũ
 
-- [ ] Đối chiếu dòng 454 trong installer với lệnh thực tế gây `Permission denied (13)`.
-- [ ] Kiểm tra riêng đường dẫn backup, file hash, file secret và lock/session của PHP tại bước [5/7].
-- [ ] Sửa cơ chế tạo tài khoản để không phụ thuộc file tạm hoặc thư mục không ghi được.
-- [ ] Bổ sung hồi quy cho SQLite + tài khoản quản trị trên môi trường quyền hạn chế.
+- [x] Đối chiếu dòng 454 trong installer với lệnh thực tế gây `Permission denied (13)`.
+- [x] Kiểm tra riêng đường dẫn backup, file hash, file secret và lock/session của PHP tại bước [5/7].
+- [x] Sửa cơ chế tạo tài khoản để không phụ thuộc file tạm hoặc thư mục không ghi được.
+- [x] Bổ sung hồi quy cho SQLite + tài khoản quản trị trên môi trường quyền hạn chế.
