@@ -1,7 +1,7 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.125,
+  "internal_version": "16.1.25",
   "build": "20260824-0200",
   "channel": "stable",
   "version_visible_to_user": true,
@@ -17,7 +17,7 @@
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "TO_BE_FILLED_AFTER_BUILD",
+  "checksum_sha256": "7b0cc6ef2f8a150b58e932e2c7db225bc4fdba94bec2c38fa1b7fb8f5482a2c8",
   "build_date": "2026-08-24",
   "version_display": "TMS OS V16.1.25",
   "changelog": "V16.1.25: khắc phục PHP Engine không khởi động trên Termux Android cũ bằng fallback PHP-FPM sang PHP-CGI cổng 9000; giữ an toàn dữ liệu trong Repair.",
