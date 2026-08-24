@@ -34,7 +34,7 @@ if (!str_contains($rootInstaller, 'TMS_INSTALL_MODE="clean"')) {
     fwrite(STDERR, "Installer mode regression: root installer must explicitly pass clean mode.\n"); exit(1);
 }
 foreach ([$installer, $adminSetup] as $script) {
-    if (!str_contains($script, 'php -n -r') || !str_contains($script, 'stream_get_contents(STDIN)')) {
+    if (!str_contains($script, 'php -n -r') || !str_contains($script, 'stream_get_contents(STDIN')) {
         fwrite(STDERR, "Password hash regression: installer must hash through stdin with PHP config disabled.\n"); exit(1);
     }
 }

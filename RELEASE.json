@@ -1,24 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.123,
-  "build": "20260824-0115",
+  "internal_version": 16.124,
+  "build": "20260824-0145",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-24",
-  "name": "TMS OS V16.1.23",
-  "version": "16.1.23",
-  "notes": "V16.1.23 sửa lỗi cài mới trên Termux Android khi runtime lock cũ hoặc thư mục .tms-os bị sai quyền; chỉ khởi tạo runtime sau khi xử lý chế độ cài mới, đồng thời giữ nguyên luồng Repair an toàn.",
+  "name": "TMS OS V16.1.24",
+  "version": "16.1.24",
+  "notes": "V16.1.24 sửa lỗi Permission denied tại bước tạo tài khoản quản trị trên Android cũ bằng cách không nạp cấu hình PHP CLI có thể tạo lock; giữ nguyên cơ chế Cài mới và Repair an toàn.",
   "features": [
     "Hash mật khẩu quản trị không còn phụ thuộc file tạm hoặc lock của PHP CLI trong môi trường Termux.",
     "Cài mới xóa runtime .tms-os cũ trước khi tạo TMPDIR và lock, tránh lỗi Permission denied do trạng thái cài đặt trước đó.",
+    "Bước ghi panel-secret.php cũng dùng php -n, không phụ thuộc session/opcache/temp lock của cấu hình PHP hệ thống.",
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "ca113285ded9e9123208cc0f3167160da2c6f4e53447208b4e94f22463adc057",
+  "checksum_sha256": "TO_BE_FILLED_AFTER_BUILD",
   "build_date": "2026-08-24",
-  "version_display": "TMS OS V16.1.23",
-  "changelog": "V16.1.23: khắc phục lỗi Permission denied khi Cài mới do runtime .tms-os hoặc lock cũ; trì hoãn khởi tạo TMPDIR đến sau khi xử lý chế độ cài đặt, bổ sung hồi quy và giữ an toàn dữ liệu trong Repair.",
+  "version_display": "TMS OS V16.1.24",
+  "changelog": "V16.1.24: khắc phục lỗi Permission denied tại bước tạo tài khoản quản trị do PHP CLI nạp cấu hình lock; đồng thời xử lý runtime .tms-os trước khi tạo TMPDIR và giữ an toàn dữ liệu trong Repair.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-24"
 }

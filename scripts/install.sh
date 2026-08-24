@@ -451,7 +451,7 @@ if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
   echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại bộ cài.' >&2
   exit 1
 fi
-php -r '
+php -n -r '
   $file=(string)$argv[1];
   $user=(string)$argv[2];
   $hash=(string)$argv[3];
