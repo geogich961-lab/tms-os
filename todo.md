@@ -330,3 +330,11 @@
 - [x] Truy vết quy trình build để loại bỏ khả năng manifest chứa checksum cũ hoặc asset bị thay thế không đồng bộ.
 - [x] Sửa quy trình đóng gói/phát hành theo nguyên tắc tạo ZIP một lần, tính checksum một lần và upload manifest tương ứng.
 - [x] Xác minh ZIP công khai giải nén được và checksum khớp RELEASE.json trước khi hướng dẫn người dùng cài lại.
+
+## Khẩn cấp: cài mới V16.1.22 vẫn lỗi tạo lock Permission denied
+
+- [ ] Xác định chính xác lock file/thư mục và nhánh installer đang được thiết bị tải.
+- [ ] Mô phỏng quyền thư mục Termux không ghi được và phân biệt lỗi lock với lỗi hash/TMPDIR.
+- [ ] Sửa installer để lock nằm trong thư mục runtime riêng có quyền ghi, có fallback an toàn và không dùng quyền root.
+- [ ] Bổ sung hồi quy riêng cho cài mới, Repair và trường hợp chạy installer từ thư mục không ghi được.
+- [ ] Đóng gói, phát hành và xác minh asset công khai trước khi yêu cầu người dùng chạy lại.

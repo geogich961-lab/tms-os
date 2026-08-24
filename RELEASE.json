@@ -1,23 +1,24 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": 16.122,
-  "build": "20260824-0000",
+  "internal_version": 16.123,
+  "build": "20260824-0115",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-24",
-  "name": "TMS OS V16.1.22",
-  "version": "16.1.22",
-  "notes": "V16.1.22 sửa lỗi cài mới trên Termux Android khi tạo lock, file tạm và hash mật khẩu bị Permission denied; bổ sung cơ chế hash qua php -n và stdin, đồng thời giữ nguyên dữ liệu và cấu hình hiện có khi Repair.",
+  "name": "TMS OS V16.1.23",
+  "version": "16.1.23",
+  "notes": "V16.1.23 sửa lỗi cài mới trên Termux Android khi runtime lock cũ hoặc thư mục .tms-os bị sai quyền; chỉ khởi tạo runtime sau khi xử lý chế độ cài mới, đồng thời giữ nguyên luồng Repair an toàn.",
   "features": [
     "Hash mật khẩu quản trị không còn phụ thuộc file tạm hoặc lock của PHP CLI trong môi trường Termux.",
+    "Cài mới xóa runtime .tms-os cũ trước khi tạo TMPDIR và lock, tránh lỗi Permission denied do trạng thái cài đặt trước đó.",
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "48fe5f920e629ade19c52c27012eab3d802dfd1179df57d7a18f75dbacf8a32f",
+  "checksum_sha256": "TO_BE_FILLED_AFTER_BUILD",
   "build_date": "2026-08-24",
-  "version_display": "TMS OS V16.1.22",
-  "changelog": "V16.1.22: khắc phục lỗi Permission denied khi installer tạo lock/file tạm và password_hash trên thiết bị Android Termux mới; xác minh hash hợp lệ và giữ an toàn dữ liệu trong cả cài mới lẫn Repair.",
+  "version_display": "TMS OS V16.1.23",
+  "changelog": "V16.1.23: khắc phục lỗi Permission denied khi Cài mới do runtime .tms-os hoặc lock cũ; trì hoãn khởi tạo TMPDIR đến sau khi xử lý chế độ cài đặt, bổ sung hồi quy và giữ an toàn dữ liệu trong Repair.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-24"
 }

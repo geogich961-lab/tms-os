@@ -6,6 +6,7 @@ $service = (string)file_get_contents($root . '/app/Services/AppInstallerService.
 $controller = (string)file_get_contents($root . '/app/Controllers/MarketplaceController.php');
 $startup = (string)file_get_contents($root . '/scripts/start-tms.sh');
 $installer = (string)file_get_contents($root . '/scripts/install.sh');
+$rootInstaller = (string)file_get_contents($root . '/install.sh');
 $adminSetup = (string)file_get_contents($root . '/scripts/tms-setup-admin.sh');
 
 foreach (['CURLOPT_FAILONERROR', "'health' => \$appInfo['type'] === 'service' ? 'running' : 'ready'", "['id' => 'file-browser'"] as $needle) {
@@ -19,6 +20,18 @@ foreach (['private AuthService $auth', 'tms_verify_csrf', 'HTTP_X_CSRF_TOKEN'] a
 }
 foreach (['start-filebrowser-*.sh', 'marketplace-services.log'] as $needle) {
     if (!str_contains($startup, $needle)) { fwrite(STDERR, "Marketplace service recovery regression: missing {$needle}\n"); exit(1); }
+}
+$cleanRemoval = strpos($installer, 'rm -rf "$RUNTIME_ROOT"');
+$runtimeInit = strpos($installer, 'if ! mkdir -p "$TMS_TMPDIR"');
+if ($cleanRemoval === false || $runtimeInit === false || $cleanRemoval > $runtimeInit) {
+    fwrite(STDERR, "Installer lock regression: clean mode must remove runtime before recreating TMPDIR.\n"); exit(1);
+}
+$oldRuntimeInit = strpos($installer, 'mkdir -p "$TMS_TMPDIR" "$RUNTIME_ROOT/backups"');
+if ($oldRuntimeInit !== false && $oldRuntimeInit < strpos($installer, 'HAS_OLD=0')) {
+    fwrite(STDERR, "Installer lock regression: runtime must not be created before clean/repair selection.\n"); exit(1);
+}
+if (!str_contains($rootInstaller, 'TMS_INSTALL_MODE="clean"')) {
+    fwrite(STDERR, "Installer mode regression: root installer must explicitly pass clean mode.\n"); exit(1);
 }
 foreach ([$installer, $adminSetup] as $script) {
     if (!str_contains($script, 'php -n -r') || !str_contains($script, 'stream_get_contents(STDIN)')) {

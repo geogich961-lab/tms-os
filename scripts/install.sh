@@ -9,9 +9,7 @@
 set -Eeuo pipefail
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"; HOME="${HOME:-/data/data/com.termux/files/home}"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"; TARGET="$HOME/tms-os"; NGINX="$PREFIX/etc/nginx/nginx.conf"; SITES="$PREFIX/etc/nginx/sites-enabled"; PHP_CONF_DIR="$PREFIX/etc/php/conf.d"
-RUNTIME_ROOT="$HOME/.tms-os"; TMS_TMPDIR="$RUNTIME_ROOT/tmp"; export TMPDIR="$TMS_TMPDIR"
-mkdir -p "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine"
-chmod 700 "$RUNTIME_ROOT" "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine" 2>/dev/null || true
+RUNTIME_ROOT="$HOME/.tms-os"; TMS_TMPDIR="$RUNTIME_ROOT/tmp"
 STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$RUNTIME_ROOT/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$RUNTIME_ROOT/quarantine/$STAMP"
 trap 'echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
 printf '\n============================================\n Welcome to TMS OS by THCGaming\n============================================\n'
@@ -159,8 +157,21 @@ if command -v pkg >/dev/null 2>&1; then
     # Cấu hình nginx/PHP cũ
     rm -f "$NGINX" "$SITES/default.conf"
     rm -f "$PHP_CONF_DIR/99-tms-os.ini"
+    # Cài mới phải loại bỏ cả runtime/lock cũ; nếu thư mục bị sở hữu bởi
+    # tài khoản khác, dừng rõ ràng thay vì để lỗi lock mơ hồ ở bước sau.
+    if [ -e "$RUNTIME_ROOT" ]; then
+      rm -rf "$RUNTIME_ROOT" || { echo '[LỖI] Không thể xóa runtime cũ ~/.tms-os — thư mục có thể bị sai quyền. Hãy chạy Termux bằng đúng tài khoản đã cài TMS OS hoặc cài lại Termux; không dùng sudo.' >&2; exit 1; }
+    fi
     echo '[OK] Đã xóa sạch dữ liệu cũ.'
   fi
+
+  # Chỉ tạo runtime sau khi đã chọn chế độ và xử lý Cài mới.
+  export TMPDIR="$TMS_TMPDIR"
+  if ! mkdir -p "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine"; then
+    echo '[LỖI] Không thể tạo ~/.tms-os/tmp — quyền thư mục HOME của Termux không hợp lệ.' >&2
+    exit 1
+  fi
+  chmod 700 "$RUNTIME_ROOT" "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine" 2>/dev/null || true
 
   # ========== Chế độ sửa chữa: sao lưu dữ liệu hiện tại ==========
   if [ "$INSTALL_MODE" = "repair" ]; then
