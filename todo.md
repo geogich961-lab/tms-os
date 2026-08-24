@@ -333,8 +333,8 @@
 
 ## Khẩn cấp: cài mới V16.1.22 vẫn lỗi tạo lock Permission denied
 
-- [ ] Xác định chính xác lock file/thư mục và nhánh installer đang được thiết bị tải.
-- [ ] Mô phỏng quyền thư mục Termux không ghi được và phân biệt lỗi lock với lỗi hash/TMPDIR.
-- [ ] Sửa installer để lock nằm trong thư mục runtime riêng có quyền ghi, có fallback an toàn và không dùng quyền root.
-- [ ] Bổ sung hồi quy riêng cho cài mới, Repair và trường hợp chạy installer từ thư mục không ghi được.
-- [ ] Đóng gói, phát hành và xác minh asset công khai trước khi yêu cầu người dùng chạy lại.
+- [x] Xác định chính xác lock file/thư mục và nhánh installer đang được thiết bị tải.
+- [x] Mô phỏng quyền thư mục Termux không ghi được và phân biệt lỗi lock với lỗi hash/TMPDIR.
+- [x] Sửa installer để lock nằm trong thư mục runtime riêng có quyền ghi, có fallback an toàn và không dùng quyền root.
+- [x] Bổ sung hồi quy riêng cho cài mới, Repair và trường hợp chạy installer từ thư mục không ghi được.
+- [x] Đóng gói, phát hành và xác minh asset công khai trước khi yêu cầu người dùng chạy lại.
