@@ -46,11 +46,8 @@ while :; do
   break
 done
 
-# --- Hash an toàn qua file tạm (mật khẩu chứa ký tự đặc biệt $!'" không bị hỏng) ---
-_PW_TMP="$(mktemp)"
-printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
-HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
-rm -f "$_PW_TMP"
+# --- Hash an toàn qua stdin, không phụ thuộc thư mục tạm/lock của Termux ---
+HASH="$(printf '%s' "$ADMIN_PASS" | php -n -r '$password=stream_get_contents(STDIN); echo password_hash($password, PASSWORD_DEFAULT);')" || HASH=""
 if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
   echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại.'
   exit 1

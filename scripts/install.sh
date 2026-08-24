@@ -9,7 +9,10 @@
 set -Eeuo pipefail
 PREFIX="${PREFIX:-/data/data/com.termux/files/usr}"; HOME="${HOME:-/data/data/com.termux/files/home}"
 SOURCE_DIR="$(cd "$(dirname "$0")/.." && pwd)"; TARGET="$HOME/tms-os"; NGINX="$PREFIX/etc/nginx/nginx.conf"; SITES="$PREFIX/etc/nginx/sites-enabled"; PHP_CONF_DIR="$PREFIX/etc/php/conf.d"
-STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$HOME/.tms-os/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$HOME/.tms-os/quarantine/$STAMP"
+RUNTIME_ROOT="$HOME/.tms-os"; TMS_TMPDIR="$RUNTIME_ROOT/tmp"; export TMPDIR="$TMS_TMPDIR"
+mkdir -p "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine"
+chmod 700 "$RUNTIME_ROOT" "$TMS_TMPDIR" "$RUNTIME_ROOT/backups" "$RUNTIME_ROOT/quarantine" 2>/dev/null || true
+STAMP="$(date +%Y%m%d_%H%M%S)"; BACKUP="$RUNTIME_ROOT/backups/$STAMP"; STAGING="$HOME/.tms-os-staging-$STAMP"; QUARANTINE="$RUNTIME_ROOT/quarantine/$STAMP"
 trap 'echo "[LỖI] Dòng $LINENO. Xem sao lưu: $BACKUP"' ERR
 printf '\n============================================\n Welcome to TMS OS by THCGaming\n============================================\n'
 
@@ -432,10 +435,7 @@ while :; do
   if [ "$ADMIN_PASS" != "$ADMIN_PASS_CONFIRM" ]; then echo 'Hai mật khẩu không khớp. Vui lòng nhập lại.'; continue; fi
   break
 done
-_PW_TMP="$(mktemp)"
-printf '%s' "$ADMIN_PASS" > "$_PW_TMP"; chmod 600 "$_PW_TMP"
-HASH="$(php -r 'echo password_hash((string)file_get_contents($argv[1]), PASSWORD_DEFAULT);' "$_PW_TMP")" || HASH=""
-rm -f "$_PW_TMP"
+HASH="$(printf '%s' "$ADMIN_PASS" | php -n -r '$password=stream_get_contents(STDIN); echo password_hash($password, PASSWORD_DEFAULT);')" || HASH=""
 if [ -z "$HASH" ] || [ "${#HASH}" -lt 20 ]; then
   echo '[LỖI] Không thể tạo hash mật khẩu. Hãy chạy lại bộ cài.' >&2
   exit 1

@@ -301,3 +301,24 @@
 - [x] Đối chiếu release metadata, tên asset, checksum và bước thay thế mã nguồn/ghi phiên bản trên thiết bị.
 - [x] Sửa luồng cập nhật một chạm để chỉ báo thành công sau khi phiên bản thực tế đổi, không xóa dữ liệu hoặc cấu hình Cloudflare.
 - [x] Bổ sung hồi quy và phát hành V16.1.21; asset công khai đã được tải trực tiếp, ZIP chứa Platform V16.1.21 và checksum khớp.
+
+## Nâng cấp Update Center: tự kiểm tra và quản lý release
+
+- [ ] Gộp giao diện Update Center thành một luồng gọn, tự kiểm tra phiên bản khi mở trang và ẩn nút cập nhật nếu đang ở bản mới nhất.
+- [ ] Hiển thị rõ phiên bản hiện tại, bản mới nhất và danh sách release GitHub để người dùng chọn nâng cấp hoặc hạ cấp.
+- [ ] Thêm cảnh báo hạ cấp, yêu cầu xác nhận sao lưu trước thao tác có rủi ro và giữ rollback an toàn.
+- [ ] Hiển thị lựa chọn clear cache sau khi nâng/hạ cấp, đồng thời vẫn cho phép người dùng bỏ qua để tự xóa thủ công.
+- [ ] Bổ sung test backend/UI, xác minh responsive và kiểm tra không ảnh hưởng dữ liệu, Tunnel, DNS, token hoặc route.
+
+## Khẩn cấp: installer V16.1.21 lỗi Permission denied khi tạo lock/hash và backup
+
+- [x] Tái hiện và xác định đường dẫn/file lock bị từ chối quyền trong chế độ cài mới và Repair.
+- [x] Sửa installer để chuẩn hóa quyền thư mục runtime/backup an toàn trước khi tạo lock, không dùng quyền root và không xóa dữ liệu ngoài lựa chọn của người dùng.
+- [x] Bổ sung hồi quy cho hash mật khẩu, lock, backup và hai chế độ cài mới/sửa chữa.
+- [ ] Phát hành V16.1.22 và hướng dẫn người dùng chạy lại an toàn trên thiết bị mới.
+
+## Bổ sung: hash password vẫn thất bại trên Android Termux
+
+- [x] Tách và kiểm tra riêng bước `password_hash`, không gộp với lỗi backup/lock.
+- [x] Sửa cơ chế tạo hash để xử lý được môi trường Termux không tạo được file tạm hoặc lock.
+- [x] Thêm hồi quy xác nhận hash hợp lệ và tạo được `panel-secret.php` trong cài mới lẫn Repair.
