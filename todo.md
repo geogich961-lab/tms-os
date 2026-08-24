@@ -315,7 +315,7 @@
 - [x] Tái hiện và xác định đường dẫn/file lock bị từ chối quyền trong chế độ cài mới và Repair.
 - [x] Sửa installer để chuẩn hóa quyền thư mục runtime/backup an toàn trước khi tạo lock, không dùng quyền root và không xóa dữ liệu ngoài lựa chọn của người dùng.
 - [x] Bổ sung hồi quy cho hash mật khẩu, lock, backup và hai chế độ cài mới/sửa chữa.
-- [ ] Phát hành V16.1.22 và hướng dẫn người dùng chạy lại an toàn trên thiết bị mới.
+- [x] Phát hành V16.1.22 và hướng dẫn người dùng chạy lại an toàn trên thiết bị mới.
 
 ## Bổ sung: hash password vẫn thất bại trên Android Termux
 
