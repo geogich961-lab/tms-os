@@ -16,7 +16,7 @@
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "TO_BE_FILLED_AFTER_BUILD",
+  "checksum_sha256": "5241ac61a0b0a3dcf36d65cab9d87bd64e8d4a14a7e9183d28c494994176e6c4",
   "build_date": "2026-08-24",
   "version_display": "TMS OS V16.1.24",
   "changelog": "V16.1.24: khắc phục lỗi Permission denied tại bước tạo tài khoản quản trị do PHP CLI nạp cấu hình lock; đồng thời xử lý runtime .tms-os trước khi tạo TMPDIR và giữ an toàn dữ liệu trong Repair.",
