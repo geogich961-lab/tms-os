@@ -1,14 +1,14 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "16.1.25",
+  "internal_version": "16.1.26",
   "build": "20260824-0200",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-24",
-  "name": "TMS OS V16.1.25",
-  "version": "16.1.25",
-  "notes": "V16.1.25 sửa lỗi PHP Engine không khởi động trên Termux Android cũ bằng fallback PHP-FPM sang PHP-CGI cổng 9000; giữ nguyên Cài mới và Repair an toàn.",
+  "name": "TMS OS V16.1.26",
+  "version": "16.1.26",
+  "notes": "V16.1.26 sửa PHP Engine trên Termux Android cũ bằng PHP-CGI sạch cấu hình (-n), tránh php.ini hệ thống tạo lock không có quyền; giữ nguyên Cài mới và Repair an toàn.",
   "features": [
     "Hash mật khẩu quản trị không còn phụ thuộc file tạm hoặc lock của PHP CLI trong môi trường Termux.",
     "Cài mới xóa runtime .tms-os cũ trước khi tạo TMPDIR và lock, tránh lỗi Permission denied do trạng thái cài đặt trước đó.",
@@ -17,10 +17,10 @@
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "7b0cc6ef2f8a150b58e932e2c7db225bc4fdba94bec2c38fa1b7fb8f5482a2c8",
+  "checksum_sha256": "",
   "build_date": "2026-08-24",
-  "version_display": "TMS OS V16.1.25",
-  "changelog": "V16.1.25: khắc phục PHP Engine không khởi động trên Termux Android cũ bằng fallback PHP-FPM sang PHP-CGI cổng 9000; giữ an toàn dữ liệu trong Repair.",
+  "version_display": "TMS OS V16.1.26",
+  "changelog": "V16.1.26: khắc phục PHP Engine bằng PHP-CGI sạch cấu hình (-n), tránh lock từ php.ini hệ thống trên Termux Android cũ; giữ an toàn dữ liệu trong Repair.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-24"
 }

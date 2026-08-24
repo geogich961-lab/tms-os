@@ -8,6 +8,7 @@ $startup = (string)file_get_contents($root . '/scripts/start-tms.sh');
 $installer = (string)file_get_contents($root . '/scripts/install.sh');
 $rootInstaller = (string)file_get_contents($root . '/install.sh');
 $adminSetup = (string)file_get_contents($root . '/scripts/tms-setup-admin.sh');
+$phpEngine = (string)file_get_contents($root . '/scripts/tms-php-engine.sh');
 
 foreach (['CURLOPT_FAILONERROR', "'health' => \$appInfo['type'] === 'service' ? 'running' : 'ready'", "['id' => 'file-browser'"] as $needle) {
     if (!str_contains($service, $needle)) { fwrite(STDERR, "App installer regression: missing {$needle}\n"); exit(1); }
@@ -32,6 +33,14 @@ if ($oldRuntimeInit !== false && $oldRuntimeInit < strpos($installer, 'HAS_OLD=0
 }
 if (!str_contains($rootInstaller, 'TMS_INSTALL_MODE="clean"')) {
     fwrite(STDERR, "Installer mode regression: root installer must explicitly pass clean mode.\n"); exit(1);
+}
+foreach (['php-cgi -n -b 127.0.0.1:9000', "php-cgi (-n )?-b 127.0.0.1:9000", 'rm -f "$PID"'] as $needle) {
+    if (!str_contains($phpEngine, $needle)) {
+        fwrite(STDERR, "PHP Engine regression: missing {$needle}\n"); exit(1);
+    }
+}
+if (str_contains($phpEngine, 'nohup php-cgi -b 127.0.0.1:9000')) {
+    fwrite(STDERR, "PHP Engine regression: CGI must not start with the system php.ini.\n"); exit(1);
 }
 foreach ([$installer, $adminSetup] as $script) {
     if (!str_contains($script, 'php -n -r') || !str_contains($script, 'stream_get_contents(STDIN')) {

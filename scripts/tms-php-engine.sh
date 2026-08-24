@@ -20,9 +20,11 @@ wait_dead(){
 start_cgi(){
   if [ -f "$PID" ] && kill -0 "$(cat "$PID" 2>/dev/null)" 2>/dev/null; then return 0; fi
   # PHP-CGI là fallback tương thích cho Termux/Android cũ khi PHP-FPM không chạy được.
-  pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+  pkill -9 -f 'php-cgi (-n )?-b 127.0.0.1:9000' 2>/dev/null || true
   fuser -k 9000/tcp 2>/dev/null || true
-  nohup php-cgi -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
+  # Không nạp php.ini hệ thống: một số Termux cũ trỏ session/lock về thư mục chỉ đọc.
+  # Nginx chỉ cần FastCGI socket TCP; các extension PHP được nạp mặc định từ binary.
+  nohup php-cgi -n -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
   echo $! > "$PID"
   sleep 0.7
   kill -0 "$(cat "$PID")" 2>/dev/null
@@ -52,7 +54,7 @@ stop_inner(){
   fi
   # Dọn cả CGI fallback, kể cả khi máy vẫn còn cài binary php-fpm.
   [ -f "$PID" ] && kill -9 "$(cat "$PID" 2>/dev/null)" 2>/dev/null || true
-  pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+  pkill -9 -f 'php-cgi (-n )?-b 127.0.0.1:9000' 2>/dev/null || true
   fuser -k 9000/tcp 2>/dev/null || true
   rm -f "$PID"
 }

@@ -360,3 +360,35 @@
 - [x] Thu thập log PHP, PID, cổng và lỗi cấu hình trên môi trường Android/Termux cũ.
 - [x] Sửa cơ chế khởi động có fallback tương thích, không báo thành công giả.
 - [x] Bổ sung hồi quy cho PHP startup, nginx upstream và trạng thái dịch vụ sau cài mới.
+
+## Khẩn cấp: thiết bị vẫn chạy mã cũ tại dòng 454 sau V16.1.25
+
+- [ ] Tải ZIP tag và latest, kiểm tra nội dung `scripts/install.sh` thực tế bên trong.
+- [ ] Đối chiếu dòng ghi `panel-secret.php` và xác nhận có `php -n` trong asset public.
+- [ ] Kiểm tra installer một dòng trên `main` có trỏ đúng asset/version hay không.
+- [ ] Nếu asset sai, thay bằng ZIP được build lại từ commit chính xác rồi xác minh checksum trước khi yêu cầu chạy lại.
+
+## Khẩn cấp: V16.1.25 vượt checksum nhưng PHP Engine vẫn thất bại ở [6/7]
+
+- [ ] Đọc log `~/logs/services/php-engine.log` và xác định mã lỗi runtime thực tế trên thiết bị.
+- [ ] Đối chiếu lệnh PHP-FPM/CGI, PID, cổng 9000 và quyền ghi log/socket.
+- [ ] Sửa engine để không báo thất bại giả và tương thích Android/Termux cũ.
+- [ ] Bổ sung test hồi quy cho trạng thái process, port và nginx upstream.
+- [ ] Chỉ phát hành bản tiếp theo sau khi xác minh lỗi bằng log và test thực tế.
+
+## Khẩn cấp: PHP Engine lock nội bộ bị Permission denied
+
+- [ ] Đối chiếu thông báo trong `php-engine.log` với toàn bộ lệnh tạo lock của `tms-php-engine.sh`.
+- [ ] Xác định đường dẫn lock thực tế, quyền sở hữu và quyền ghi của thư mục cha trên Termux.
+- [ ] Kiểm tra lock cũ có bị tạo bởi phiên bản trước hoặc tiến trình khác hay không.
+- [ ] Sửa lock để dùng file trong runtime có quyền ghi, dọn lock stale an toàn và không dùng `chmod -R 777`.
+- [ ] Bổ sung hồi quy cho FPM/CGI, lock stale, restart và cài mới.
+- [ ] Chỉ tạo release mới sau khi ZIP, manifest và nội dung engine được kiểm tra đồng nhất.
+
+### Kết quả điều tra PHP Engine ngày 2026-08-24
+
+- [x] Log người dùng xác nhận lỗi lặp lại là `Cannot create lock - Permission denied (13)` ngay khi PHP Engine khởi động; không phải lỗi checksum hay quyền bộ nhớ Android.
+- [x] Đối chiếu source cho thấy wrapper gọi `php-fpm` hệ thống trước, còn fallback gọi `php-cgi` nhưng vẫn nạp cấu hình PHP mặc định.
+- [x] Sửa fallback thành `php-cgi -n -b 127.0.0.1:9000`, đồng thời dọn cả biến thể CGI cũ/mới khi stop hoặc restart.
+- [x] Chạy `bash -n` cho toàn bộ script, toàn bộ test PHP trong `tests/*_test.php`, và `git diff --check`; tất cả đạt.
+- [ ] Chưa phát hành bản mới; cần đóng gói từ commit sửa này và xác minh nội dung ZIP cùng checksum trước khi đưa người dùng chạy lại.
