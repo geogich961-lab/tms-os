@@ -17,23 +17,28 @@ wait_dead(){
   done
 }
 
+start_cgi(){
+  if [ -f "$PID" ] && kill -0 "$(cat "$PID" 2>/dev/null)" 2>/dev/null; then return 0; fi
+  # PHP-CGI là fallback tương thích cho Termux/Android cũ khi PHP-FPM không chạy được.
+  pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+  fuser -k 9000/tcp 2>/dev/null || true
+  nohup php-cgi -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
+  echo $! > "$PID"
+  sleep 0.7
+  kill -0 "$(cat "$PID")" 2>/dev/null
+}
+
 start_inner(){
   if [ "$(mode)" = fpm ]; then
     if [ -n "$(master_pid)" ]; then return 0; fi
     rm -f "$PREFIX/var/run/php-fpm.pid" "$PREFIX/var/run/php-fpm.sock"
-    php-fpm >>"$LOG" 2>&1 || return 1
-    sleep 0.5
-    [ -n "$(master_pid)" ]
-  else
-    if [ -f "$PID" ] && kill -0 "$(cat "$PID" 2>/dev/null)" 2>/dev/null; then return 0; fi
-    # V16.0.15: Cưỡng bức kill triệt để để giải phóng file config trong RAM
-    pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
-    fuser -k 9000/tcp 2>/dev/null || true
-    nohup php-cgi -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
-    echo $! > "$PID"
-    sleep 0.7
-    kill -0 "$(cat "$PID")" 2>/dev/null
+    if php-fpm >>"$LOG" 2>&1; then
+      sleep 0.5
+      [ -n "$(master_pid)" ] && return 0
+    fi
+    printf '%s\n' '[WARN] PHP-FPM không khởi động được; chuyển sang PHP-CGI trên cổng 9000.' >>"$LOG"
   fi
+  start_cgi
 }
 
 stop_inner(){
@@ -44,12 +49,12 @@ stop_inner(){
     wait_dead 'php-fpm: master process'
     pgrep -f 'php-fpm: master process' >/dev/null 2>&1 && pkill -KILL -f 'php-fpm: master process' 2>/dev/null || true
     rm -f "$PREFIX/var/run/php-fpm.pid" "$PREFIX/var/run/php-fpm.sock"
-  else
-    [ -f "$PID" ] && kill -9 "$(cat "$PID" 2>/dev/null)" 2>/dev/null || true
-    pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
-    fuser -k 9000/tcp 2>/dev/null || true
-    rm -f "$PID"
   fi
+  # Dọn cả CGI fallback, kể cả khi máy vẫn còn cài binary php-fpm.
+  [ -f "$PID" ] && kill -9 "$(cat "$PID" 2>/dev/null)" 2>/dev/null || true
+  pkill -9 -f 'php-cgi -b 127.0.0.1:9000' 2>/dev/null || true
+  fuser -k 9000/tcp 2>/dev/null || true
+  rm -f "$PID"
 }
 
 restart_inner(){

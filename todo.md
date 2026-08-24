@@ -353,3 +353,10 @@
 - [x] Kiểm tra riêng đường dẫn backup, file hash, file secret và lock/session của PHP tại bước [5/7].
 - [x] Sửa cơ chế tạo tài khoản để không phụ thuộc file tạm hoặc thư mục không ghi được.
 - [x] Bổ sung hồi quy cho SQLite + tài khoản quản trị trên môi trường quyền hạn chế.
+
+## Khẩn cấp: PHP Engine không khởi động ở bước [6/7]
+
+- [x] Xác định lệnh khởi động PHP thực tế, binary được dùng và file cấu hình PHP/CGI-FPM.
+- [x] Thu thập log PHP, PID, cổng và lỗi cấu hình trên môi trường Android/Termux cũ.
+- [x] Sửa cơ chế khởi động có fallback tương thích, không báo thành công giả.
+- [x] Bổ sung hồi quy cho PHP startup, nginx upstream và trạng thái dịch vụ sau cài mới.
