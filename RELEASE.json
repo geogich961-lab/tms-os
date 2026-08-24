@@ -14,7 +14,7 @@
     "Installer sử dụng TMPDIR riêng trong thư mục runtime có thể ghi và kiểm tra kết quả hash trước khi hoàn tất.",
     "Luồng cài mới và Repair không tự động xóa dữ liệu, cấu hình Cloudflare, token, route hoặc hostname hiện có."
   ],
-  "checksum_sha256": "48fe5f920e629ade19c52c27012eab3d802dfd1179df57d7a18f75dbacf8a32",
+  "checksum_sha256": "48fe5f920e629ade19c52c27012eab3d802dfd1179df57d7a18f75dbacf8a32f",
   "build_date": "2026-08-24",
   "version_display": "TMS OS V16.1.22",
   "changelog": "V16.1.22: khắc phục lỗi Permission denied khi installer tạo lock/file tạm và password_hash trên thiết bị Android Termux mới; xác minh hash hợp lệ và giữ an toàn dữ liệu trong cả cài mới lẫn Repair.",
