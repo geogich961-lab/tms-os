@@ -528,3 +528,4 @@
 - [x] Khắc phục tải payload GitHub bị curl 56 trên Android 7 bằng retry, IPv4 fallback và kiểm tra checksum
 - [x] Khắc phục lỗi `home: unbound variable` trong installer safety preflight trên Android 7
 - [x] Đóng gói lại và thay asset payload v16.1.21 cùng RELEASE.json để phát hành bản vá safety preflight
+- [x] Chặn installer tiếp tục, bật auto-start và báo thành công khi người dùng hủy xác nhận Cài mới
