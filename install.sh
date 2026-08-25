@@ -334,8 +334,11 @@ fi
 case "${BOOT_CHOICE:-y}" in
   n|N|no|NO) echo "Bỏ qua. Khi cần, chạy: bash ~/tms-os/scripts/tms-boot.sh on" ;;
   *)
-    bash "$SRC/scripts/tms-boot.sh" on
-    echo '[OK] Auto-start đã được thiết lập.'
+    if bash "$SRC/scripts/tms-boot.sh" on; then
+      echo '[OK] Auto-start đã được thiết lập.'
+    else
+      echo '[CẢNH BÁO] Không thể thiết lập auto-start. TMS OS vẫn có thể chạy thủ công sau khi cài đặt hoàn tất.' >&2
+    fi
     ;;
 esac
 

@@ -23,4 +23,9 @@ AUTOSTART_LINE="$(grep -nF 'Bước 6/7: Tự khởi động TMS OS' "$BOOTSTRAP
 sed -n "${CANCEL_LINE},$((CANCEL_LINE + 5))p" "$BOOTSTRAP" | grep -Fq 'exit 0' || fail 'bootstrap does not stop cleanly after cancellation'
 grep -Fq '[ĐÃ HỦY] Bạn chưa gõ YES' "$BOOTSTRAP" || fail 'bootstrap cancellation output missing'
 
+# Optional auto-start must not print a success message when tms-boot rejects
+# a missing start script (the exact situation caused by the cancelled install).
+grep -Fq 'if bash "$SRC/scripts/tms-boot.sh" on; then' "$BOOTSTRAP" || fail 'auto-start result is not checked'
+grep -Fq '[CẢNH BÁO] Không thể thiết lập auto-start' "$BOOTSTRAP" || fail 'auto-start failure warning missing'
+
 echo 'installer clean cancel tests: PASS'
