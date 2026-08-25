@@ -34,13 +34,16 @@ if ($oldRuntimeInit !== false && $oldRuntimeInit < strpos($installer, 'HAS_OLD=0
 if (!str_contains($rootInstaller, 'TMS_INSTALL_MODE="clean"')) {
     fwrite(STDERR, "Installer mode regression: root installer must explicitly pass clean mode.\n"); exit(1);
 }
-foreach (['php-cgi -n -b 127.0.0.1:9000', "php-cgi (-n )?-b 127.0.0.1:9000", 'rm -f "$PID"'] as $needle) {
+foreach (['php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -b 127.0.0.1:9000', "php-cgi (-n )?-b 127.0.0.1:9000", 'rm -f "$PID"', 'TERMUX_VAR_TMP="$PREFIX/var/tmp"', 'mkdir -p "$STATE" "$(dirname "$LOG")" "$ENGINE_TMPDIR" "$TERMUX_VAR_TMP" "$PREFIX/var/run"'] as $needle) {
     if (!str_contains($phpEngine, $needle)) {
         fwrite(STDERR, "PHP Engine regression: missing {$needle}\n"); exit(1);
     }
 }
-if (str_contains($phpEngine, 'nohup php-cgi -b 127.0.0.1:9000')) {
+if (str_contains($phpEngine, 'nohup php-cgi -b 127.0.0.1:9000') || str_contains($phpEngine, 'nohup php-cgi -n -b 127.0.0.1:9000')) {
     fwrite(STDERR, "PHP Engine regression: CGI must not start with the system php.ini.\n"); exit(1);
+}
+if (!str_contains($rootInstaller, 'mktemp "$PREFIX/var/tmp/tms-installer.XXXXXX"') || !str_contains($installer, 'mktemp "$TERMUX_VAR_TMP/tms-preflight.XXXXXX"')) {
+    fwrite(STDERR, "Installer temp preflight regression: missing var/tmp mktemp check.\n"); exit(1);
 }
 foreach ([$installer, $adminSetup] as $script) {
     if (!str_contains($script, 'php -n -r') || !str_contains($script, 'stream_get_contents(STDIN')) {

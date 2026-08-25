@@ -522,4 +522,5 @@
 - [x] Tích hợp Universal Compatibility Installer vào payload V16.1.21, đóng gói và cập nhật asset release có checksum mới
 - [x] Sửa test matrix live để kỳ vọng mã lỗi 10 cho Android API 23 và chạy lại toàn bộ UCI matrix
 - [x] Tạo tập lệnh tự động kiểm tra integrity payload UCI trên nhiều Android API/ABI, có báo cáo và mã thoát rõ ràng
-- [ ] Thiết lập GitHub Actions chạy verify-uci-payload.sh khi có build mới và chặn phát hành khi kiểm tra thất bại
+- [x] Thiết lập GitHub Actions chạy verify-uci-payload.sh khi có build mới và chặn phát hành khi kiểm tra thất bại
+- [ ] Tạo gói pilot Android thật gồm collector log an toàn, checklist cài đặt/repair/rollback và hướng dẫn thử nghiệm
