@@ -88,7 +88,13 @@ tms_probe_php_cgi() {
 }
 
 tms_preflight() {
-  local prefix="${PREFIX:-}" home="${HOME:-}" tmp="$home/.tms-os/preflight-tmp" api free failed=0 detail
+  # Không khởi tạo `tmp` trong cùng câu lệnh `local` với `home`: khi `set -u`
+  # đang bật, Bash chưa bảo đảm biến local `home` sẵn sàng để được tham chiếu
+  # ở biểu thức kế tiếp. Android pilot đã tái hiện lỗi này tại Bước 5.
+  local prefix home tmp api free failed=0 detail
+  prefix="${PREFIX:-}"
+  home="${HOME:-/data/data/com.termux/files/home}"
+  tmp="$home/.tms-os/preflight-tmp"
   local require_nginx="${TMS_PREFLIGHT_REQUIRE_NGINX:-1}"
   tms_safety_init || return 50
   tms_report "prefix=$prefix home=$home mode=${TMS_INSTALL_MODE:-diagnose}"

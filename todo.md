@@ -526,3 +526,4 @@
 - [x] Tạo gói pilot Android thật gồm collector log an toàn, checklist cài đặt/repair/rollback và hướng dẫn thử nghiệm
 - [x] Soạn hướng dẫn cài đặt TMS OS UCI từng lệnh cho Sony Xperia XZ Premium chạy Android 7
 - [x] Khắc phục tải payload GitHub bị curl 56 trên Android 7 bằng retry, IPv4 fallback và kiểm tra checksum
+- [x] Khắc phục lỗi `home: unbound variable` trong installer safety preflight trên Android 7
