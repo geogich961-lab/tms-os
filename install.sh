@@ -154,6 +154,42 @@ WORK="$HOME/.tms-os-installer-$$"
 mkdir -p "$WORK"
 trap 'rm -rf "$WORK"' EXIT
 
+# Một số Wi-Fi/ISP và bản cURL trên Android cũ ngắt kết nối khi GitHub chuyển
+# từ github.com sang CDN release-assets (curl 56). Tải theo IPv4 + HTTP/1.1
+# trước, sau đó mới quay về chế độ mặc định; mỗi cách có retry riêng. Dữ liệu
+# chỉ được đổi tên sang đích khi tải xong, nên file dở dang không thể đi vào
+# bước kiểm tra SHA-256 hoặc bước cài đặt.
+tms_download_release_asset() {
+  local url="$1" destination="$2" label="$3"
+  local temporary="${destination}.part" rc=1 profile
+  for profile in ipv4_http1 default; do
+    rm -f "$temporary"
+    if [ "$profile" = "ipv4_http1" ]; then
+      echo "[TẢI] ${label}: thử IPv4/HTTP 1.1 (phù hợp mạng Android cũ)..."
+      if curl -f -sS -L -4 --http1.1 --connect-timeout 20 --max-time 240 --retry 2 --retry-delay 2 -o "$temporary" "$url"; then
+        rc=0
+      else
+        rc=$?
+      fi
+    else
+      echo "[TẢI] ${label}: thử lại với cấu hình mạng mặc định..."
+      if curl -f -sS -L --connect-timeout 20 --max-time 240 --retry 2 --retry-delay 2 -o "$temporary" "$url"; then
+        rc=0
+      else
+        rc=$?
+      fi
+    fi
+    if [ "$rc" -eq 0 ] && [ -s "$temporary" ]; then
+      mv -f "$temporary" "$destination"
+      return 0
+    fi
+    rm -f "$temporary"
+    echo "[THỬ LẠI] ${label} chưa tải xong (curl $rc); chuyển phương án mạng sau 3 giây..." >&2
+    sleep 3
+  done
+  return "$rc"
+}
+
 # ---------- Bước 3: cập nhật kho gói và cài thành phần ----------
 echo 'Bước 3/7: Cập nhật kho gói Termux và cài đặt các thành phần (PHP, Nginx, MariaDB, OpenSSH)...'
 export DEBIAN_FRONTEND=noninteractive
@@ -203,16 +239,20 @@ ZIP="$WORK/TMS_OS.zip"
 # checksum nhúng: checksum nhúng sẽ cũ ở release sau và tự chặn gói hợp lệ.
 # Nếu GitHub đang đồng bộ hai asset, bộ cài tải lại tối đa 4 lần rồi dừng an toàn.
 RELEASE_MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/RELEASE.json"
+RELEASE_MANIFEST="$WORK/RELEASE.json"
 VERIFY_OK=0
 VERIFY_SOURCE=""
 for VERIFY_ATTEMPT in 1 2 3 4; do
-  if ! curl -fsSL --retry 3 --retry-delay 2 -m 120 -o "$ZIP" "$RELEASE_URL"; then
+  if ! tms_download_release_asset "$RELEASE_URL" "$ZIP" 'Gói nguồn TMS OS'; then
     echo "[LỖI] Không tải được bộ nguồn từ $RELEASE_URL"
-    echo '        Kiểm tra kết nối mạng, hoặc đặt biến môi trường TMS_REPO=owner/repo rồi chạy lại.'
+    echo '        Hãy đổi mạng Wi-Fi/4G rồi chạy lại. Không có dữ liệu TMS OS nào bị xóa.'
     exit 1
   fi
   ACTUAL="$(sha256sum "$ZIP" | awk '{print $1}')"
-  EXPECTED="$(curl -fsSL -m 30 "${RELEASE_MANIFEST_URL}?nocache=$RANDOM" 2>/dev/null | sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]\{64\}\)".*/\1/p')"
+  EXPECTED=""
+  if tms_download_release_asset "${RELEASE_MANIFEST_URL}?nocache=$RANDOM" "$RELEASE_MANIFEST" 'Manifest chữ ký'; then
+    EXPECTED="$(sed -n 's/.*"checksum_sha256"[[:space:]]*:[[:space:]]*"\([a-f0-9]\{64\}\)".*/\1/p' "$RELEASE_MANIFEST" | head -n 1)"
+  fi
   if [ "$ACTUAL" = "$EXPECTED" ] && [ -n "$EXPECTED" ]; then
     VERIFY_OK=1; VERIFY_SOURCE="GitHub Release"
     break

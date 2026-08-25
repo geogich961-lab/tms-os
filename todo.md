@@ -524,3 +524,5 @@
 - [x] Tạo tập lệnh tự động kiểm tra integrity payload UCI trên nhiều Android API/ABI, có báo cáo và mã thoát rõ ràng
 - [x] Thiết lập GitHub Actions chạy verify-uci-payload.sh khi có build mới và chặn phát hành khi kiểm tra thất bại
 - [x] Tạo gói pilot Android thật gồm collector log an toàn, checklist cài đặt/repair/rollback và hướng dẫn thử nghiệm
+- [x] Soạn hướng dẫn cài đặt TMS OS UCI từng lệnh cho Sony Xperia XZ Premium chạy Android 7
+- [x] Khắc phục tải payload GitHub bị curl 56 trên Android 7 bằng retry, IPv4 fallback và kiểm tra checksum
