@@ -312,7 +312,11 @@ else
 fi
 bash "$SRC/scripts/install.sh" || RC=$?
 if [ "$RC" -ne 0 ]; then
-  if [ "$RC" -eq 2 ]; then
+  if [ "$RC" -eq 64 ]; then
+    echo '[ĐÃ HỦY] Bạn chưa gõ YES để xác nhận Cài mới. TMS OS chưa được cài và không có dữ liệu nào bị xóa.'
+    echo '          Chạy lại installer khi sẵn sàng; chỉ gõ YES nếu muốn tiếp tục cài mới.'
+    exit 0
+  elif [ "$RC" -eq 2 ]; then
     echo "[INFO] Bộ cài dừng để chờ bạn chọn chế độ (cài mới / sửa chữa). Chạy lại cùng lệnh trên và trả lời câu hỏi."
   else
     echo "[LỖI] Bộ cài gặp lỗi (exit $RC). Hãy chạy lại cùng lệnh trên — bộ cài có sao lưu tự động."

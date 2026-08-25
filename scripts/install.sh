@@ -217,8 +217,10 @@ if command -v pkg >/dev/null 2>&1; then
     read -r CONFIRM_CLEAN
     if [ "$CONFIRM_CLEAN" != "YES" ]; then
       tms_clear_txn
-      echo 'Đã hủy — không xóa gì cả.'
-      exit 0
+      echo '[ĐÃ HỦY] Cài mới không được xác nhận — không xóa hoặc cài đặt gì cả.'
+      # 64 là trạng thái hủy có chủ đích. Root bootstrap phải dừng tại đây,
+      # không thiết lập Termux:Boot hoặc in thông báo cài đặt thành công.
+      exit 64
     fi
     # Dừng dịch vụ đang chạy trước khi xóa
     bash "$TARGET/scripts/stop-tms.sh" 2>/dev/null || true
