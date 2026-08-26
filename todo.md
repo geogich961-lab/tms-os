@@ -538,5 +538,5 @@
 - [x] Đóng gói, kiểm thử integrity và phát hành GitHub Release V17.0.0.
 - [x] Xóa các GitHub Release cũ sau khi V17.0.0 được xác minh, chỉ giữ V16.1.21 và V17.0.0.
 - [x] Khắc phục Update Center V17.0.0 trên Xperia: bước xác nhận sau cập nhật phải luôn trả JSON hợp lệ thay vì HTML.
-- [ ] Khôi phục cập nhật một chạm trực tiếp từ Update Center trên panel V17 cũ: trả JSON trước restart và tự xác minh sau restart, không cần lệnh Termux.
-- [ ] Phát hành V17.0.1 hotfix để panel V17.0.0 nhận và áp dụng cập nhật trực tiếp; sau xác minh chỉ giữ V16.1.21 và V17.0.1.
+- [x] Khôi phục cập nhật một chạm trực tiếp từ Update Center trên panel V17 cũ: trả JSON trước restart và tự xác minh sau restart, không cần lệnh Termux.
+- [x] Phát hành V17.0.1 hotfix để panel V17.0.0 nhận và áp dụng cập nhật trực tiếp; sau xác minh chỉ giữ V16.1.21 và V17.0.1.
