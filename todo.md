@@ -540,3 +540,5 @@
 - [x] Khắc phục Update Center V17.0.0 trên Xperia: bước xác nhận sau cập nhật phải luôn trả JSON hợp lệ thay vì HTML.
 - [x] Khôi phục cập nhật một chạm trực tiếp từ Update Center trên panel V17 cũ: trả JSON trước restart và tự xác minh sau restart, không cần lệnh Termux.
 - [x] Phát hành V17.0.1 hotfix để panel V17.0.0 nhận và áp dụng cập nhật trực tiếp; sau xác minh chỉ giữ V16.1.21 và V17.0.1.
+- [x] Khắc phục Runtime Package Cloudflare Tunnel V17.0.1 treo request/panel; chuyển cài đặt sang nền có timeout, trạng thái rõ ràng và không ảnh hưởng PHP/Nginx/SQLite.
+- [x] Phát hành V17.0.2 để TMS OS V17.0.1 nhận hotfix Runtime Package Cloudflare Tunnel trực tiếp từ Update Center.
