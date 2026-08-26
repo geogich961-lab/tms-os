@@ -64,7 +64,9 @@ PHP_ROUTER
 start_cgi(){
   pkill -9 -f 'php-cgi (-n )?-b 127.0.0.1:9000' 2>/dev/null || true
   fuser -k 9000/tcp 2>/dev/null || true
-  nohup env TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
+  # Đồng nhất với compatibility probe: một số Android/Termux để LD_PRELOAD
+  # trong môi trường phiên shell khiến PHP-CGI thoát ngay dù probe đã đạt.
+  nohup env -u LD_PRELOAD TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
   echo $! > "$PID"; cp "$PID" "$LEGACY_PID"; sleep 0.7; kill -0 "$(cat "$PID")" 2>/dev/null
 }
 start_http(){
@@ -72,7 +74,7 @@ start_http(){
   write_http_router
   pkill -9 -f 'php .* -S 127.0.0.1:9000' 2>/dev/null || true
   fuser -k 9000/tcp 2>/dev/null || true
-  nohup env TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null php -n -d "sys_temp_dir=$ENGINE_TMPDIR" -S 127.0.0.1:9000 -t "$WEB_ROOT" "$STATE/php-http-router.php" >>"$LOG" 2>&1 &
+  nohup env -u LD_PRELOAD TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null php -n -d "sys_temp_dir=$ENGINE_TMPDIR" -S 127.0.0.1:9000 -t "$WEB_ROOT" "$STATE/php-http-router.php" >>"$LOG" 2>&1 &
   echo $! > "$PID"; sleep 0.8; kill -0 "$(cat "$PID")" 2>/dev/null
 }
 start_fpm(){
@@ -88,7 +90,7 @@ pm.max_children = 2
 clear_env = no
 CFG
   rm -f "$PREFIX/var/run/php-fpm.pid" "$PREFIX/var/run/php-fpm.sock"
-  TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null \
+  env -u LD_PRELOAD TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null \
     php-fpm -n -F -y "$cfg" >>"$LOG" 2>&1 &
   echo $! > "$PID"
   sleep 0.8
