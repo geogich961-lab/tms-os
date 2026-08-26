@@ -14,6 +14,18 @@ HOME="${HOME:-/data/data/com.termux/files/home}"
 BOOT_DIR="$HOME/.termux/boot"
 BOOT_FILE="$BOOT_DIR/tms-os.sh"
 START_SCRIPT="$HOME/tms-os/scripts/start-tms.sh"
+BOOT_PACKAGE="com.termux.boot"
+
+boot_app_installed() {
+  command -v pm >/dev/null 2>&1 || return 1
+  pm list packages "$BOOT_PACKAGE" 2>/dev/null | grep -Fxq "package:$BOOT_PACKAGE"
+}
+
+open_boot_install_page() {
+  if command -v termux-open >/dev/null 2>&1; then
+    (termux-open "https://f-droid.org/packages/com.termux.boot/" >/dev/null 2>&1) &
+  fi
+}
 
 usage() {
   echo "Cách dùng: bash ~/tms-os/scripts/tms-boot.sh [on|off|status]"
@@ -41,13 +53,16 @@ if [ -f "$START_SCRIPT" ]; then
 fi
 EOF
     chmod 700 "$BOOT_FILE"
-    # Cài app Termux:Boot nếu chưa có (mở trang cài)
-    if ! pm list packages com.termux.boot >/dev/null 2>&1; then
-      echo "[INFO] Chưa có app Termux:Boot. Mở trang cài đặt..."
-      (termux-open "https://f-droid.org/packages/com.termux.boot/" >/dev/null 2>&1) &
+    if boot_app_installed; then
+      echo "[OK] Đã BẬT auto-start TMS OS."
+      echo "  Termux:Boot đã được phát hiện. Hãy mở app một lần nếu vừa cài."
+    else
+      echo "[CẦN HOÀN TẤT] Đã tạo cấu hình auto-start, nhưng chưa thấy app Termux:Boot."
+      echo "  Cài từ F-Droid, mở app Termux:Boot một lần, rồi kiểm tra lại bằng:"
+      echo "  bash ~/tms-os/scripts/tms-boot.sh status"
+      echo "  https://f-droid.org/packages/com.termux.boot/"
+      open_boot_install_page
     fi
-    echo "[OK] Đã BẬT auto-start TMS OS."
-    echo "  Lưu ý: mở app Termux:Boot 1 lần sau khi cài để kích hoạt."
     ;;
   off)
     rm -f "$BOOT_FILE"
@@ -58,8 +73,10 @@ EOF
       echo "Auto-start: BẬT"
       echo "  File: $BOOT_FILE"
       echo "  Khi máy bật, TMS OS sẽ tự chạy: bash ~/tms-os/scripts/start-tms.sh"
-      if ! pm list packages com.termux.boot >/dev/null 2>&1; then
-        echo "  ⚠ Chưa cài app Termux:Boot — hãy cài để auto-start hoạt động:"
+      if boot_app_installed; then
+        echo "  Trạng thái Termux:Boot: Đã cài. Mở app một lần nếu vừa cài."
+      else
+        echo "  [CẦN HOÀN TẤT] Chưa cài app Termux:Boot — auto-start sẽ chưa chạy sau reboot:"
         echo "    termux-open https://f-droid.org/packages/com.termux.boot/"
       fi
     else

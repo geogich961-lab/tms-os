@@ -529,3 +529,11 @@
 - [x] Khắc phục lỗi `home: unbound variable` trong installer safety preflight trên Android 7
 - [x] Đóng gói lại và thay asset payload v16.1.21 cùng RELEASE.json để phát hành bản vá safety preflight
 - [x] Chặn installer tiếp tục, bật auto-start và báo thành công khi người dùng hủy xác nhận Cài mới
+- [x] Khắc phục PHP engine không khởi động và 502 Bad Gateway trên Xperia Android 7 sau cài mới
+- [x] Đồng bộ nút Start/Restart PHP Engine trong Service Manager với launcher runtime đã kiểm thử
+- [ ] Khắc phục cài đặt và phát hiện Redis tùy chọn trên Xperia Android 7
+- [x] Kiểm tra chỉ đọc trạng thái dịch vụ Xperia: tiến trình, cổng, phản hồi panel/PHP/Redis và auto-start; phát hiện thiếu Termux:Boot cùng Redis chưa được khôi phục sau reboot.
+- [x] Hoàn thiện auto-start Xperia: yêu cầu Termux:Boot rõ ràng và khôi phục Redis tùy chọn sau reboot mà không ảnh hưởng PHP/Nginx/SQLite.
+- [x] Chuẩn bị TMS OS V17.0.0 ổn định từ nền V16.1.21 với auto-start Termux:Boot và Redis tùy chọn sau reboot.
+- [ ] Đóng gói, kiểm thử integrity và phát hành GitHub Release V17.0.0.
+- [ ] Xóa các GitHub Release cũ sau khi V17.0.0 được xác minh, chỉ giữ V16.1.21 và V17.0.0.

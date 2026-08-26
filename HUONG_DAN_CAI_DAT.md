@@ -1,8 +1,8 @@
-# TMS OS V16.1.1 — Hướng dẫn cài đặt & Tối ưu hóa
+# TMS OS V17.0.0 — Hướng dẫn cài đặt & Tối ưu hóa
 
 **TMS OS** là nền tảng biến điện thoại Android cũ thành VPS mini: chạy website, PHP, SQLite/MariaDB với panel quản trị PWA tiếng Việt, quản lý dịch vụ qua giao diện web, Guardian tự sửa lỗi, sao lưu/khôi phục, và **Cloudflare Hosting** để đưa website ra Internet bằng tên miền riêng chính chủ (HTTPS miễn phí).
 
-Phiên bản ổn định hiện tại: **V16.1.1** (2026-08-22).
+Phiên bản ổn định hiện tại: **V17.0.0** (2026-08-26).
 
 ## Cài đặt (3 bước, người dùng chỉ thao tác 2 lần)
 
@@ -70,9 +70,22 @@ pkg install termux-api
 
 ### 2. Termux:Boot (Tự khởi động khi bật nguồn điện thoại)
 Để máy chủ tự chạy ngay khi bạn vừa bật điện thoại mà không cần mở Termux thủ công:
-1. Cài đặt app **Termux:Boot**.
-2. Mở app **Termux:Boot** một lần (để Android cấp quyền chạy ngầm).
-3. TMS OS đã tự động tạo script khởi động tại `~/.termux/boot/start-tms` cho bạn.
+
+1. Cài app **Termux:Boot** từ [F-Droid](https://f-droid.org/packages/com.termux.boot/) (nên dùng cùng nguồn cài Termux).
+2. Mở app **Termux:Boot** một lần sau khi cài để Android kích hoạt receiver khởi động.
+3. Trong Termux, bật hoặc làm mới cấu hình bằng lệnh sau:
+
+```bash
+bash ~/tms-os/scripts/tms-boot.sh on
+```
+
+4. Xác nhận trạng thái trước khi reboot:
+
+```bash
+bash ~/tms-os/scripts/tms-boot.sh status
+```
+
+TMS OS tạo script tại `~/.termux/boot/tms-os.sh`, chờ ngắn để Termux/mạng sẵn sàng rồi khởi động PHP, Nginx, SSH và các dịch vụ cốt lõi. Nếu người dùng đã cài `redis-server`, V17.0.0 cũng tự khôi phục Redis; nếu chưa cài, Redis được bỏ qua hoàn toàn và không ảnh hưởng Panel, PHP, Nginx, SQLite hoặc MariaDB.
 
 ---
 

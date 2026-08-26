@@ -7,7 +7,7 @@ $manifest = json_decode((string)file_get_contents($root . '/RELEASE.json'), true
 
 $required = [
     'RELEASE_MANIFEST_URL="https://github.com/${REPO}/releases/latest/download/RELEASE.json"',
-    'EXPECTED="$(curl -fsSL -m 30 "${RELEASE_MANIFEST_URL}?nocache=$RANDOM"',
+    'tms_download_release_asset "${RELEASE_MANIFEST_URL}?nocache=$RANDOM" "$RELEASE_MANIFEST"',
     '\\([a-f0-9]\\{64\\}\\)',
     'ZIP hoặc RELEASE.json (try $VERIFY_ATTEMPT) chưa đồng bộ trên GitHub.',
 ];

@@ -31,6 +31,13 @@ if [ "$DBMODE" = "mariadb" ]; then
   pgrep -f mariadbd >/dev/null 2>&1 || mariadbd-safe --datadir="$PREFIX/var/lib/mysql" >"$HOME/logs/services/mariadb.log" 2>&1 &
 fi
 pgrep -x sshd >/dev/null 2>&1 || sshd
+# Redis là dịch vụ tùy chọn. Chỉ khôi phục sau reboot khi người dùng đã cài
+# redis-server; thất bại của Redis không được làm gián đoạn Panel, PHP, Nginx
+# hoặc database SQLite/MariaDB.
+if command -v redis-server >/dev/null 2>&1; then
+  bash "$HOME/tms-os/scripts/tms-service-core.sh" redis start >>"$HOME/logs/services/redis.log" 2>&1 || \
+    printf '%s\n' '[WARN] Redis không khởi động được; các dịch vụ TMS OS còn lại vẫn tiếp tục hoạt động.' >>"$HOME/logs/services/redis.log"
+fi
 [ -f "$HOME/tms-os/scripts/tms-guardian.sh" ] && bash "$HOME/tms-os/scripts/tms-guardian.sh" start || true
 # Cron Jobs chạy bằng crond trong user-space Termux; thiếu cronie không làm panel dừng.
 [ -f "$HOME/tms-os/scripts/tms-cron-engine.sh" ] && bash "$HOME/tms-os/scripts/tms-cron-engine.sh" start >>"$HOME/logs/services/cron.log" 2>&1 || true
