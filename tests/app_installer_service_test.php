@@ -9,6 +9,7 @@ $installer = (string)file_get_contents($root . '/scripts/install.sh');
 $rootInstaller = (string)file_get_contents($root . '/install.sh');
 $adminSetup = (string)file_get_contents($root . '/scripts/tms-setup-admin.sh');
 $phpEngine = (string)file_get_contents($root . '/scripts/tms-php-engine.sh');
+$serviceCore = (string)file_get_contents($root . '/scripts/tms-service-core.sh');
 
 foreach (['CURLOPT_FAILONERROR', "'health' => \$appInfo['type'] === 'service' ? 'running' : 'ready'", "['id' => 'file-browser'"] as $needle) {
     if (!str_contains($service, $needle)) { fwrite(STDERR, "App installer regression: missing {$needle}\n"); exit(1); }
@@ -41,6 +42,14 @@ foreach (['php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -b 127.0.0.1:9000', "php-
 }
 if (str_contains($phpEngine, 'nohup php-cgi -b 127.0.0.1:9000') || str_contains($phpEngine, 'nohup php-cgi -n -b 127.0.0.1:9000')) {
     fwrite(STDERR, "PHP Engine regression: CGI must not start with the system php.ini.\n"); exit(1);
+}
+foreach (['fuser 9000/tcp', 'php-cgi .* -b 127\\.0\\.0\\.1:9000', 'php .* -S 127\\.0\\.0\\.1:9000', 'bash "$ROOT/scripts/tms-php-engine.sh" start'] as $needle) {
+    if (!str_contains($serviceCore, $needle)) {
+        fwrite(STDERR, "Service Manager PHP status regression: missing {$needle}\n"); exit(1);
+    }
+}
+if (str_contains($serviceCore, "php-cgi -b 127\\.0\\.0\\.1:9000';")) {
+    fwrite(STDERR, "Service Manager PHP status regression: legacy CGI pattern must not remain.\n"); exit(1);
 }
 if (!str_contains($rootInstaller, 'mktemp "$PREFIX/var/tmp/tms-installer.XXXXXX"') || !str_contains($installer, 'mktemp "$TERMUX_VAR_TMP/tms-preflight.XXXXXX"')) {
     fwrite(STDERR, "Installer temp preflight regression: missing var/tmp mktemp check.\n"); exit(1);

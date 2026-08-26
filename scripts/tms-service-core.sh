@@ -20,7 +20,17 @@ wait_until(){
   if status_service "$service"; then [ "$expected" = up ]; else [ "$expected" = down ]; fi
 }
 
-php_pid(){ first_pid -f 'php-fpm: master process|php-cgi -b 127\.0\.0\.1:9000'; }
+# PHP-CGI của UCI chạy với -n/-d trước -b; không so khớp dạng "php-cgi -b"
+# vì Service Manager sẽ báo dừng sai dù engine đang lắng nghe. Cổng 9000 là
+# điểm giao tiếp duy nhất của PHP engine TMS và bao phủ cả FPM/CGI/php-http.
+php_pid(){
+  local pid
+  if have fuser; then
+    pid="$(fuser 9000/tcp 2>/dev/null | awk '{for (i=NF; i>=1; i--) if ($i ~ /^[0-9]+$/) { print $i; exit }}')"
+    [ -n "$pid" ] && { printf '%s\n' "$pid"; return 0; }
+  fi
+  first_pid -f 'php-fpm: master process|php-cgi .* -b 127\.0\.0\.1:9000|php .* -S 127\.0\.0\.1:9000'
+}
 nginx_pid(){ first_pid -f 'nginx: master process'; }
 mariadb_pid(){ first_pid -f '(^|/)(mariadbd|mysqld)( |$)'; }
 ssh_pid(){ first_pid -x sshd; }
