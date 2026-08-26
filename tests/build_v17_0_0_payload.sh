@@ -27,6 +27,8 @@ for rel in \
   scripts/lib/installer-compatibility.sh \
   scripts/lib/installer-safety.sh \
   scripts/installer-rollback.sh \
+  app/Controllers/UpdateController.php \
+  app/Views/updates/index.php \
   config/app.php \
   public/service-worker.js \
   HUONG_DAN_CAI_DAT.md; do
@@ -42,7 +44,7 @@ find "$PAYLOAD/scripts" -type f -name '*.sh' -exec chmod 700 {} +
 cat > "$PAYLOAD/docs/universal-installer-v17.0.0.md" <<'DOC'
 # TMS OS V17.0.0 — Universal Compatibility Installer
 
-V17.0.0 kế thừa Universal Compatibility Installer, preflight và rollback an toàn từ V16.1.21. Bản này chuẩn hóa Auto-start với Termux:Boot và chỉ khôi phục Redis sau reboot khi `redis-server` đã được người dùng cài. Redis luôn là dịch vụ tùy chọn; lỗi hoặc việc thiếu Redis không chặn PHP, Nginx, SQLite/MariaDB hay Panel.
+V17.0.0 kế thừa Universal Compatibility Installer, preflight và rollback an toàn từ V16.1.21. Bản này chuẩn hóa Auto-start với Termux:Boot và chỉ khôi phục Redis sau reboot khi `redis-server` đã được người dùng cài. Redis luôn là dịch vụ tùy chọn; lỗi hoặc việc thiếu Redis không chặn PHP, Nginx, SQLite/MariaDB hay Panel. Update Center cũng xử lý phản hồi trong lúc PHP/Nginx khởi động lại an toàn, không parse HTML như JSON.
 DOC
 
 ( cd "$PAYLOAD" && zip -qr9 "$OUT/TMS_OS_LATEST.zip" . )
@@ -58,17 +60,18 @@ cat > "$OUT/RELEASE.json" <<JSON
   "released_at": "$BUILD_DATE",
   "name": "TMS OS V17.0.0",
   "version": "$VERSION",
-  "notes": "V17.0.0: Auto-start minh bạch với Termux:Boot và tự khôi phục Redis nếu Redis đã được cài; giữ nguyên UCI, Repair, rollback và dữ liệu người dùng.",
+  "notes": "V17.0.0: Auto-start minh bạch với Termux:Boot, tự khôi phục Redis nếu Redis đã được cài và vá Update Center xử lý phản hồi khi panel khởi động lại; giữ nguyên UCI, Repair, rollback và dữ liệu người dùng.",
   "features": [
     "Auto-start phân biệt rõ cấu hình đã tạo và trạng thái app Termux:Boot.",
     "Khôi phục Redis sau reboot chỉ khi redis-server tồn tại.",
     "Redis là optional: lỗi Redis không chặn PHP, Nginx, SQLite/MariaDB hoặc Panel.",
+    "Update Center phản hồi JSON rõ ràng và tự chờ panel khởi động lại sau cập nhật.",
     "Kế thừa preflight, xác minh SHA-256, backup và rollback của Universal Compatibility Installer."
   ],
   "checksum_sha256": "$SHA256",
   "build_date": "$BUILD_DATE",
   "version_display": "TMS OS V17.0.0",
-  "changelog": "V17.0.0: hoàn thiện Auto-start Termux:Boot và khôi phục Redis tùy chọn sau reboot; giữ Repair an toàn và Universal Compatibility Installer.",
+  "changelog": "V17.0.0: hoàn thiện Auto-start Termux:Boot, khôi phục Redis tùy chọn sau reboot và vá Update Center không parse HTML như JSON khi panel khởi động lại; giữ Repair an toàn và Universal Compatibility Installer.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "$BUILD_DATE"
 }

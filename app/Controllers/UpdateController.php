@@ -12,6 +12,22 @@ final class UpdateController
         }
     }
 
+    /** API chỉ trả JSON; không chuyển hướng sang trang đăng nhập HTML. */
+    private function apiGuard(): bool
+    {
+        if ($this->auth->check()) {
+            return true;
+        }
+        http_response_code(401);
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'ok' => false,
+            'code' => 'AUTH_REQUIRED',
+            'error' => 'Phiên đăng nhập đã hết. Vui lòng đăng nhập lại để tiếp tục.',
+        ], JSON_UNESCAPED_UNICODE);
+        return false;
+    }
+
     private function verify(): void
     {
         if (!tms_verify_csrf($_POST['csrf'] ?? null)) {
@@ -37,7 +53,9 @@ final class UpdateController
 
     public function check(): void
     {
-        $this->guard();
+        if (!$this->apiGuard()) {
+            return;
+        }
         try {
             $result = $this->updates->check();
         } catch (Throwable $e) {
@@ -154,7 +172,9 @@ final class UpdateController
     /** API: lấy token và trạng thái cho lệnh curl. */
     public function apiStatus(): void
     {
-        $this->guard();
+        if (!$this->apiGuard()) {
+            return;
+        }
         header('Content-Type: application/json; charset=UTF-8');
         echo json_encode([
             'ok' => true,

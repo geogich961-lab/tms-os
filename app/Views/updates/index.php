@@ -44,17 +44,36 @@
 </td></tr><?php endforeach;?></tbody></table></div></form><?php endif;?></section>
 
 <script>
+function parseUpdateJson(response) {
+  return response.text().then(function(body) {
+    var data = null;
+    try { data = JSON.parse(body); } catch (ignore) {}
+    if (!response.ok) {
+      var requestError = new Error((data && data.error) || ('Panel đang tạm thời chưa sẵn sàng (HTTP ' + response.status + ').'));
+      requestError.authRequired = response.status === 401 || response.status === 403 || (data && data.code === 'AUTH_REQUIRED');
+      requestError.retryable = !requestError.authRequired && response.status >= 500;
+      throw requestError;
+    }
+    if (!data) {
+      var formatError = new Error('Panel đang khởi động lại hoặc trả dữ liệu chưa hoàn chỉnh.');
+      formatError.retryable = true;
+      throw formatError;
+    }
+    return data;
+  });
+}
+
 document.getElementById('check-update-btn')?.addEventListener('click',function(){
   var btn=this;btn.disabled=true;btn.textContent='Đang kiểm tra…';
   var out=document.getElementById('check-result');out.textContent='Đang kết nối GitHub…';
-  fetch('/api/updates/check',{credentials:'same-origin'}).then(function(r){return r.json();}).then(function(d){
+  fetch('/api/updates/check',{credentials:'same-origin'}).then(parseUpdateJson).then(function(d){
     btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
     if(d.error){out.textContent='Lỗi: '+d.error;return;}
     if(d.available){
       var notes=(d.available.notes||'').split('\n').filter(function(l){return l.trim().startsWith('-');}).slice(0,6).join('<br>');
       out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><p class="muted small" style="margin-top:8px">Vui lòng sử dụng mục "Cập nhật nhanh" bên dưới để áp dụng.</p>';
     }else{out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';}
-  }).catch(function(){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent='Không thể kiểm tra — hãy thử lại.';});
+  }).catch(function(error){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent=(error && error.message) ? error.message : 'Không thể kiểm tra — hãy thử lại.';});
 });
 
 document.getElementById('select-all-packages')?.addEventListener('change', function() {
@@ -91,9 +110,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
 	    method: 'POST',
 	    body: formData,
 	    headers: { 'X-Requested-With': 'XMLHttpRequest' }
-	  }).then(function(r) {
-	    return r.json();
-  }).then(function(d) {
+	  }).then(parseUpdateJson).then(function(d) {
     if (!d.ok) {
       throw new Error(d.error || 'Không thể áp dụng cập nhật.');
     }
@@ -111,8 +128,13 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
 
   function verifyAppliedVersion(attempt, fallbackError) {
     fetch('/api/updates/check?verify=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
-      .then(function(r) { return r.json(); })
+      .then(parseUpdateJson)
       .then(function(status) {
+        if (status && status.code === 'AUTH_REQUIRED') {
+          var authError = new Error(status.error || 'Phiên đăng nhập đã hết.');
+          authError.authRequired = true;
+          throw authError;
+        }
         var current = String(status.current || '');
         var available = status.available && String(status.available.version || '');
         if (!status.error && available === '') {
@@ -129,6 +151,11 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         throw new Error(fallbackError || ('Phiên bản thực tế vẫn chưa được xác nhận (đang là ' + current + ').'));
       })
       .catch(function(error) {
+        if (attempt < 12 && error && error.retryable) {
+          btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/12)...';
+          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError || error.message); }, 2500);
+          return;
+        }
         btn.disabled = false;
         btn.className = 'btn btn-primary';
         btn.textContent = 'Cập nhật ngay';

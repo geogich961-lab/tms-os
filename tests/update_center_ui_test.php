@@ -3,12 +3,15 @@ declare(strict_types=1);
 
 $root = dirname(__DIR__);
 $view = (string) file_get_contents($root . '/app/Views/updates/index.php');
+$controller = (string) file_get_contents($root . '/app/Controllers/UpdateController.php');
 
 $required = [
     "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
     "Chưa xác nhận cập nhật:",
+    "parseUpdateJson(response)",
+    "Đang chờ panel khởi động lại",
 ];
 foreach ($required as $needle) {
     if (!str_contains($view, $needle)) {
@@ -30,4 +33,21 @@ if ($catchPos === false || $verifyPos === false || $verifyPos < $catchPos) {
     exit(1);
 }
 
-echo "OK: Update Center requires post-apply version verification.\n";
+if (str_contains($view, 'return r.json();')) {
+    fwrite(STDERR, "Update Center must not parse temporary HTML responses as JSON directly.\n");
+    exit(1);
+}
+
+foreach ([
+    'private function apiGuard(): bool',
+    'http_response_code(401)',
+    "'code' => 'AUTH_REQUIRED'",
+    'if (!$this->apiGuard())',
+] as $needle) {
+    if (!str_contains($controller, $needle)) {
+        fwrite(STDERR, "Missing JSON API authentication guard: {$needle}\n");
+        exit(1);
+    }
+}
+
+echo "OK: Update Center retries restart responses and preserves JSON API errors.\n";

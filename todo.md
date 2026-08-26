@@ -537,3 +537,4 @@
 - [x] Chuẩn bị TMS OS V17.0.0 ổn định từ nền V16.1.21 với auto-start Termux:Boot và Redis tùy chọn sau reboot.
 - [x] Đóng gói, kiểm thử integrity và phát hành GitHub Release V17.0.0.
 - [x] Xóa các GitHub Release cũ sau khi V17.0.0 được xác minh, chỉ giữ V16.1.21 và V17.0.0.
+- [ ] Khắc phục Update Center V17.0.0 trên Xperia: bước xác nhận sau cập nhật phải luôn trả JSON hợp lệ thay vì HTML.
