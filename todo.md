@@ -543,3 +543,4 @@
 - [x] Khắc phục Runtime Package Cloudflare Tunnel V17.0.1 treo request/panel; chuyển cài đặt sang nền có timeout, trạng thái rõ ràng và không ảnh hưởng PHP/Nginx/SQLite.
 - [x] Phát hành V17.0.2 để TMS OS V17.0.1 nhận hotfix Runtime Package Cloudflare Tunnel trực tiếp từ Update Center.
 - [x] Khắc phục Update Center trên Xperia: V17.0.2 được phát hiện/tải nhưng bước xác minh vẫn báo V17.0.1, bảo đảm cập nhật một chạm thực sự áp dụng payload trước khi thông báo thành công.
+- [ ] Khắc phục Update Center Xperia bị kẹt ở “Đang xác minh phiên bản (12/12)” hoặc “cập nhật trong hàng đợi” sau khi source đã đổi version; hoàn tất idempotent, có timeout và tự dọn job cũ.

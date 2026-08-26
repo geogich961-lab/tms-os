@@ -120,7 +120,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
       tms_toast(d.message || 'Gói đã được áp dụng; đang xác minh phiên bản thực tế...', 'success');
     }
     if (d.queued && d.job) {
-      pollUpdateJob(String(d.job), 0);
+      pollUpdateJob(String(d.job), String(d.version || ''), 0);
       return;
     }
     verifyAppliedVersion(0);
@@ -130,7 +130,19 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
     verifyAppliedVersion(0, e && e.message ? e.message : 'Không nhận được phản hồi từ panel.');
   });
 
-  function pollUpdateJob(job, attempt, fallbackError) {
+  function versionMatches(current, expected) {
+    return expected !== '' && String(current || '').replace(/^v/i, '') === expected.replace(/^v/i, '');
+  }
+
+  function finishVerified(current) {
+    btn.textContent = 'Đã cập nhật ' + current;
+    btn.disabled = true;
+    btn.className = 'btn btn-success';
+    if (window.tms_toast) tms_toast('Đã xác minh phiên bản đang chạy: ' + current, 'success');
+    setTimeout(function() { window.location.href = '/dashboard?updated=1'; }, 1200);
+  }
+
+  function pollUpdateJob(job, expected, attempt, fallbackError) {
     fetch('/api/updates/job-status?job=' + encodeURIComponent(job) + '&_=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
       .then(parseUpdateJson)
       .then(function(status) {
@@ -139,27 +151,32 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
           authError.authRequired = true;
           throw authError;
         }
+        if (versionMatches(status.current, expected)) {
+          finishVerified(String(status.current));
+          return;
+        }
         if (status.job && status.job !== job) {
-          throw new Error('Trạng thái cập nhật không khớp yêu cầu hiện tại. Vui lòng tải lại trang.');
+          verifyAppliedVersion(0, fallbackError || 'Trạng thái worker đã thay đổi; đang kiểm tra source thực tế.', expected);
+          return;
         }
         if (status.update_ok === false || status.phase === 'failed') {
           throw new Error(status.message || 'Cập nhật không thành công; hệ thống đã giữ bản đang chạy.');
         }
         if (status.update_ok === true || status.phase === 'restarting' || status.phase === 'skipped') {
-          verifyAppliedVersion(0);
+          verifyAppliedVersion(0, null, expected);
           return;
         }
         if (attempt < 36) {
           btn.textContent = status.message || ('Đang áp dụng cập nhật (' + (attempt + 1) + '/36)...');
-          setTimeout(function() { pollUpdateJob(job, attempt + 1, fallbackError); }, 1500);
+          setTimeout(function() { pollUpdateJob(job, expected, attempt + 1, fallbackError); }, 1500);
           return;
         }
-        throw new Error(fallbackError || 'Hết thời gian chờ worker cập nhật. Vui lòng kiểm tra lại phiên bản.');
+        verifyAppliedVersion(0, fallbackError || 'Worker vẫn đang xử lý nền; đang kiểm tra source thực tế.', expected);
       })
       .catch(function(error) {
         if (attempt < 36 && error && error.retryable) {
           btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/36)...';
-          setTimeout(function() { pollUpdateJob(job, attempt + 1, fallbackError || error.message); }, 1500);
+          setTimeout(function() { pollUpdateJob(job, expected, attempt + 1, fallbackError || error.message); }, 1500);
           return;
         }
         btn.disabled = false;
@@ -169,7 +186,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
       });
   }
 
-  function verifyAppliedVersion(attempt, fallbackError) {
+  function verifyAppliedVersion(attempt, fallbackError, expected) {
     fetch('/api/updates/check?verify=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
       .then(parseUpdateJson)
       .then(function(status) {
@@ -180,15 +197,13 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         }
         var current = String(status.current || '');
         var available = status.available && String(status.available.version || '');
-        if (!status.error && available === '') {
-          btn.textContent = 'Đã cập nhật ' + current;
-          if (window.tms_toast) tms_toast('Đã xác minh phiên bản đang chạy: ' + current, 'success');
-          setTimeout(function() { window.location.href = '/dashboard?updated=1'; }, 1200);
+        if (!status.error && (versionMatches(current, expected || '') || (!expected && available === ''))) {
+          finishVerified(current);
           return;
         }
         if (attempt < 12) {
           btn.textContent = 'Đang xác minh phiên bản (' + (attempt + 1) + '/12)...';
-          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError); }, 2500);
+          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError, expected); }, 2500);
           return;
         }
         throw new Error(fallbackError || ('Phiên bản thực tế vẫn chưa được xác nhận (đang là ' + current + ').'));
@@ -196,7 +211,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
       .catch(function(error) {
         if (attempt < 12 && error && error.retryable) {
           btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/12)...';
-          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError || error.message); }, 2500);
+          setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError || error.message, expected); }, 2500);
           return;
         }
         btn.disabled = false;

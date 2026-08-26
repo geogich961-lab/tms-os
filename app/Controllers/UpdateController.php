@@ -79,6 +79,7 @@ final class UpdateController
             'current' => (string)($status['current'] ?? 'unknown'),
             'applying' => !empty($status['applying']),
             'job' => (string)($state['job'] ?? ''),
+            'target' => (string)($state['to'] ?? ''),
             'phase' => (string)($state['phase'] ?? 'idle'),
             'update_ok' => array_key_exists('ok', $state) ? (bool)$state['ok'] : null,
             'message' => (string)($state['message'] ?? ''),

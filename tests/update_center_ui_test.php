@@ -42,10 +42,12 @@ if (str_contains($view, 'return r.json();')) {
 }
 
 foreach ([
-    'pollUpdateJob(String(d.job), 0)',
+    "pollUpdateJob(String(d.job), String(d.version || ''), 0)",
     '/api/updates/job-status?job=',
     'status.update_ok === false',
     'status.phase === \'failed\'',
+    'function versionMatches(current, expected)',
+    'function finishVerified(current)',
 ] as $needle) {
     if (!str_contains($view, $needle)) {
         fwrite(STDERR, "Missing queued Update Center polling guard: {$needle}\n");
@@ -76,7 +78,11 @@ foreach ([
     "'phase'=>'applying'",
     "'phase'=>'failed'",
     'private function launchUpdateWorker(): void',
-    "'phase' => 'swapping'",
+    'private function scheduleRestart(): void',
+    'private const JOB_TIMEOUT_SECONDS = 900',
+    "'phase' => 'completed'",
+    'Worker cập nhật đã quá thời gian chờ',
+    'Đã xác nhận source đang chạy là V',
     'foreach ($parts as $part)',
     "'TMS_UPDATE_SKIP_RESTART'",
     "'Payload đã xử lý nhưng phiên bản source chưa đổi sang V'",

@@ -18,6 +18,7 @@ final class UpdateService
     private string $workerLock;
     private string $workerScript;
     private string $workerLog;
+    private const JOB_TIMEOUT_SECONDS = 900;
 
     public function __construct()
     {
@@ -212,7 +213,7 @@ final class UpdateService
     }
 
     /** Tải bản mới nhất từ GitHub rồi áp dụng ngay (update 1 chạm qua API). */
-    public function applyFromGitHub(): array
+    public function applyFromGitHub(bool $deferRestart = false): array
     {
         $release = $this->latestRelease();
         $current = $this->currentVersion();
@@ -221,7 +222,7 @@ final class UpdateService
             return ['ok' => true, 'skipped' => true, 'message' => 'Đã là phiên bản mới nhất (' . $current . '). Không cần cập nhật.', 'version' => $current];
         }
         $staged = $this->stageFromGitHub($release['zip_url'] ?? null);
-        return $this->doApply($this->dir . '/' . $staged['name'], (string)($staged['version'] ?? $available));
+        return $this->doApply($this->dir . '/' . $staged['name'], (string)($staged['version'] ?? $available), $deferRestart);
     }
 
     /**
@@ -250,7 +251,7 @@ final class UpdateService
             'message'=>'Đã nhận yêu cầu cập nhật. Worker đang chuẩn bị tải gói an toàn.',
         ]));
         $this->launchUpdateWorker();
-        return ['ok'=>true,'queued'=>true,'job'=>$job,'message'=>'Đã nhận yêu cầu cập nhật '.$available.'. Panel sẽ tự xác minh sau khi dịch vụ khởi động lại.'];
+        return ['ok'=>true,'queued'=>true,'job'=>$job,'version'=>$available,'message'=>'Đã nhận yêu cầu cập nhật '.$available.'. Panel sẽ tự xác minh sau khi dịch vụ khởi động lại.'];
     }
 
     /** Chỉ worker nội bộ được gọi phương thức này; không nhận input từ web. */
@@ -270,7 +271,7 @@ final class UpdateService
                 'started_at'=>date('c'),
                 'message'=>'Đang tải, kiểm tra checksum và áp dụng gói cập nhật.',
             ]));
-            $result = $this->applyFromGitHub();
+            $result = $this->applyFromGitHub(true);
             $current = $this->currentVersion();
             $expected = $this->normalizeVersion((string)($job['to'] ?? ''));
             if (empty($result['skipped']) && $expected !== '' && $this->normalizeVersion($current) !== $expected) {
@@ -279,12 +280,15 @@ final class UpdateService
             $this->writeJsonAtomically($this->stateFile, array_merge($job, [
                 'applying'=>false,
                 'ok'=>true,
-                'phase'=>!empty($result['skipped'])?'skipped':'restarting',
+                'phase'=>!empty($result['skipped'])?'skipped':'completed',
                 'finished_at'=>date('c'),
                 'current'=>$current,
                 'message'=>(string)($result['message'] ?? 'Đã áp dụng cập nhật.'),
             ]));
             @unlink($this->queueFile);
+            if (empty($result['skipped'])) {
+                $this->scheduleRestart();
+            }
         } catch (Throwable $e) {
             $job = $this->readJson($this->queueFile);
             $message = mb_substr(preg_replace('/\s+/', ' ', trim($e->getMessage())), 0, 500);
@@ -356,12 +360,43 @@ final class UpdateService
     /** Trạng thái hiện tại của Update Center. */
     public function status(): array
     {
-        $state = [];
-        if (is_file($this->stateFile)) {
-            $state = json_decode((string)file_get_contents($this->stateFile), true) ?: [];
+        $state = $this->readJson($this->stateFile);
+        $queued = $this->readJson($this->queueFile);
+        if ($state === [] && $queued !== []) {
+            $state = array_merge($queued, [
+                'applying' => true,
+                'phase' => 'queued',
+                'message' => 'Đang khôi phục trạng thái yêu cầu cập nhật nền.',
+            ]);
+        }
+        $current = $this->currentVersion();
+        $expected = $this->normalizeVersion((string)($state['to'] ?? $queued['to'] ?? ''));
+        $active = !empty($state['applying']) || $queued !== [];
+        if ($active && $expected !== '' && $this->normalizeVersion($current) === $expected) {
+            $state = array_merge($state, [
+                'applying' => false,
+                'ok' => true,
+                'phase' => 'completed',
+                'finished_at' => date('c'),
+                'current' => $current,
+                'message' => 'Đã xác nhận source đang chạy là V' . $current . '.',
+            ]);
+            $this->writeJsonAtomically($this->stateFile, $state);
+            @unlink($this->queueFile);
+        } elseif ($active && !$this->isWorkerActive() && $this->stateAgeSeconds() > self::JOB_TIMEOUT_SECONDS) {
+            $state = array_merge($state, [
+                'applying' => false,
+                'ok' => false,
+                'phase' => 'failed',
+                'finished_at' => date('c'),
+                'current' => $current,
+                'message' => 'Worker cập nhật đã quá thời gian chờ mà chưa đổi source. Hệ thống đã dọn hàng đợi để bạn có thể thử lại.',
+            ]);
+            $this->writeJsonAtomically($this->stateFile, $state);
+            @unlink($this->queueFile);
         }
         return [
-            'current' => $this->currentVersion(),
+            'current' => $current,
             'previous_exists' => is_dir($this->target . '.previous'),
             'applying' => !empty($state['applying']),
             'state' => $state,
@@ -412,6 +447,22 @@ final class UpdateService
         return is_array($data) ? $data : [];
     }
 
+    private function isWorkerActive(): bool
+    {
+        return is_dir($this->workerLock);
+    }
+
+    private function stateAgeSeconds(): int
+    {
+        $mtime = 0;
+        foreach ([$this->stateFile, $this->queueFile] as $file) {
+            if (is_file($file)) {
+                $mtime = max($mtime, (int)@filemtime($file));
+            }
+        }
+        return $mtime > 0 ? max(0, time() - $mtime) : PHP_INT_MAX;
+    }
+
     private function writeJsonAtomically(string $file, array $data): void
     {
         $tmp = $file.'.tmp-'.bin2hex(random_bytes(4));
@@ -423,7 +474,7 @@ final class UpdateService
         @chmod($file, 0600);
     }
 
-    private function doApply(string $zipFile, ?string $expectedVersion = null): array
+    private function doApply(string $zipFile, ?string $expectedVersion = null, bool $deferRestart = false): array
     {
         $zip = new ZipArchive();
         if ($zip->open($zipFile) !== true) {
@@ -600,27 +651,34 @@ final class UpdateService
             file_put_contents($configPath, $configContent);
         }
 
-        // 8. Hoàn tất xử lý file và dọn dẹp
-        @unlink($this->stateFile);
+        // 8. Hoàn tất xử lý file và dọn dẹp. Worker giữ state đến khi đã ghi kết quả.
+        if (!$deferRestart) {
+            @unlink($this->stateFile);
+        }
 
         // 9. Chuẩn bị khởi động lại bất đồng bộ
         // Chúng ta cần đảm bảo response được gửi về trình duyệt TRƯỚC khi kill tiến trình PHP
-        $restartScript = $this->target . '/scripts/start-tms.sh';
-        if (is_file($restartScript) && getenv('TMS_UPDATE_SKIP_RESTART') !== '1') {
-            // Sử dụng cơ chế "Sát thủ tiến trình" mạnh mẽ hơn:
-            // 1. Gửi phản hồi HTTP về Cloudflare trước
-            // 2. Chờ 2 giây để kết nối đóng an toàn
-            // 3. Force kill mọi tiến trình Nginx/PHP cũ và khởi động lại
-            $cmd = "sleep 2 && (pkill -9 -f php-cgi; pkill -9 -f nginx; bash " . escapeshellarg($restartScript) . ")";
-            exec("nohup bash -c " . escapeshellarg($cmd) . " > /dev/null 2>&1 &");
+        if (!$deferRestart) {
+            $this->scheduleRestart();
         }
 
         return [
             'ok' => true,
             'backup' => $backupDir,
             'message' => 'Đã áp dụng cập nhật thành công. Hệ thống đang khởi động lại dịch vụ (mất khoảng 5-10 giây), vui lòng đợi...',
-            'restarting' => true
+            'restarting' => !$deferRestart,
+            'restart_required' => $deferRestart,
         ];
+    }
+
+    private function scheduleRestart(): void
+    {
+        $restartScript = $this->target . '/scripts/start-tms.sh';
+        if (!is_file($restartScript) || getenv('TMS_UPDATE_SKIP_RESTART') === '1') {
+            return;
+        }
+        $cmd = "sleep 2 && (pkill -9 -f php-cgi; pkill -9 -f nginx; bash " . escapeshellarg($restartScript) . ")";
+        @exec("nohup bash -c " . escapeshellarg($cmd) . " > /dev/null 2>&1 &");
     }
 
     private function validateZip(string $tmp): void

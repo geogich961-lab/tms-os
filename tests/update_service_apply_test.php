@@ -51,6 +51,24 @@ try {
     expectUpdateApply((string) file_get_contents($target . '/public/index.php') === "<?php echo 'new';\n", 'Source mới không được kích hoạt.');
     expectUpdateApply((string) file_get_contents($target . '/storage/keep.txt') === 'persistent-user-data', 'Update không được chạm dữ liệu storage.');
     expectUpdateApply(is_dir($target . '.previous/config'), 'Bản source trước phải có trong vùng khôi phục.');
+
+    $statePath = $updatesDir . '/apply-state.json';
+    $queuePath = $updatesDir . '/github-apply.job.json';
+    file_put_contents($statePath, json_encode(['job' => 'done-after-restart', 'to' => 'V17.0.3', 'applying' => true, 'phase' => 'applying']));
+    file_put_contents($queuePath, json_encode(['job' => 'done-after-restart', 'to' => 'V17.0.3']));
+    $recovered = $service->status();
+    expectUpdateApply(empty($recovered['applying']), 'Status phải tự hoàn tất khi source đã đổi sang version đích.');
+    expectUpdateApply(($recovered['state']['phase'] ?? '') === 'completed', 'Status phải ghi phase completed sau restart.');
+    expectUpdateApply(!is_file($queuePath), 'Job đã hoàn tất phải được dọn khỏi queue.');
+
+    file_put_contents($statePath, json_encode(['job' => 'expired-job', 'to' => 'V17.0.4', 'applying' => true, 'phase' => 'applying']));
+    file_put_contents($queuePath, json_encode(['job' => 'expired-job', 'to' => 'V17.0.4']));
+    touch($statePath, time() - 1000);
+    touch($queuePath, time() - 1000);
+    $expired = $service->status();
+    expectUpdateApply(empty($expired['applying']), 'Job quá hạn không còn worker phải được kết thúc.');
+    expectUpdateApply(($expired['state']['phase'] ?? '') === 'failed', 'Job quá hạn phải có trạng thái failed rõ ràng.');
+    expectUpdateApply(!is_file($queuePath), 'Queue quá hạn phải được dọn để cho phép thử lại.');
     echo "PASS: UpdateService swap source, thay version và giữ storage.\n";
 } finally {
     removeUpdateApplyTree($temp);
