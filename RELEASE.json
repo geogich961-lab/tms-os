@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.0",
-  "build": "20260826-v17",
+  "internal_version": "17.0.1",
+  "build": "20260826-v17.0.1",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-26",
-  "name": "TMS OS V17.0.0",
-  "version": "17.0.0",
-  "notes": "V17.0.0: Auto-start minh bạch với Termux:Boot, tự khôi phục Redis nếu Redis đã được cài và vá Update Center xử lý phản hồi khi panel khởi động lại; giữ nguyên UCI, Repair, rollback và dữ liệu người dùng.",
+  "name": "TMS OS V17.0.1",
+  "version": "17.0.1",
+  "notes": "V17.0.1: khôi phục Cập nhật nhanh một chạm trực tiếp từ panel V17.0.0. Request trả JSON trước khi worker nền áp dụng gói và giao diện tự xác minh sau restart.",
   "features": [
-    "Auto-start phân biệt rõ cấu hình đã tạo và trạng thái app Termux:Boot.",
-    "Khôi phục Redis sau reboot chỉ khi redis-server tồn tại.",
-    "Redis là optional: lỗi Redis không chặn PHP, Nginx, SQLite/MariaDB hoặc Panel.",
-    "Update Center phản hồi JSON rõ ràng và tự chờ panel khởi động lại sau cập nhật.",
-    "Kế thừa preflight, xác minh SHA-256, backup và rollback của Universal Compatibility Installer."
+    "Update Center ghi job và trả JSON trước khi PHP/Nginx restart.",
+    "Worker nền tải gói, xác minh SHA-256, backup, swap, health-check và rollback nếu cần.",
+    "Panel polling trạng thái job qua JSON, tương thích với giao diện V17.0.0.",
+    "Kế thừa Auto-start Termux:Boot và Redis tùy chọn của V17.0.0.",
+    "Giữ nguyên Universal Compatibility Installer, Repair và dữ liệu người dùng."
   ],
-  "checksum_sha256": "abf83c5d54be3ae85d0ee19b88ee459575489428cd29262399f5d2d568fa4d1f",
+  "checksum_sha256": "2a87284d0c8d734cfc0ed6098c7bccf51ad5633e92213b299fc24bd31df99d55",
   "build_date": "2026-08-26",
-  "version_display": "TMS OS V17.0.0",
-  "changelog": "V17.0.0: hoàn thiện Auto-start Termux:Boot, khôi phục Redis tùy chọn sau reboot và vá Update Center không parse HTML như JSON khi panel khởi động lại; giữ Repair an toàn và Universal Compatibility Installer.",
+  "version_display": "TMS OS V17.0.1",
+  "changelog": "V17.0.1: sửa Cập nhật nhanh trực tiếp trong panel bằng hàng đợi worker nền và polling JSON bền vững qua restart.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-26"
 }

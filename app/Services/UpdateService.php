@@ -14,6 +14,10 @@ final class UpdateService
     private string $target;
     private string $stateFile;
     private string $tokenFile;
+    private string $queueFile;
+    private string $workerLock;
+    private string $workerScript;
+    private string $workerLog;
 
     public function __construct()
     {
@@ -22,8 +26,13 @@ final class UpdateService
         $this->target = $this->home . '/tms-os';
         $this->stateFile = $this->dir . '/apply-state.json';
         $this->tokenFile = $this->home . '/.tms-os/update-token';
+        $this->queueFile = $this->dir . '/github-apply.job.json';
+        $this->workerLock = $this->dir . '/github-apply.worker.lock';
+        $this->workerScript = $this->target . '/scripts/tms-update-worker.php';
+        $this->workerLog = $this->home . '/logs/services/update-worker.log';
         @mkdir($this->dir, 0700, true);
         @mkdir($this->home . '/.tms-os', 0700, true);
+        @mkdir($this->home . '/logs/services', 0700, true);
     }
 
     /** Kiểm tra version hiện tại so với release mới nhất trên GitHub. */
@@ -215,6 +224,78 @@ final class UpdateService
         return $this->doApply($this->dir . '/' . $staged['name']);
     }
 
+    /**
+     * Request web chỉ ghi job và trả JSON. Việc tải/swap/restart chạy trong
+     * worker riêng, tránh làm PHP-CGI bị dừng trước khi response đến trình duyệt.
+     */
+    public function enqueueGitHubApply(): array
+    {
+        $state = $this->status()['state'] ?? [];
+        if (!empty($state['applying']) || is_file($this->queueFile)) {
+            throw new RuntimeException('Đang có một cập nhật trong hàng đợi. Vui lòng chờ hệ thống hoàn tất.');
+        }
+        $release = $this->latestRelease();
+        $current = $this->currentVersion();
+        $available = $this->normalizeVersion((string)($release['version'] ?? ''));
+        if ($available === '' || !$this->isNewer($available, $current)) {
+            return ['ok'=>true,'skipped'=>true,'version'=>$current,'message'=>'Đã là phiên bản mới nhất ('.$current.'). Không cần cập nhật.'];
+        }
+
+        $job = date('YmdHis').'-'.bin2hex(random_bytes(5));
+        $payload = ['job'=>$job,'source'=>'github','from'=>$current,'to'=>$available,'queued_at'=>date('c')];
+        $this->writeJsonAtomically($this->queueFile, $payload);
+        $this->writeJsonAtomically($this->stateFile, array_merge($payload, [
+            'applying'=>true,
+            'phase'=>'queued',
+            'message'=>'Đã nhận yêu cầu cập nhật. Worker đang chuẩn bị tải gói an toàn.',
+        ]));
+        $this->launchUpdateWorker();
+        return ['ok'=>true,'queued'=>true,'job'=>$job,'message'=>'Đã nhận yêu cầu cập nhật '.$available.'. Panel sẽ tự xác minh sau khi dịch vụ khởi động lại.'];
+    }
+
+    /** Chỉ worker nội bộ được gọi phương thức này; không nhận input từ web. */
+    public function runQueuedGitHubApply(): void
+    {
+        if (!@mkdir($this->workerLock, 0700)) {
+            return;
+        }
+        try {
+            $job = $this->readJson($this->queueFile);
+            if ($job === []) {
+                return;
+            }
+            $this->writeJsonAtomically($this->stateFile, array_merge($job, [
+                'applying'=>true,
+                'phase'=>'applying',
+                'started_at'=>date('c'),
+                'message'=>'Đang tải, kiểm tra checksum và áp dụng gói cập nhật.',
+            ]));
+            $result = $this->applyFromGitHub();
+            $this->writeJsonAtomically($this->stateFile, array_merge($job, [
+                'applying'=>false,
+                'ok'=>true,
+                'phase'=>!empty($result['skipped'])?'skipped':'restarting',
+                'finished_at'=>date('c'),
+                'current'=>$this->currentVersion(),
+                'message'=>(string)($result['message'] ?? 'Đã áp dụng cập nhật.'),
+            ]));
+            @unlink($this->queueFile);
+        } catch (Throwable $e) {
+            $job = $this->readJson($this->queueFile);
+            $message = mb_substr(preg_replace('/\s+/', ' ', trim($e->getMessage())), 0, 500);
+            $this->writeJsonAtomically($this->stateFile, array_merge($job, [
+                'applying'=>false,
+                'ok'=>false,
+                'phase'=>'failed',
+                'finished_at'=>date('c'),
+                'message'=>$message,
+            ]));
+            @unlink($this->queueFile);
+        } finally {
+            @rmdir($this->workerLock);
+        }
+    }
+
     /** Khôi phục về bản trước (previous/quarantine backup gần nhất). */
     public function rollback(): array
     {
@@ -308,6 +389,34 @@ final class UpdateService
 
     // ===== Nội bộ =====
 
+    private function launchUpdateWorker(): void
+    {
+        if (!is_file($this->workerScript)) {
+            throw new RuntimeException('Thiếu worker cập nhật. Vui lòng Repair TMS OS trước khi thử lại.');
+        }
+        $setsid = is_executable('/data/data/com.termux/files/usr/bin/setsid') ? 'setsid ' : '';
+        $cmd = 'nohup '.$setsid.'php '.escapeshellarg($this->workerScript)
+            .' >>'.escapeshellarg($this->workerLog).' 2>&1 < /dev/null &';
+        @exec($cmd);
+    }
+
+    private function readJson(string $file): array
+    {
+        $data = @json_decode((string)@file_get_contents($file), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function writeJsonAtomically(string $file, array $data): void
+    {
+        $tmp = $file.'.tmp-'.bin2hex(random_bytes(4));
+        $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        if ($json === false || @file_put_contents($tmp, $json."\n", LOCK_EX) === false || !@rename($tmp, $file)) {
+            @unlink($tmp);
+            throw new RuntimeException('Không thể lưu trạng thái cập nhật.');
+        }
+        @chmod($file, 0600);
+    }
+
     private function doApply(string $zipFile): array
     {
         $zip = new ZipArchive();
@@ -354,14 +463,16 @@ final class UpdateService
         }
 
         // 4. Ghi state (phục vụ rollback nếu process chết giữa chừng)
-        $state = [
+        $queuedState = $this->readJson($this->stateFile);
+        $state = array_merge($queuedState, [
             'applying' => true,
+            'phase' => 'swapping',
             'staging' => $staging,
             'backup' => $backupDir,
             'zip' => $zipFile,
             'started_at' => time(),
-        ];
-        file_put_contents($this->stateFile, json_encode($state, JSON_PRETTY_PRINT));
+        ]);
+        $this->writeJsonAtomically($this->stateFile, $state);
 
         // 5. Swap: target → target.previous, staging → target
         $previous = $this->target . '.previous';
@@ -436,7 +547,7 @@ final class UpdateService
             // Rollback: đưa previous về target
             $quarantineDir = $this->home . '/.tms-os/quarantine/' . $backupStamp;
             @mkdir($quarantineDir, 0700, true);
-            foreach ($oldParts as $part) {
+            foreach ($parts as $part) {
                 if (is_dir($this->target . '/' . $part)) {
                     rename($this->target . '/' . $part, $quarantineDir . '/' . $part);
                 }

@@ -4,6 +4,9 @@ declare(strict_types=1);
 $root = dirname(__DIR__);
 $view = (string) file_get_contents($root . '/app/Views/updates/index.php');
 $controller = (string) file_get_contents($root . '/app/Controllers/UpdateController.php');
+$service = (string) file_get_contents($root . '/app/Services/UpdateService.php');
+$routes = (string) file_get_contents($root . '/routes/web.php');
+$worker = (string) file_get_contents($root . '/scripts/tms-update-worker.php');
 
 $required = [
     "verifyAppliedVersion(0)",
@@ -39,10 +42,24 @@ if (str_contains($view, 'return r.json();')) {
 }
 
 foreach ([
+    'pollUpdateJob(String(d.job), 0)',
+    '/api/updates/job-status?job=',
+    'status.update_ok === false',
+    'status.phase === \'failed\'',
+] as $needle) {
+    if (!str_contains($view, $needle)) {
+        fwrite(STDERR, "Missing queued Update Center polling guard: {$needle}\n");
+        exit(1);
+    }
+}
+
+foreach ([
     'private function apiGuard(): bool',
     'http_response_code(401)',
     "'code' => 'AUTH_REQUIRED'",
     'if (!$this->apiGuard())',
+    'public function jobStatus(): void',
+    "'update_ok' => array_key_exists('ok', \$state)",
 ] as $needle) {
     if (!str_contains($controller, $needle)) {
         fwrite(STDERR, "Missing JSON API authentication guard: {$needle}\n");
@@ -50,4 +67,29 @@ foreach ([
     }
 }
 
-echo "OK: Update Center retries restart responses and preserves JSON API errors.\n";
+foreach ([
+    'public function enqueueGitHubApply(): array',
+    'public function runQueuedGitHubApply(): void',
+    "'phase'=>'queued'",
+    "'phase'=>'applying'",
+    "'phase'=>'failed'",
+    'private function launchUpdateWorker(): void',
+    "'phase' => 'swapping'",
+    'foreach ($parts as $part)',
+] as $needle) {
+    if (!str_contains($service, $needle)) {
+        fwrite(STDERR, "Missing queued worker safety guard: {$needle}\n");
+        exit(1);
+    }
+}
+
+if (!str_contains($routes, "'/api/updates/job-status'")) {
+    fwrite(STDERR, "Missing authenticated update job status route.\n");
+    exit(1);
+}
+if (!str_contains($worker, '(new UpdateService())->runQueuedGitHubApply();')) {
+    fwrite(STDERR, "Update worker must only execute the internal queued apply method.\n");
+    exit(1);
+}
+
+echo "OK: Update Center queues work, polls JSON status, and preserves API errors across restart.\n";

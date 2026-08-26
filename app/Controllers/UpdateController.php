@@ -65,6 +65,26 @@ final class UpdateController
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
     }
 
+    /** API polling cho job Cập nhật nhanh; không trả token hay đường dẫn nội bộ. */
+    public function jobStatus(): void
+    {
+        if (!$this->apiGuard()) {
+            return;
+        }
+        $status = $this->updates->status();
+        $state = is_array($status['state'] ?? null) ? $status['state'] : [];
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode([
+            'ok' => true,
+            'current' => (string)($status['current'] ?? 'unknown'),
+            'applying' => !empty($status['applying']),
+            'job' => (string)($state['job'] ?? ''),
+            'phase' => (string)($state['phase'] ?? 'idle'),
+            'update_ok' => array_key_exists('ok', $state) ? (bool)$state['ok'] : null,
+            'message' => (string)($state['message'] ?? ''),
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
     public function stage(): void
     {
         $this->guard();
@@ -81,11 +101,17 @@ final class UpdateController
     /** Tải bản mới nhất từ GitHub và áp dụng ngay (update 1 chạm). */
     public function apply(): void
     {
-        $this->guard();
         $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+        if ($isAjax) {
+            if (!$this->apiGuard()) {
+                return;
+            }
+        } else {
+            $this->guard();
+        }
         try {
             $this->verify();
-            $r = $this->updates->applyFromGitHub();
+            $r = $this->updates->enqueueGitHubApply();
             
             if ($isAjax) {
                 header('Content-Type: application/json; charset=UTF-8');
@@ -180,6 +206,7 @@ final class UpdateController
             'ok' => true,
             'token' => $this->updates->token(),
             'current' => $this->updates->currentVersion(),
+            'update' => $this->updates->status(),
         ], JSON_UNESCAPED_UNICODE);
     }
 }

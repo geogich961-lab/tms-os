@@ -119,12 +119,55 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
     if (window.tms_toast) {
       tms_toast(d.message || 'Gói đã được áp dụng; đang xác minh phiên bản thực tế...', 'success');
     }
+    if (d.queued && d.job) {
+      pollUpdateJob(String(d.job), 0);
+      return;
+    }
     verifyAppliedVersion(0);
   }).catch(function(e) {
     // PHP-CGI có thể bị khởi động lại trước khi fetch nhận response. Không được
     // coi trường hợp này là thành công; chỉ xác nhận sau khi đọc phiên bản mới.
     verifyAppliedVersion(0, e && e.message ? e.message : 'Không nhận được phản hồi từ panel.');
   });
+
+  function pollUpdateJob(job, attempt, fallbackError) {
+    fetch('/api/updates/job-status?job=' + encodeURIComponent(job) + '&_=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
+      .then(parseUpdateJson)
+      .then(function(status) {
+        if (status && status.code === 'AUTH_REQUIRED') {
+          var authError = new Error(status.error || 'Phiên đăng nhập đã hết.');
+          authError.authRequired = true;
+          throw authError;
+        }
+        if (status.job && status.job !== job) {
+          throw new Error('Trạng thái cập nhật không khớp yêu cầu hiện tại. Vui lòng tải lại trang.');
+        }
+        if (status.update_ok === false || status.phase === 'failed') {
+          throw new Error(status.message || 'Cập nhật không thành công; hệ thống đã giữ bản đang chạy.');
+        }
+        if (status.update_ok === true || status.phase === 'restarting' || status.phase === 'skipped') {
+          verifyAppliedVersion(0);
+          return;
+        }
+        if (attempt < 36) {
+          btn.textContent = status.message || ('Đang áp dụng cập nhật (' + (attempt + 1) + '/36)...');
+          setTimeout(function() { pollUpdateJob(job, attempt + 1, fallbackError); }, 1500);
+          return;
+        }
+        throw new Error(fallbackError || 'Hết thời gian chờ worker cập nhật. Vui lòng kiểm tra lại phiên bản.');
+      })
+      .catch(function(error) {
+        if (attempt < 36 && error && error.retryable) {
+          btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/36)...';
+          setTimeout(function() { pollUpdateJob(job, attempt + 1, fallbackError || error.message); }, 1500);
+          return;
+        }
+        btn.disabled = false;
+        btn.className = 'btn btn-primary';
+        btn.textContent = 'Cập nhật ngay';
+        alert('Chưa xác nhận cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
+      });
+  }
 
   function verifyAppliedVersion(attempt, fallbackError) {
     fetch('/api/updates/check?verify=' + Date.now(), {credentials:'same-origin', cache:'no-store'})
