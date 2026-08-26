@@ -37,6 +37,7 @@ $router->post('/modules/toggle',fn()=>$moduleController->toggle());
 $router->post('/modules/repair',fn()=>$moduleController->repair());
 $router->get('/plugins',fn()=>tms_redirect('/modules'));
 $router->get('/packages',fn()=>$pluginController->index());
+$router->get('/api/packages/status',fn()=>$pluginController->status());
 $router->post('/packages/install',fn()=>$pluginController->install());
 $router->post('/packages/update',fn()=>$pluginController->update());$router->post('/packages/remove',fn()=>$pluginController->remove());
 $router->post('/plugins/install',fn()=>$pluginController->install());

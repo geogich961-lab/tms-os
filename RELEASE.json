@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.1",
-  "build": "20260826-v17.0.1",
+  "internal_version": "17.0.2",
+  "build": "20260826-v17.0.2",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-26",
-  "name": "TMS OS V17.0.1",
-  "version": "17.0.1",
-  "notes": "V17.0.1: khôi phục Cập nhật nhanh một chạm trực tiếp từ panel V17.0.0. Request trả JSON trước khi worker nền áp dụng gói và giao diện tự xác minh sau restart.",
+  "name": "TMS OS V17.0.2",
+  "version": "17.0.2",
+  "notes": "V17.0.2: sửa Runtime Package để cài Cloudflared chạy nền có timeout, phản hồi trạng thái rõ ràng và không làm treo panel.",
   "features": [
-    "Update Center ghi job và trả JSON trước khi PHP/Nginx restart.",
-    "Worker nền tải gói, xác minh SHA-256, backup, swap, health-check và rollback nếu cần.",
-    "Panel polling trạng thái job qua JSON, tương thích với giao diện V17.0.0.",
-    "Kế thừa Auto-start Termux:Boot và Redis tùy chọn của V17.0.0.",
-    "Giữ nguyên Universal Compatibility Installer, Repair và dữ liệu người dùng."
+    "Cài Runtime Package được xếp hàng và xử lý bởi worker nền, không chặn request PHP/Nginx.",
+    "Cloudflared được kiểm tra theo allowlist, có timeout và xác minh binary trước khi báo thành công.",
+    "Package Manager polling JSON có CSRF/session guard, trạng thái đang cài và lỗi có thể thử lại.",
+    "Worker Runtime Package không dừng hoặc khởi động lại PHP Engine, Nginx, SQLite, MariaDB hay Redis.",
+    "Giữ nguyên Update Center một chạm, Universal Compatibility Installer, Repair và dữ liệu người dùng."
   ],
-  "checksum_sha256": "2a87284d0c8d734cfc0ed6098c7bccf51ad5633e92213b299fc24bd31df99d55",
+  "checksum_sha256": "daeb931711d1262d0302a64e02b7335b9265799a06831b204f3bb5242830c6d8",
   "build_date": "2026-08-26",
-  "version_display": "TMS OS V17.0.1",
-  "changelog": "V17.0.1: sửa Cập nhật nhanh trực tiếp trong panel bằng hàng đợi worker nền và polling JSON bền vững qua restart.",
+  "version_display": "TMS OS V17.0.2",
+  "changelog": "V17.0.2: hotfix Cloudflared Runtime Package chạy nền, giới hạn thời gian chờ và polling trạng thái an toàn.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-26"
 }
