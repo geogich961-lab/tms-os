@@ -535,5 +535,5 @@
 - [x] Kiểm tra chỉ đọc trạng thái dịch vụ Xperia: tiến trình, cổng, phản hồi panel/PHP/Redis và auto-start; phát hiện thiếu Termux:Boot cùng Redis chưa được khôi phục sau reboot.
 - [x] Hoàn thiện auto-start Xperia: yêu cầu Termux:Boot rõ ràng và khôi phục Redis tùy chọn sau reboot mà không ảnh hưởng PHP/Nginx/SQLite.
 - [x] Chuẩn bị TMS OS V17.0.0 ổn định từ nền V16.1.21 với auto-start Termux:Boot và Redis tùy chọn sau reboot.
-- [ ] Đóng gói, kiểm thử integrity và phát hành GitHub Release V17.0.0.
-- [ ] Xóa các GitHub Release cũ sau khi V17.0.0 được xác minh, chỉ giữ V16.1.21 và V17.0.0.
+- [x] Đóng gói, kiểm thử integrity và phát hành GitHub Release V17.0.0.
+- [x] Xóa các GitHub Release cũ sau khi V17.0.0 được xác minh, chỉ giữ V16.1.21 và V17.0.0.
