@@ -208,7 +208,7 @@ final class UpdateService
         if (!is_file($zipFile) || !str_ends_with($zipName, '.zip')) {
             throw new RuntimeException('Gói cập nhật không tồn tại.');
         }
-        return $this->doApply($zipFile);
+        return $this->doApply($zipFile, null);
     }
 
     /** Tải bản mới nhất từ GitHub rồi áp dụng ngay (update 1 chạm qua API). */
@@ -221,7 +221,7 @@ final class UpdateService
             return ['ok' => true, 'skipped' => true, 'message' => 'Đã là phiên bản mới nhất (' . $current . '). Không cần cập nhật.', 'version' => $current];
         }
         $staged = $this->stageFromGitHub($release['zip_url'] ?? null);
-        return $this->doApply($this->dir . '/' . $staged['name']);
+        return $this->doApply($this->dir . '/' . $staged['name'], (string)($staged['version'] ?? $available));
     }
 
     /**
@@ -271,12 +271,17 @@ final class UpdateService
                 'message'=>'Đang tải, kiểm tra checksum và áp dụng gói cập nhật.',
             ]));
             $result = $this->applyFromGitHub();
+            $current = $this->currentVersion();
+            $expected = $this->normalizeVersion((string)($job['to'] ?? ''));
+            if (empty($result['skipped']) && $expected !== '' && $this->normalizeVersion($current) !== $expected) {
+                throw new RuntimeException('Payload đã xử lý nhưng phiên bản source chưa đổi sang V' . $expected . '. Hệ thống đã giữ bản đang chạy để tránh báo thành công sai.');
+            }
             $this->writeJsonAtomically($this->stateFile, array_merge($job, [
                 'applying'=>false,
                 'ok'=>true,
                 'phase'=>!empty($result['skipped'])?'skipped':'restarting',
                 'finished_at'=>date('c'),
-                'current'=>$this->currentVersion(),
+                'current'=>$current,
                 'message'=>(string)($result['message'] ?? 'Đã áp dụng cập nhật.'),
             ]));
             @unlink($this->queueFile);
@@ -288,6 +293,7 @@ final class UpdateService
                 'ok'=>false,
                 'phase'=>'failed',
                 'finished_at'=>date('c'),
+                'current'=>$this->currentVersion(),
                 'message'=>$message,
             ]));
             @unlink($this->queueFile);
@@ -417,7 +423,7 @@ final class UpdateService
         @chmod($file, 0600);
     }
 
-    private function doApply(string $zipFile): array
+    private function doApply(string $zipFile, ?string $expectedVersion = null): array
     {
         $zip = new ZipArchive();
         if ($zip->open($zipFile) !== true) {
@@ -474,40 +480,50 @@ final class UpdateService
         ]);
         $this->writeJsonAtomically($this->stateFile, $state);
 
-        // 5. Swap: target → target.previous, staging → target
+        // 5. Swap an toàn: move từng phần source sang .previous, rồi move staging
+        // vào target. Không xóa source đang chạy trước khi bản mới sẵn sàng.
         $previous = $this->target . '.previous';
         $this->rmdir($previous);
         @mkdir($previous, 0700, true);
-        
         $parts = ['app', 'config', 'public', 'routes', 'scripts'];
-        foreach ($parts as $part) {
-            $src = $this->target . '/' . $part;
-            if (is_dir($src)) {
-                // Sao lưu bản cũ sang .previous
-                exec("cp -af " . escapeshellarg($src) . " " . escapeshellarg($previous . '/'));
+        $movedOld = [];
+        $movedNew = [];
+        try {
+            foreach ($parts as $part) {
+                $src = $this->target . '/' . $part;
+                if (is_dir($src)) {
+                    if (!@rename($src, $previous . '/' . $part)) {
+                        throw new RuntimeException('Không thể đưa phần source cũ vào vùng khôi phục: ' . $part . '.');
+                    }
+                    $movedOld[] = $part;
+                }
             }
-        }
-        
-        // Áp dụng code mới từ staging vào target bằng cơ chế "Xóa sạch - Chép mới"
-        // Điều này giúp bẻ gãy mọi sự chiếm giữ file của PHP-CGI cũ
-        foreach ($parts as $part) {
-            $src = $staging . '/' . $part;
-            if (is_dir($src)) {
-                $dst = $this->target . '/' . $part;
-                // Cưỡng bức xóa thư mục cũ
-                exec("rm -rf " . escapeshellarg($dst));
-                // Chép thư mục mới vào
-                exec("cp -af " . escapeshellarg($src) . " " . escapeshellarg($this->target . '/'));
+            foreach ($parts as $part) {
+                $src = $staging . '/' . $part;
+                if (is_dir($src)) {
+                    if (!@rename($src, $this->target . '/' . $part)) {
+                        throw new RuntimeException('Không thể kích hoạt phần source mới: ' . $part . '.');
+                    }
+                    $movedNew[] = $part;
+                }
             }
-        }
-        
-        // Đảm bảo file config/app.php được ghi đè tuyệt đối
-        $configSrc = $staging . '/config/app.php';
-        $configDst = $this->target . '/config/app.php';
-        if (is_file($configSrc)) {
-            @unlink($configDst); // Xóa hẳn file cũ
-            exec("cp -af " . escapeshellarg($configSrc) . " " . escapeshellarg($configDst));
-            @chmod($configDst, 0644);
+        } catch (Throwable $e) {
+            $quarantine = $this->home . '/.tms-os/quarantine/swap-' . $backupStamp;
+            @mkdir($quarantine, 0700, true);
+            foreach (array_reverse($movedNew) as $part) {
+                $active = $this->target . '/' . $part;
+                if (is_dir($active)) {
+                    @rename($active, $quarantine . '/' . $part);
+                }
+            }
+            foreach ($movedOld as $part) {
+                $old = $previous . '/' . $part;
+                if (is_dir($old)) {
+                    @rename($old, $this->target . '/' . $part);
+                }
+            }
+            $this->rmdir($staging);
+            throw new RuntimeException('Không thể thay source cập nhật; hệ thống đã khôi phục bản trước. ' . $e->getMessage());
         }
         
         // Cố gắng xóa OPcache của PHP cưỡng bức
@@ -518,12 +534,13 @@ final class UpdateService
             clearstatcache(true);
         }
         
-        // Dọn dẹp staging
+        // Dọn dẹp staging sau khi mọi phần đã được kích hoạt thành công.
         $this->rmdir($staging);
 
         // 6. Health check — kiểm tra cú pháp PHP của source mới vừa swap vào
         // (không gọi HTTP vì request hiện tại đang chiếm worker php-cgi duy nhất).
         $healthy = false;
+        $healthError = 'Cập nhật thất bại khi kiểm tra sức khỏe — đã tự động khôi phục bản trước.';
         try {
             $lintOk = true;
             foreach (['config/app.php', 'public/index.php', 'routes/web.php', 'app/Core/helpers.php', 'app/Core/Router.php'] as $critical) {
@@ -539,7 +556,13 @@ final class UpdateService
                     break;
                 }
             }
-            $healthy = $lintOk;
+            $versionOk = true;
+            $expected = $this->normalizeVersion((string)$expectedVersion);
+            if ($expected !== '' && $this->normalizeVersion($this->currentVersion()) !== $expected) {
+                $versionOk = false;
+                $healthError = 'Cập nhật chưa đổi được source sang V' . $expected . ' — đã tự động khôi phục bản trước.';
+            }
+            $healthy = $lintOk && $versionOk;
         } catch (Throwable) {
             // không healthy
         }
@@ -560,7 +583,7 @@ final class UpdateService
                 }
             }
             @unlink($this->stateFile);
-            throw new RuntimeException('Cập nhật thất bại khi kiểm tra sức khỏe — đã tự động khôi phục bản trước.');
+            throw new RuntimeException($healthError);
         }
 
         // 7. Tự động xóa cache và tăng asset version để trình duyệt nhận diện code mới ngay lập tức
@@ -583,7 +606,7 @@ final class UpdateService
         // 9. Chuẩn bị khởi động lại bất đồng bộ
         // Chúng ta cần đảm bảo response được gửi về trình duyệt TRƯỚC khi kill tiến trình PHP
         $restartScript = $this->target . '/scripts/start-tms.sh';
-        if (is_file($restartScript)) {
+        if (is_file($restartScript) && getenv('TMS_UPDATE_SKIP_RESTART') !== '1') {
             // Sử dụng cơ chế "Sát thủ tiến trình" mạnh mẽ hơn:
             // 1. Gửi phản hồi HTTP về Cloudflare trước
             // 2. Chờ 2 giây để kết nối đóng an toàn

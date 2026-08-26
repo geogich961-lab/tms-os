@@ -60,6 +60,8 @@ foreach ([
     'if (!$this->apiGuard())',
     'public function jobStatus(): void',
     "'update_ok' => array_key_exists('ok', \$state)",
+    "'queued' => !empty(\$r['queued'])",
+    "'job' => (string)(\$r['job'] ?? '')",
 ] as $needle) {
     if (!str_contains($controller, $needle)) {
         fwrite(STDERR, "Missing JSON API authentication guard: {$needle}\n");
@@ -76,6 +78,9 @@ foreach ([
     'private function launchUpdateWorker(): void',
     "'phase' => 'swapping'",
     'foreach ($parts as $part)',
+    "'TMS_UPDATE_SKIP_RESTART'",
+    "'Payload đã xử lý nhưng phiên bản source chưa đổi sang V'",
+    "'Cập nhật chưa đổi được source sang V'",
 ] as $needle) {
     if (!str_contains($service, $needle)) {
         fwrite(STDERR, "Missing queued worker safety guard: {$needle}\n");

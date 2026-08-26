@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.2",
-  "build": "20260826-v17.0.2",
+  "internal_version": "17.0.3",
+  "build": "20260826-v17.0.3",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-26",
-  "name": "TMS OS V17.0.2",
-  "version": "17.0.2",
-  "notes": "V17.0.2: sửa Runtime Package để cài Cloudflared chạy nền có timeout, phản hồi trạng thái rõ ràng và không làm treo panel.",
+  "name": "TMS OS V17.0.3",
+  "version": "17.0.3",
+  "notes": "V17.0.3: sửa Cập nhật nhanh để worker trả job, chuyển source an toàn và chỉ báo thành công sau khi xác nhận version thực tế.",
   "features": [
-    "Cài Runtime Package được xếp hàng và xử lý bởi worker nền, không chặn request PHP/Nginx.",
-    "Cloudflared được kiểm tra theo allowlist, có timeout và xác minh binary trước khi báo thành công.",
-    "Package Manager polling JSON có CSRF/session guard, trạng thái đang cài và lỗi có thể thử lại.",
-    "Worker Runtime Package không dừng hoặc khởi động lại PHP Engine, Nginx, SQLite, MariaDB hay Redis.",
-    "Giữ nguyên Update Center một chạm, Universal Compatibility Installer, Repair và dữ liệu người dùng."
+    "Cập nhật nhanh trả về job nền đầy đủ để giao diện polling chính xác trên PHP-CGI Android.",
+    "Source mới được kích hoạt bằng chuyển thư mục có vùng khôi phục, không xóa source chạy trước.",
+    "Worker xác minh config/app.php đã đổi đúng version mục tiêu trước khi báo cập nhật thành công.",
+    "Khi swap hoặc xác minh version thất bại, source trước được phục hồi và lỗi hiển thị rõ ràng.",
+    "Giữ nguyên Runtime Package Cloudflared nền, Universal Compatibility Installer, Repair và dữ liệu người dùng."
   ],
-  "checksum_sha256": "daeb931711d1262d0302a64e02b7335b9265799a06831b204f3bb5242830c6d8",
+  "checksum_sha256": "849abe099d13499b3444826d76ba11ac8da6f23116f02ec0337701f244fae27d",
   "build_date": "2026-08-26",
-  "version_display": "TMS OS V17.0.2",
-  "changelog": "V17.0.2: hotfix Cloudflared Runtime Package chạy nền, giới hạn thời gian chờ và polling trạng thái an toàn.",
+  "version_display": "TMS OS V17.0.3",
+  "changelog": "V17.0.3: hotfix Update Center — worker trả job, swap source an toàn và xác nhận version thực tế trước khi thành công.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-26"
 }

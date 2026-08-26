@@ -115,7 +115,13 @@ final class UpdateController
             
             if ($isAjax) {
                 header('Content-Type: application/json; charset=UTF-8');
-                echo json_encode(['ok' => true, 'message' => $r['message']], JSON_UNESCAPED_UNICODE);
+                echo json_encode([
+                    'ok' => (bool)($r['ok'] ?? true),
+                    'queued' => !empty($r['queued']),
+                    'job' => (string)($r['job'] ?? ''),
+                    'version' => (string)($r['version'] ?? ''),
+                    'message' => (string)($r['message'] ?? ''),
+                ], JSON_UNESCAPED_UNICODE);
                 return;
             }
             tms_flash('success', $r['message']);
