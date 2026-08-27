@@ -565,4 +565,5 @@
 - [x] Đóng gói và phát hành V17.0.6 từ payload V17.0.5: xác minh SHA-256, đường nâng, giữ phiên sau restart và xử lý re-authentication trước khi Xperia cài.
 - [ ] Xác minh thực địa V17.0.6 trên Xperia: Update Center giữ phiên sau restart; nếu hết hạn thực sự, giao diện yêu cầu đăng nhập lại thay vì báo cập nhật chưa được xác nhận.
 - [x] Khắc phục trang `/login` hiển thị HTML thô sau re-authentication: luôn nạp layout header/footer và CSS/JS, không làm đổi luồng xác thực hoặc chuyển hướng nội bộ an toàn.
-- [ ] Đóng gói, phát hành và xác minh V17.0.7: sửa giao diện login sau Update Center, làm mới cache PWA và giữ nguyên dữ liệu/cấu hình runtime.
+- [x] Đóng gói, phát hành và xác minh V17.0.7: sửa giao diện login sau Update Center, làm mới cache PWA và giữ nguyên dữ liệu/cấu hình runtime.
+- [ ] Xác minh thực địa V17.0.7 trên Xperia: đăng nhập lại sau Update Center phải giữ giao diện TMS OS đầy đủ và trở về trang cập nhật an toàn.
