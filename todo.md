@@ -559,4 +559,5 @@
 - [x] Khẩn cấp khôi phục panel local Xperia sau khi bấm Cập nhật nhanh: `127.0.0.1:8888/updates` cũng không phản hồi, cần kiểm tra process/port và trạng thái worker không phá hủy trước khi thử thêm cập nhật.
 - [x] Khắc phục triệt để Update Center: sau khi swap source phải khởi động lại dịch vụ bằng cơ chế độc lập, có thời gian chờ/health confirmation và không để panel local mất phản hồi nếu bước restart lỗi.
 - [x] Loại bỏ hoàn toàn App Marketplace để tối giản TMS OS: menu, route, controller, service, view, JavaScript, CSS/tài nguyên và liên kết liên quan; không gỡ hoặc can thiệp dịch vụ/website đã cài đặt trước đó.
-- [ ] Đóng gói và phát hành V17.0.5 từ payload V17.0.4, gồm bootstrap repair cho thiết bị đang ở V17.0.4; xác minh SHA-256, đường nâng, restart health và bảo toàn dữ liệu trước khi Xperia cập nhật.
+- [x] Đóng gói và phát hành V17.0.5 từ payload V17.0.4, gồm bootstrap repair cho thiết bị đang ở V17.0.4; xác minh SHA-256, đường nâng, restart health và bảo toàn dữ liệu trước khi Xperia cập nhật.
+- [ ] Xác minh thực địa V17.0.5 trên Xperia sau bootstrap repair: Update Center chỉ xác nhận hoàn tất khi panel local phản hồi, sau đó mới thử tùy chọn tương thích Wi-Fi Cloudflare tại Highland.
