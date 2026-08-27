@@ -544,3 +544,14 @@
 - [x] Phát hành V17.0.2 để TMS OS V17.0.1 nhận hotfix Runtime Package Cloudflare Tunnel trực tiếp từ Update Center.
 - [x] Khắc phục Update Center trên Xperia: V17.0.2 được phát hiện/tải nhưng bước xác minh vẫn báo V17.0.1, bảo đảm cập nhật một chạm thực sự áp dụng payload trước khi thông báo thành công.
 - [x] Khắc phục Update Center Xperia bị kẹt ở “Đang xác minh phiên bản (12/12)” hoặc “cập nhật trong hàng đợi” sau khi source đã đổi version; hoàn tất idempotent, có timeout và tự dọn job cũ.
+- [ ] Tái hiện và sửa đường nâng trực tiếp từ source V17.0.2 trên Xperia: worker phải áp dụng đúng payload mới, không kẹt ở xác minh/hàng đợi và không phát hành thêm trước khi kiểm chứng tương thích ngược.
+- [ ] Ổn định Xperia đang chạy V17.0.3: xử lý lỗi Update Center không kết nối GitHub và đồng bộ release/giao diện để không đề xuất cập nhật mâu thuẫn.
+- [ ] Khôi phục truy cập công khai thc.io.vn và taone.thc.io.vn: hoàn tất Cloudflared cài nền, khởi động tunnel an toàn và hiển thị trạng thái tunnel thực tế thay vì chỉ trạng thái DNS/hostname.
+- [x] Đối chiếu chỉ đọc tunnel Cloudflare, CNAME của thc.io.vn/taone.thc.io.vn và connector trên Xperia để xác định nguyên nhân Error 1033 mà không thay đổi DNS, ingress hoặc token.
+- [x] Xác định nguyên nhân Cloudflared đã cài nhưng tiến trình connector không duy trì replica trên tunnel; chỉ dùng thông báo lỗi đã làm sạch, không để lộ token hay yêu cầu đổi token.
+- [ ] Khôi phục phân giải DNS cho Cloudflared trên Xperia: lỗi SRV lookup qua 8.8.4.4 bị timeout làm connector tự dừng; không thay tunnel, token, ingress, CNAME hay dữ liệu TMS OS.
+- [x] Thay thế phương án DNS-only VPN không tương thích bằng resolver cục bộ cho cloudflared/Termux, vì VPN 1.1.1.1 không đổi resolver của connector và làm Xperia mất Internet.
+- [x] Xử lý tương thích Wi‑Fi công cộng: hotspot đã xác nhận tunnel tạo bình thường 4 kết nối, cần cơ chế tránh DNS UDP timeout riêng cho connector mà không thay DNS Android hoặc Cloudflare.
+- [x] Bổ sung chế độ opt-in “Tương thích Wi‑Fi công cộng”: sao lưu, áp dụng và hoàn tác resolver riêng của Termux khi khởi động cloudflared; không thay DNS Android, tunnel, routes hoặc token.
+- [ ] Đóng gói và phát hành GitHub hotfix nội bộ chỉ cho Cloudflare resolver, kiểm tra đường nâng từ V17.0.3 qua Update Center và SHA-256 trước khi Xperia cài thử.
+- [ ] Xác minh V17.0.4 trên Xperia tại Wi‑Fi Highland: chỉ xác nhận khắc phục sau khi tunnel lên Active và hostname truy cập được; dừng thử nghiệm nếu mạng chặn DNS công khai hoặc Cloudflare Tunnel ở tầng mạng.

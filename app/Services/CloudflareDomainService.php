@@ -15,13 +15,15 @@ declare(strict_types=1);
  */
 final class CloudflareDomainService
 {
+    private const PUBLIC_WIFI_RESOLVER_CONTENT = "nameserver 1.1.1.1\nnameserver 1.0.0.1\n";
     private string $home;
     private string $dir;
     private string $configFile;
     private string $pidFile;
     private string $logFile;
     private string $publicStatusFile;
-
+    private string $termuxResolverFile;
+    private string $termuxResolverBackupFile;
     public function __construct()
     {
         $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
@@ -30,6 +32,9 @@ final class CloudflareDomainService
         $this->pidFile = $this->dir . '/tunnel.pid';
         $this->logFile = $this->dir . '/tunnel.log';
         $this->publicStatusFile = $this->dir . '/public-status.json';
+        $prefix = getenv('PREFIX') ?: '/data/data/com.termux/files/usr';
+        $this->termuxResolverFile = rtrim($prefix, '/') . '/etc/resolv.conf';
+        $this->termuxResolverBackupFile = $this->dir . '/termux-resolv.conf.before-public-wifi';
         @mkdir($this->dir, 0700, true);
     }
 
@@ -658,6 +663,7 @@ final class CloudflareDomainService
             throw new RuntimeException('Chưa cài cloudflared. Vào Runtime Packages → cài Cloudflared rồi thử lại.');
         }
         if ($this->running()) { throw new RuntimeException('Tunnel đang chạy.'); }
+        $this->applyPublicWifiDnsCompatibility($cfg);
         $this->terminate();
         $cmd = escapeshellarg($this->cloudflared()) . ' tunnel --no-autoupdate run --token ' . escapeshellarg($token);
         $shell = 'nohup sh -c ' . escapeshellarg('exec ' . $cmd) . ' </dev/null >' . escapeshellarg($this->logFile) . ' 2>&1 & echo $!';
@@ -677,6 +683,92 @@ final class CloudflareDomainService
     {
         $this->terminate();
         return ['running' => false, 'message' => 'Đã dừng tunnel.'];
+    }
+
+    /**
+     * Bật/tắt resolver riêng trong Termux cho các Wi‑Fi công cộng làm rơi DNS
+     * của cloudflared. Đây không phải DNS Android/VPN và không chạm Cloudflare API.
+     */
+    public function setPublicWifiDnsCompatibility(bool $enabled): array
+    {
+        $cfg = $this->readJson($this->configFile);
+        if (!$enabled) {
+            if ($this->running()) {
+                throw new RuntimeException('Hãy dừng Tunnel trước khi tắt chế độ Wi‑Fi công cộng để khôi phục resolver Termux an toàn.');
+            }
+            $this->restorePublicWifiDnsCompatibility($cfg);
+            unset($cfg['public_wifi_dns_compatibility'], $cfg['public_wifi_dns_backup_had_file'], $cfg['public_wifi_dns_backup_mode']);
+            $this->writeJson($this->configFile, $cfg);
+            @chmod($this->configFile, 0600);
+            return ['message' => 'Đã tắt chế độ Wi‑Fi công cộng và khôi phục resolver Termux trước đó.'];
+        }
+
+        $cfg['public_wifi_dns_compatibility'] = true;
+        $this->writeJson($this->configFile, $cfg);
+        @chmod($this->configFile, 0600);
+        return ['message' => 'Đã bật chế độ Wi‑Fi công cộng. Resolver riêng của Termux sẽ chỉ được áp dụng khi bạn khởi động Tunnel.'];
+    }
+
+    private function applyPublicWifiDnsCompatibility(array $cfg): void
+    {
+        if (empty($cfg['public_wifi_dns_compatibility'])) { return; }
+        $backupExists = is_file($this->termuxResolverBackupFile);
+        if (!$backupExists) {
+            $hadResolver = is_file($this->termuxResolverFile);
+            if ($hadResolver && !@copy($this->termuxResolverFile, $this->termuxResolverBackupFile)) {
+                throw new RuntimeException('Không thể sao lưu resolver Termux; tunnel chưa được khởi động.');
+            }
+            if (!$hadResolver && @file_put_contents($this->termuxResolverBackupFile, '', LOCK_EX) === false) {
+                throw new RuntimeException('Không thể tạo điểm khôi phục resolver Termux; tunnel chưa được khởi động.');
+            }
+            @chmod($this->termuxResolverBackupFile, 0600);
+            $cfg['public_wifi_dns_backup_had_file'] = $hadResolver;
+            $cfg['public_wifi_dns_backup_mode'] = $hadResolver ? (fileperms($this->termuxResolverFile) & 0777) : 0600;
+            $this->writeJson($this->configFile, $cfg);
+            @chmod($this->configFile, 0600);
+        }
+        $this->writeTermuxResolver(self::PUBLIC_WIFI_RESOLVER_CONTENT);
+    }
+
+    private function restorePublicWifiDnsCompatibility(array $cfg): void
+    {
+        if (!is_file($this->termuxResolverBackupFile)) { return; }
+        if (!empty($cfg['public_wifi_dns_backup_had_file'])) {
+            if (!@rename($this->termuxResolverBackupFile, $this->termuxResolverFile)) {
+                throw new RuntimeException('Không thể khôi phục resolver Termux trước đó.');
+            }
+            $mode = (int)($cfg['public_wifi_dns_backup_mode'] ?? 0600);
+            @chmod($this->termuxResolverFile, $mode >= 0600 && $mode <= 0777 ? $mode : 0600);
+            return;
+        }
+        if (is_file($this->termuxResolverFile) && !@unlink($this->termuxResolverFile)) {
+            throw new RuntimeException('Không thể xóa resolver tạm của TMS OS.');
+        }
+        @unlink($this->termuxResolverBackupFile);
+    }
+
+    private function writeTermuxResolver(string $content): void
+    {
+        $directory = dirname($this->termuxResolverFile);
+        if (!is_dir($directory) || !is_writable($directory)) {
+            throw new RuntimeException('Không có quyền ghi resolver Termux; tunnel chưa được khởi động.');
+        }
+        $temporary = $this->termuxResolverFile . '.tms-os-new';
+        if (@file_put_contents($temporary, $content, LOCK_EX) === false || !@rename($temporary, $this->termuxResolverFile)) {
+            @unlink($temporary);
+            throw new RuntimeException('Không thể áp dụng resolver Termux; tunnel chưa được khởi động.');
+        }
+        @chmod($this->termuxResolverFile, 0600);
+    }
+
+    private function publicWifiDnsCompatibilityStatus(array $cfg): array
+    {
+        $enabled = !empty($cfg['public_wifi_dns_compatibility']);
+        return [
+            'enabled' => $enabled,
+            'applied' => $enabled && is_file($this->termuxResolverBackupFile)
+                && trim((string)@file_get_contents($this->termuxResolverFile)) === trim(self::PUBLIC_WIFI_RESOLVER_CONTENT),
+        ];
     }
 
     public function status(): array
@@ -757,6 +849,7 @@ final class CloudflareDomainService
             'hostnames' => $hostnamesOut,
             'zones' => $zones,
             'zone_warn' => $zoneWarn,
+            'public_wifi_dns_compatibility' => $this->publicWifiDnsCompatibilityStatus($cfg),
             'log' => $log,
         ];
     }
@@ -976,6 +1069,7 @@ final class CloudflareDomainService
     public function uninstall(): array
     {
         $this->stopTunnel();
+        $this->setPublicWifiDnsCompatibility(false);
         $this->deleteTunnel();
         @unlink($this->configFile);
         return ['message' => 'Đã xóa toàn bộ cấu hình Cloudflare Hosting.'];

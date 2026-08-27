@@ -187,6 +187,19 @@ final class CloudflareDomainController
         $this->json(array_merge(['success' => true], $this->cfDomain->stopTunnel()));
     }
 
+    /** POST /api/cloudflare-domain/public-wifi-dns — thiết lập opt-in resolver Termux. */
+    public function publicWifiDns(): void
+    {
+        $this->guard();
+        if (!tms_verify_csrf($_POST['csrf'] ?? null)) { http_response_code(400); $this->json(['success' => false, 'error' => 'Phiên không hợp lệ.']); return; }
+        try {
+            $enabled = (string)($_POST['enabled'] ?? '') === '1';
+            $this->json(array_merge(['success' => true], $this->cfDomain->setPublicWifiDnsCompatibility($enabled)));
+        } catch (Throwable $e) {
+            $this->jsonError($e);
+        }
+    }
+
     /** POST /api/cloudflare-domain/detach (không truyền hostname = tách tên chính) */
     public function detach(): void
     {

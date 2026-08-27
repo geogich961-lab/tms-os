@@ -137,6 +137,15 @@
     text('#cfd-tunnel-running', running ? 'Có' : 'Không');
     text('#cfd-log', status.log || 'Chưa có nhật ký tunnel.');
 
+    const publicWifi = status.public_wifi_dns_compatibility || {};
+    text('#cfd-public-wifi-status', publicWifi.enabled
+      ? (publicWifi.applied ? 'Đang dùng resolver riêng của Termux' : 'Đã bật — áp dụng ở lần khởi động Tunnel kế tiếp')
+      : 'Chưa bật');
+    const publicWifiEnable = $('#cfd-public-wifi-enable');
+    const publicWifiDisable = $('#cfd-public-wifi-disable');
+    if (publicWifiEnable) publicWifiEnable.disabled = Boolean(publicWifi.enabled);
+    if (publicWifiDisable) publicWifiDisable.disabled = !publicWifi.enabled || running;
+
     const runningDot = $('#cfd-running-dot');
     if (runningDot) runningDot.classList.toggle('online', running);
     const remoteDot = $('#cfd-remote-dot');
@@ -285,13 +294,15 @@
   bindForm('#cfd-attach-form', '/api/cloudflare-domain/attach');
   bindForm('#cfd-remote-form', '/api/cloudflare-domain/attach-panel');
 
-  const action = (selector, endpoint, confirmation, after) => $(selector)?.addEventListener('click', async () => {
+  const action = (selector, endpoint, confirmation, after, fields = {}) => $(selector)?.addEventListener('click', async () => {
     if (confirmation && !confirmAction(confirmation)) return;
     const button = $(selector);
     const label = button?.textContent;
     if (button) { button.disabled = true; button.textContent = 'Đang xử lý…'; }
     try {
-      const data = await post(endpoint);
+      const form = new FormData();
+      Object.entries(fields).forEach(([name, value]) => form.set(name, value));
+      const data = await post(endpoint, form);
       show(data.message || 'Đã thực hiện thành công.');
       if (after) await after(data);
       await refresh({ silent: true });
@@ -304,6 +315,8 @@
 
   action('#cfd-start', '/api/cloudflare-domain/start');
   action('#cfd-stop', '/api/cloudflare-domain/stop', 'Dừng tunnel? Website công khai và panel từ xa sẽ tạm thời không truy cập được.');
+  action('#cfd-public-wifi-enable', '/api/cloudflare-domain/public-wifi-dns', 'Bật chế độ tương thích Wi‑Fi công cộng? TMS OS chỉ sao lưu và đổi resolver bên trong Termux khi bạn khởi động Tunnel; DNS Android, VPN, tunnel, route và token không bị thay đổi.', undefined, { enabled: '1' });
+  action('#cfd-public-wifi-disable', '/api/cloudflare-domain/public-wifi-dns', 'Tắt chế độ này? Tunnel phải đang dừng để TMS OS khôi phục đúng resolver Termux trước đó.', undefined, { enabled: '0' });
   action('#cfd-sync-routes', '/api/cloudflare-domain/sync-routes', 'Kiểm tra và thêm lại các route đang thiếu? Các hostname, DNS và route hiện có sẽ được giữ nguyên.');
   action('#cfd-detach', '/api/cloudflare-domain/detach', 'Tách tên miền chính khỏi tunnel? Tunnel và các tên miền khác vẫn được giữ.');
   action('#cfd-delete-tunnel', '/api/cloudflare-domain/delete-tunnel', 'Xóa tunnel khỏi Cloudflare? Tất cả website gắn với tunnel này sẽ ngừng hoạt động.');

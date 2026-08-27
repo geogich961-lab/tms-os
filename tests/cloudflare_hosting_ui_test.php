@@ -29,6 +29,9 @@ foreach ([
     '/api/cloudflare-domain/attach-panel',
     '/api/cloudflare-domain/perf-optimize',
     '/api/cloudflare-domain/sync-routes',
+    '/api/cloudflare-domain/public-wifi-dns',
+    'cfd-public-wifi-enable',
+    'public_wifi_dns_compatibility',
     'Promise.allSettled',
     'latestStatus',
     'setZoneWarning',
@@ -61,6 +64,10 @@ foreach ([
     'Đã có Cloudflare Tunnel được lưu trong TMS OS.',
     'Cloudflared đã thoát ngay sau khi khởi động.',
     'usleep(500000)',
+    'PUBLIC_WIFI_RESOLVER_CONTENT',
+    'setPublicWifiDnsCompatibility',
+    'applyPublicWifiDnsCompatibility',
+    'restorePublicWifiDnsCompatibility',
     'private function managedWebsiteIngress(array $cfg): array',
     'private function mergedTunnelIngress(array $cfg, array $currentIngress, string $panelHostname = \'\', bool $includePanel = false): array',
     "foreach ((array)(\$cfg['hostnames'] ?? []) as \$site)",
@@ -76,6 +83,7 @@ foreach ([
     'private function isPublicPanelRequest(): bool',
     'Không thể dừng Cloudflare Tunnel từ panel đang chạy qua chính tunnel.',
     '$this->cfDomain->stopTunnel()',
+    '$this->cfDomain->setPublicWifiDnsCompatibility($enabled)',
 ] as $required) {
     if (!str_contains($controller, $required)) {
         fwrite(STDERR, "Cloudflare Hosting controller lacks tunnel-stop safety: {$required}\n");

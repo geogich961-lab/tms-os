@@ -71,12 +71,14 @@ $csrf=tms_csrf_token();
 <!-- ========== ĐIỀU KHIỂN TUNNEL ========== -->
 <section class="panel-card cfd-section" data-panel="hosting">
 <div class="section-title-row"><h2>Điều khiển Tunnel</h2><span class="online-dot" id="cfd-running-dot"></span></div>
-<div class="btn-grid cfd-btn-grid two" style="gap: 12px; margin-bottom: 12px;">
-<button type="button" class="btn btn-success" id="cfd-start">▶ Khởi động Tunnel</button>
-<button type="button" class="btn btn-danger-soft" id="cfd-stop">■ Dừng Tunnel</button>
-</div>
-<p class="muted">Sau khi khởi động, các website tại tên miền đã gắn sẽ online ngay lập tức qua hạ tầng Cloudflare.</p>
-<div class="form-stack cfd-form"><button type="button" class="btn btn-ghost btn-block" id="cfd-refresh">Làm mới trạng thái</button></div>
+	<div class="btn-grid cfd-btn-grid two" style="gap: 12px; margin-bottom: 12px;">
+	<button type="button" class="btn btn-success" id="cfd-start">▶ Khởi động Tunnel</button>
+	<button type="button" class="btn btn-danger-soft" id="cfd-stop">■ Dừng Tunnel</button>
+	</div>
+	<p class="muted">Sau khi khởi động, các website tại tên miền đã gắn sẽ online ngay lập tức qua hạ tầng Cloudflare.</p>
+	<div class="cfh-info-box" id="cfd-public-wifi-box"><div><strong>Tương thích Wi‑Fi công cộng:</strong> <span id="cfd-public-wifi-status">Đang kiểm tra…</span></div><small class="muted">Chỉ dùng khi Wi‑Fi chặn DNS của cloudflared. Chế độ này chỉ sao lưu và đổi resolver trong Termux khi khởi động Tunnel; không thay DNS Android, VPN, tunnel, route hay token.</small></div>
+	<div class="btn-grid cfd-btn-grid two" style="gap: 12px; margin-top: 12px;"><button type="button" class="btn btn-secondary" id="cfd-public-wifi-enable">Bật tương thích Wi‑Fi</button><button type="button" class="btn btn-ghost" id="cfd-public-wifi-disable">Tắt &amp; khôi phục resolver</button></div>
+	<div class="form-stack cfd-form"><button type="button" class="btn btn-ghost btn-block" id="cfd-refresh">Làm mới trạng thái</button></div>
 <div class="form-stack cfd-form"><button type="button" class="btn btn-danger-soft btn-block" id="cfd-delete-tunnel">Xóa Tunnel khỏi Cloudflare</button></div>
 <div class="form-stack cfd-form"><button type="button" class="btn btn-danger-soft btn-block" id="cfd-uninstall">Xóa toàn bộ cấu hình Cloudflare</button></div>
 </section>
