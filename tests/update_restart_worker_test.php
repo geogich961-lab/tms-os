@@ -4,7 +4,7 @@ declare(strict_types=1);
 /**
  * Hồi quy cho lỗi Update Center: shell `bash -c` chứa chuỗi pkill -f có thể
  * tự bị pkill trước khi gọi start-tms.sh, khiến panel local không quay lại.
- * Restart phải được thực hiện bởi file worker riêng có argv không chứa mẫu pkill.
+ * Worker phải restart riêng PHP engine, không restart cả Nginx/Cloudflare.
  */
 function restartWorkerFail(string $message): never
 {
@@ -48,6 +48,8 @@ restartWorkerExpect(str_contains($service, "'restarting'"), 'UpdateService phả
 $workerSource = (string)file_get_contents($worker);
 restartWorkerExpect(str_contains($workerSource, 'http://127.0.0.1:8888/login'), 'Worker phải kiểm tra health của panel local sau restart.');
 restartWorkerExpect(str_contains($workerSource, 'restart_failed'), 'Worker phải ghi rõ trạng thái restart thất bại.');
+restartWorkerExpect(str_contains($workerSource, 'tms-php-engine.sh" restart'), 'Worker phải chỉ restart PHP engine sau source swap.');
+restartWorkerExpect(!str_contains($workerSource, 'bash "$SCRIPT_DIR/start-tms.sh"'), 'Worker Update Center không được restart cả Nginx và Cloudflare Tunnel.');
 
 if (!preg_match('/private function scheduleRestart\(\): bool\s*\{(.*?)\n\s*\}\n\s*private function validateZip/s', $service, $match)) {
     restartWorkerFail('Không đọc được hàm scheduleRestart.');
@@ -60,11 +62,11 @@ try {
     mkdir($tmp . '/scripts', 0700, true);
     mkdir($tmp . '/bin', 0700, true);
     copy($worker, $tmp . '/scripts/tms-update-restart.sh');
-    file_put_contents($tmp . '/scripts/start-tms.sh', "#!/usr/bin/env bash\ntouch \"\${TMS_RESTART_MARKER:?}\"\n");
+    file_put_contents($tmp . '/scripts/tms-php-engine.sh', "#!/usr/bin/env bash\n[ \"\${1:-}\" = restart ] || exit 2\ntouch \"\${TMS_RESTART_MARKER:?}\"\n");
     file_put_contents($tmp . '/bin/sleep', "#!/bin/sh\nexit 0\n");
     file_put_contents($tmp . '/bin/curl', "#!/bin/sh\nexit \"\${TMS_CURL_EXIT:-0}\"\n");
     chmod($tmp . '/scripts/tms-update-restart.sh', 0700);
-    chmod($tmp . '/scripts/start-tms.sh', 0700);
+    chmod($tmp . '/scripts/tms-php-engine.sh', 0700);
     chmod($tmp . '/bin/sleep', 0700);
     chmod($tmp . '/bin/curl', 0700);
     $marker = $tmp . '/restarted';
@@ -82,7 +84,7 @@ try {
         . ' bash ' . escapeshellarg($tmp . '/scripts/tms-update-restart.sh');
     exec($command . ' 2>&1', $output, $code);
     restartWorkerExpect($code === 0, 'Worker restart riêng phải chạy thành công trong môi trường cô lập.');
-    restartWorkerExpect(is_file($marker), 'Worker restart riêng chưa gọi start-tms.sh.');
+    restartWorkerExpect(is_file($marker), 'Worker restart riêng chưa gọi PHP engine ở chế độ restart.');
     $completed = json_decode((string)file_get_contents($stateFile), true);
     restartWorkerExpect(($completed['phase'] ?? '') === 'completed' && empty($completed['applying']), 'Health thành công phải hoàn tất trạng thái cập nhật.');
     restartWorkerExpect(!is_file($queueFile), 'Health thành công phải dọn hàng đợi cập nhật.');

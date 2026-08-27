@@ -52,9 +52,12 @@ clear_queue() {
 }
 
 sleep 3
-write_state 'restarting' 'Đang khởi động lại TMS OS và xác nhận panel local.'
-if ! bash "$SCRIPT_DIR/start-tms.sh"; then
-  write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng TMS OS không khởi động lại được. Hãy chạy start-tms.sh một lần từ Termux.'
+write_state 'restarting' 'Đang khởi động lại PHP của TMS OS và xác nhận panel local.'
+# Payload Update Center chỉ thay app/config/public/routes/scripts. Không được gọi
+# start-tms.sh ở đây vì full-stack restart sẽ dừng Nginx và Cloudflare Tunnel,
+# khiến browser từ hostname ngoài nhận 502 dù source đã được áp dụng đúng.
+if ! bash "$SCRIPT_DIR/tms-php-engine.sh" restart; then
+  write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng PHP của TMS OS không khởi động lại được. Hãy chạy start-tms.sh một lần từ Termux.'
   clear_queue
   exit 1
 fi

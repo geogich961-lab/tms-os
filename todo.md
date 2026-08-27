@@ -569,3 +569,5 @@
 - [ ] Xác minh thực địa V17.0.7 trên Xperia: đăng nhập lại sau Update Center phải giữ giao diện TMS OS đầy đủ và trở về trang cập nhật an toàn.
 - [x] Khắc phục GitHub Actions Verify UCI payload: kiểm tra installer theo đường dẫn phát hành `scripts/install.sh`, không yêu cầu sai `install.sh` ở gốc ZIP và không tạo lại release.
 - [x] Xác minh workflow GitHub Actions thủ công với release V17.0.7 sau khi sửa contract UCI, bảo đảm không báo thiếu installer ở gốc ZIP.
+- [x] Khắc phục Update Center khi truy cập qua Cloudflare: polling phải chịu được 502 tạm thời trong lúc restart, xác minh bằng trạng thái worker bền vững và không hiển thị cảnh báo “Chưa xác nhận cập nhật” sai.
+- [ ] Đóng gói, phát hành và xác minh V17.0.8: restart PHP hẹp để không dừng Nginx/Cloudflare trong update; polling kiểm tra source trước khi kết luận thất bại.

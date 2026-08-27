@@ -176,7 +176,11 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
             setTimeout(function() { pollUpdateJob(job, expected, attempt + 1, fallbackError); }, 1500);
             return;
           }
-          throw new Error('Panel chưa xác nhận khởi động lại sau cập nhật. Vui lòng mở panel local để kiểm tra trước khi thử lại.');
+          // 502 qua Cloudflare có thể kéo dài hơn lúc PHP engine khởi động lại.
+          // Luôn đối chiếu source một lượt nữa trước khi kết luận trạng thái.
+          btn.textContent = 'Đang kiểm tra phiên bản thực tế sau khi khởi động lại...';
+          verifyAppliedVersion(0, fallbackError || 'Panel cần thêm thời gian để hoàn tất khởi động lại.', expected);
+          return;
         }
         if (status.update_ok === false) {
           throw new Error(status.message || 'Cập nhật không thành công; hệ thống đã giữ bản đang chạy.');
@@ -209,7 +213,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         btn.disabled = false;
         btn.className = 'btn btn-primary';
         btn.textContent = 'Cập nhật ngay';
-        alert('Chưa xác nhận cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
+        alert('Không thể xác minh trạng thái cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
       });
   }
 
@@ -248,7 +252,7 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         btn.disabled = false;
         btn.className = 'btn btn-primary';
         btn.textContent = 'Cập nhật ngay';
-        alert('Chưa xác nhận cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
+        alert('Không thể xác minh trạng thái cập nhật: ' + (error.message || fallbackError || 'panel chưa phản hồi.'));
       });
   }
 	});

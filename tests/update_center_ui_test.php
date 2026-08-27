@@ -13,7 +13,7 @@ $required = [
     "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
-    "Chưa xác nhận cập nhật:",
+    "Không thể xác minh trạng thái cập nhật:",
     "function requestUpdateReauthentication",
     "Phiên đăng nhập đã hết hạn sau khi TMS OS khởi động lại.",
     "if (error && error.authRequired)",
@@ -55,6 +55,7 @@ foreach ([
     'status.phase === \'restarting\'',
     'function versionMatches(current, expected)',
     'function finishVerified(current)',
+    'Đang kiểm tra phiên bản thực tế sau khi khởi động lại...',
 ] as $needle) {
     if (!str_contains($view, $needle)) {
         fwrite(STDERR, "Missing queued Update Center polling guard: {$needle}\n");
@@ -66,6 +67,13 @@ $phaseFailurePos = strpos($view, "status.phase === 'restart_failed'");
 $versionMatchPos = strpos($view, 'if (versionMatches(status.current, expected))');
 if ($phaseFailurePos === false || $versionMatchPos === false || $phaseFailurePos > $versionMatchPos) {
     fwrite(STDERR, "Update Center must handle restart failure before accepting a matching source version.\n");
+    exit(1);
+}
+
+$restartMaxPos = strpos($view, "if (status.phase === 'restarting')");
+$restartVerifyPos = strpos($view, 'verifyAppliedVersion(0, fallbackError', $restartMaxPos === false ? 0 : $restartMaxPos);
+if ($restartMaxPos === false || $restartVerifyPos === false || $restartVerifyPos < $restartMaxPos) {
+    fwrite(STDERR, "Update Center must verify source after an extended restarting phase instead of treating a transient gateway outage as failure.\n");
     exit(1);
 }
 
