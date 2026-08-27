@@ -648,9 +648,11 @@ final class UpdateService
             throw new RuntimeException($healthError);
         }
 
-        // 7. Tự động xóa cache và tăng asset version để trình duyệt nhận diện code mới ngay lập tức
+        // 7. Worker nền không có session trình duyệt. Chỉ xóa cache để giữ
+        // nguyên phiên đang dùng qua restart; nếu xóa session ở đây, poller
+        // sau restart sẽ nhận AUTH_REQUIRED dù source đã cập nhật thành công.
         if (function_exists('tms_clear_cache')) {
-            tms_clear_cache();
+            tms_clear_cache(false);
         }
         
         // Tăng asset version trong config để ép trình duyệt tải lại CSS/JS mới nhất (tránh lỗi 520 do cache cũ)

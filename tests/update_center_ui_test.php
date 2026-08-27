@@ -13,6 +13,10 @@ $required = [
     "cache:'no-store'",
     "Đang xác minh phiên bản",
     "Chưa xác nhận cập nhật:",
+    "function requestUpdateReauthentication",
+    "Phiên đăng nhập đã hết hạn sau khi TMS OS khởi động lại.",
+    "if (error && error.authRequired)",
+    "/login?next=%2Fupdates",
     "parseUpdateJson(response)",
     "Đang chờ panel khởi động lại",
 ];
@@ -97,6 +101,7 @@ foreach ([
     "'TMS_UPDATE_SKIP_RESTART'",
     "'Payload đã xử lý nhưng phiên bản source chưa đổi sang V'",
     "'Cập nhật chưa đổi được source sang V'",
+    'tms_clear_cache(false)',
 ] as $needle) {
     if (!str_contains($service, $needle)) {
         fwrite(STDERR, "Missing queued worker safety guard: {$needle}\n");

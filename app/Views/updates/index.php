@@ -134,6 +134,18 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
     return expected !== '' && String(current || '').replace(/^v/i, '') === expected.replace(/^v/i, '');
   }
 
+  function requestUpdateReauthentication() {
+    btn.disabled = true;
+    btn.className = 'btn btn-secondary';
+    btn.textContent = 'Cần đăng nhập lại';
+    if (window.tms_toast) {
+      tms_toast('Phiên đăng nhập đã hết hạn sau khi TMS OS khởi động lại. Đang chuyển tới trang đăng nhập…', 'info');
+    }
+    window.setTimeout(function() {
+      window.location.assign('/login?next=%2Fupdates&reason=update-restart');
+    }, 350);
+  }
+
   function finishVerified(current) {
     btn.textContent = 'Đã cập nhật ' + current;
     btn.disabled = true;
@@ -185,6 +197,10 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         verifyAppliedVersion(0, fallbackError || 'Worker vẫn đang xử lý nền; đang kiểm tra source thực tế.', expected);
       })
       .catch(function(error) {
+        if (error && error.authRequired) {
+          requestUpdateReauthentication();
+          return;
+        }
         if (attempt < 36 && error && error.retryable) {
           btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/36)...';
           setTimeout(function() { pollUpdateJob(job, expected, attempt + 1, fallbackError || error.message); }, 1500);
@@ -220,6 +236,10 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
         throw new Error(fallbackError || ('Phiên bản thực tế vẫn chưa được xác nhận (đang là ' + current + ').'));
       })
       .catch(function(error) {
+        if (error && error.authRequired) {
+          requestUpdateReauthentication();
+          return;
+        }
         if (attempt < 12 && error && error.retryable) {
           btn.textContent = 'Đang chờ panel khởi động lại (' + (attempt + 1) + '/12)...';
           setTimeout(function() { verifyAppliedVersion(attempt + 1, fallbackError || error.message, expected); }, 2500);

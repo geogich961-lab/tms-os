@@ -561,3 +561,5 @@
 - [x] Loại bỏ hoàn toàn App Marketplace để tối giản TMS OS: menu, route, controller, service, view, JavaScript, CSS/tài nguyên và liên kết liên quan; không gỡ hoặc can thiệp dịch vụ/website đã cài đặt trước đó.
 - [x] Đóng gói và phát hành V17.0.5 từ payload V17.0.4, gồm bootstrap repair cho thiết bị đang ở V17.0.4; xác minh SHA-256, đường nâng, restart health và bảo toàn dữ liệu trước khi Xperia cập nhật.
 - [ ] Xác minh thực địa V17.0.5 trên Xperia sau bootstrap repair: Update Center chỉ xác nhận hoàn tất khi panel local phản hồi, sau đó mới thử tùy chọn tương thích Wi-Fi Cloudflare tại Highland.
+- [x] Sửa cảnh báo sai sau cập nhật: khi polling nhận `AUTH_REQUIRED` vì phiên cũ bị mất sau restart nhưng version đã đổi, yêu cầu đăng nhập lại rõ ràng thay vì thông báo “Chưa xác nhận cập nhật”.
+- [ ] Đóng gói và phát hành V17.0.6 từ payload V17.0.5: xác minh SHA-256, đường nâng, giữ phiên sau restart và xử lý re-authentication trước khi Xperia cài.

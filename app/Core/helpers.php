@@ -224,20 +224,21 @@ function tms_asset_version(): string
 }
 
 /**
- * Xóa cache máy chủ: session cũ (giữ session đang đăng nhập), storage/cache,
- * flash file cũ, và opcache (nếu có). Sau đó tăng số bust thủ công để trình
- * duyệt/PWA tải lại toàn bộ CSS/JS/icon ở phiên bản mới.
+ * Xóa cache máy chủ: có thể giữ toàn bộ session khi được gọi từ worker nền,
+ * dọn storage/cache, flash file cũ, và opcache (nếu có). Sau đó tăng số bust
+ * thủ công để trình duyệt/PWA tải lại toàn bộ CSS/JS/icon ở phiên bản mới.
  */
-function tms_clear_cache(): array
+function tms_clear_cache(bool $clearSessions = true): array
 {
     $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
     $appRoot = dirname(__DIR__, 2);
     $removed = ['sessions' => 0, 'cache' => 0, 'files' => 0];
 
-    // 1. Session cũ: xóa mọi session ngoại trừ session đang đăng nhập
+    // 1. Session cũ: không đụng session khi worker nền cập nhật, vì worker
+    // không có session_id của trình duyệt và sẽ xóa nhầm phiên đang dùng.
     $current = session_id();
     $sessionDir = $appRoot . '/storage/sessions';
-    if (is_dir($sessionDir)) {
+    if ($clearSessions && is_dir($sessionDir)) {
         foreach (glob($sessionDir . '/sess_*') ?: [] as $f) {
             if ($current === '' || basename($f) !== 'sess_' . $current) {
                 @unlink($f);
