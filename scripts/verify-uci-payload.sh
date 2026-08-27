@@ -97,13 +97,13 @@ unzip -tq "$PAYLOAD" >/dev/null || fail "ZIP integrity không đạt"
 pass "ZIP integrity đạt"
 unzip -q "$PAYLOAD" -d "$EXTRACT" || fail "Không thể giải nén payload"
 
-required_files='install.sh
-scripts/install.sh
+required_files='scripts/install.sh
 scripts/lib/installer-compatibility.sh
 scripts/lib/installer-safety.sh
 scripts/installer-rollback.sh
 scripts/tms-php-engine.sh
-HUONG_DAN_CAI_DAT.md'
+config/app.php
+public/index.php'
 while IFS= read -r rel; do
   [ -n "$rel" ] || continue
   [ -f "$EXTRACT/$rel" ] || fail "Thiếu file bắt buộc: $rel"
@@ -112,7 +112,7 @@ $required_files
 EOF
 pass "Đủ các file UCI bắt buộc"
 
-for shell_file in "$EXTRACT/install.sh" "$EXTRACT/scripts/install.sh" "$EXTRACT/scripts/lib/installer-compatibility.sh" "$EXTRACT/scripts/lib/installer-safety.sh" "$EXTRACT/scripts/installer-rollback.sh" "$EXTRACT/scripts/tms-php-engine.sh"; do
+for shell_file in "$EXTRACT/scripts/install.sh" "$EXTRACT/scripts/lib/installer-compatibility.sh" "$EXTRACT/scripts/lib/installer-safety.sh" "$EXTRACT/scripts/installer-rollback.sh" "$EXTRACT/scripts/tms-php-engine.sh"; do
   bash -n "$shell_file" || fail "Bash syntax lỗi: ${shell_file#$EXTRACT/}"
 done
 pass "Bash syntax của các installer/runtime script đạt"
