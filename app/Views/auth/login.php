@@ -1,1 +1,27 @@
-<main class="auth-shell"><section class="login-card"><div style="text-align: center;"><img class="brand-logo login-logo" src="<?=tms_h(tms_brand_icon('logo'))?>" alt="TMS OS" style="border-radius: 20px; margin-bottom: 10px;"><p class="brand-tagline" style="color: #ed1d24; font-weight: 600; margin-bottom: 20px;">Mini Android VPS by THCGaming</p></div><?php if(!empty($notice)):?><div class="alert alert-success"><?=tms_h($notice)?></div><?php endif;?><?php if(!empty($error)):?><div class="alert alert-error"><?=tms_h($error)?></div><?php endif;?><form method="post" action="/login" class="stack"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="next" value="<?=tms_h($next ?? '/dashboard')?>"><label><span>Tài khoản</span><input name="username" required></label><label><span>Mật khẩu</span><input type="password" name="password" required></label><button class="btn btn-primary btn-block">Đăng nhập</button></form></section></main><?php require dirname(__DIR__).'/layouts/footer.php';?>
+<?php
+$title = 'Đăng nhập';
+$showShell = false;
+require dirname(__DIR__) . '/layouts/header.php';
+?>
+<main class="auth-shell">
+  <section class="login-card">
+    <div style="text-align: center;">
+      <img class="brand-logo login-logo" src="<?= tms_h(tms_brand_icon('logo')) ?>" alt="TMS OS" style="border-radius: 20px; margin-bottom: 10px;">
+      <p class="brand-tagline" style="color: #ed1d24; font-weight: 600; margin-bottom: 20px;">Mini Android VPS by THCGaming</p>
+    </div>
+    <?php if (!empty($notice)): ?>
+      <div class="alert alert-success"><?= tms_h($notice) ?></div>
+    <?php endif; ?>
+    <?php if (!empty($error)): ?>
+      <div class="alert alert-error"><?= tms_h($error) ?></div>
+    <?php endif; ?>
+    <form method="post" action="/login" class="stack">
+      <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+      <input type="hidden" name="next" value="<?= tms_h($next ?? '/dashboard') ?>">
+      <label><span>Tài khoản</span><input name="username" required></label>
+      <label><span>Mật khẩu</span><input type="password" name="password" required></label>
+      <button class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+  </section>
+</main>
+<?php require dirname(__DIR__) . '/layouts/footer.php'; ?>

@@ -7,6 +7,7 @@ $controller = (string) file_get_contents($root . '/app/Controllers/UpdateControl
 $service = (string) file_get_contents($root . '/app/Services/UpdateService.php');
 $routes = (string) file_get_contents($root . '/routes/web.php');
 $worker = (string) file_get_contents($root . '/scripts/tms-update-worker.php');
+$login = (string) file_get_contents($root . '/app/Views/auth/login.php');
 
 $required = [
     "verifyAppliedVersion(0)",
@@ -116,6 +117,17 @@ if (!str_contains($routes, "'/api/updates/job-status'")) {
 if (!str_contains($worker, '(new UpdateService())->runQueuedGitHubApply();')) {
     fwrite(STDERR, "Update worker must only execute the internal queued apply method.\n");
     exit(1);
+}
+
+foreach ([
+    "require dirname(__DIR__) . '/layouts/header.php';",
+    "require dirname(__DIR__) . '/layouts/footer.php';",
+    '$showShell = false;',
+] as $needle) {
+    if (!str_contains($login, $needle)) {
+        fwrite(STDERR, "Login re-authentication page must load the shared styled layout: {$needle}\n");
+        exit(1);
+    }
 }
 
 echo "OK: Update Center queues work, waits for restart health, and preserves API errors.\n";
