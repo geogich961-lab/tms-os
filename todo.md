@@ -553,5 +553,5 @@
 - [x] Thay thế phương án DNS-only VPN không tương thích bằng resolver cục bộ cho cloudflared/Termux, vì VPN 1.1.1.1 không đổi resolver của connector và làm Xperia mất Internet.
 - [x] Xử lý tương thích Wi‑Fi công cộng: hotspot đã xác nhận tunnel tạo bình thường 4 kết nối, cần cơ chế tránh DNS UDP timeout riêng cho connector mà không thay DNS Android hoặc Cloudflare.
 - [x] Bổ sung chế độ opt-in “Tương thích Wi‑Fi công cộng”: sao lưu, áp dụng và hoàn tác resolver riêng của Termux khi khởi động cloudflared; không thay DNS Android, tunnel, routes hoặc token.
-- [ ] Đóng gói và phát hành GitHub hotfix nội bộ chỉ cho Cloudflare resolver, kiểm tra đường nâng từ V17.0.3 qua Update Center và SHA-256 trước khi Xperia cài thử.
+- [x] Đóng gói và phát hành GitHub hotfix V17.0.4 cho Cloudflare resolver, kiểm tra đường nâng từ V17.0.3 qua Update Center và SHA-256 trước khi Xperia cài thử.
 - [ ] Xác minh V17.0.4 trên Xperia tại Wi‑Fi Highland: chỉ xác nhận khắc phục sau khi tunnel lên Active và hostname truy cập được; dừng thử nghiệm nếu mạng chặn DNS công khai hoặc Cloudflare Tunnel ở tầng mạng.
