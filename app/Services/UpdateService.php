@@ -277,6 +277,20 @@ final class UpdateService
             if (empty($result['skipped']) && $expected !== '' && $this->normalizeVersion($current) !== $expected) {
                 throw new RuntimeException('Payload đã xử lý nhưng phiên bản source chưa đổi sang V' . $expected . '. Hệ thống đã giữ bản đang chạy để tránh báo thành công sai.');
             }
+            $requiresRestart = empty($result['skipped']) && getenv('TMS_UPDATE_SKIP_RESTART') !== '1';
+            if ($requiresRestart) {
+                $this->writeJsonAtomically($this->stateFile, array_merge($job, [
+                    'applying'=>true,
+                    'ok'=>false,
+                    'phase'=>'restarting',
+                    'current'=>$current,
+                    'message'=>'Đã áp dụng source. Đang khởi động lại và xác nhận panel local.',
+                ]));
+                if (!$this->scheduleRestart()) {
+                    throw new RuntimeException('Không thể khởi chạy worker xác nhận sau cập nhật. Hệ thống giữ source mới; hãy chạy start-tms.sh một lần từ Termux.');
+                }
+                return;
+            }
             $this->writeJsonAtomically($this->stateFile, array_merge($job, [
                 'applying'=>false,
                 'ok'=>true,
@@ -286,9 +300,6 @@ final class UpdateService
                 'message'=>(string)($result['message'] ?? 'Đã áp dụng cập nhật.'),
             ]));
             @unlink($this->queueFile);
-            if (empty($result['skipped'])) {
-                $this->scheduleRestart();
-            }
         } catch (Throwable $e) {
             $job = $this->readJson($this->queueFile);
             $message = mb_substr(preg_replace('/\s+/', ' ', trim($e->getMessage())), 0, 500);
@@ -372,7 +383,7 @@ final class UpdateService
         $current = $this->currentVersion();
         $expected = $this->normalizeVersion((string)($state['to'] ?? $queued['to'] ?? ''));
         $active = !empty($state['applying']) || $queued !== [];
-        if ($active && $expected !== '' && $this->normalizeVersion($current) === $expected) {
+        if ($active && $expected !== '' && $this->normalizeVersion($current) === $expected && (string)($state['phase'] ?? '') !== 'restarting') {
             $state = array_merge($state, [
                 'applying' => false,
                 'ok' => true,
@@ -671,14 +682,21 @@ final class UpdateService
         ];
     }
 
-    private function scheduleRestart(): void
+    private function scheduleRestart(): bool
     {
         $restartScript = $this->target . '/scripts/start-tms.sh';
-        if (!is_file($restartScript) || getenv('TMS_UPDATE_SKIP_RESTART') === '1') {
-            return;
+        $restartWorker = $this->target . '/scripts/tms-update-restart.sh';
+        if (!is_file($restartScript) || !is_file($restartWorker) || getenv('TMS_UPDATE_SKIP_RESTART') === '1') {
+            return false;
         }
-        $cmd = "sleep 2 && (pkill -9 -f php-cgi; pkill -9 -f nginx; bash " . escapeshellarg($restartScript) . ")";
-        @exec("nohup bash -c " . escapeshellarg($cmd) . " > /dev/null 2>&1 &");
+        // Worker riêng sẽ gọi start-tms.sh sau độ trễ ngắn, tránh tự dừng
+        // tiến trình đang chịu trách nhiệm chuyển giao restart.
+        $command = 'TMS_UPDATE_STATE_FILE=' . escapeshellarg($this->stateFile)
+            . ' TMS_UPDATE_QUEUE_FILE=' . escapeshellarg($this->queueFile)
+            . ' TMS_UPDATE_EXPECTED_VERSION=' . escapeshellarg($this->currentVersion())
+            . ' nohup sh ' . escapeshellarg($restartWorker) . ' > /dev/null 2>&1 &';
+        @exec($command);
+        return true;
     }
 
     private function validateZip(string $tmp): void

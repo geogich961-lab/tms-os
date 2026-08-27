@@ -151,18 +151,29 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
           authError.authRequired = true;
           throw authError;
         }
-        if (versionMatches(status.current, expected)) {
-          finishVerified(String(status.current));
-          return;
-        }
         if (status.job && status.job !== job) {
           verifyAppliedVersion(0, fallbackError || 'Trạng thái worker đã thay đổi; đang kiểm tra source thực tế.', expected);
           return;
         }
-        if (status.update_ok === false || status.phase === 'failed') {
+        if (status.phase === 'failed' || status.phase === 'restart_failed') {
           throw new Error(status.message || 'Cập nhật không thành công; hệ thống đã giữ bản đang chạy.');
         }
-        if (status.update_ok === true || status.phase === 'restarting' || status.phase === 'skipped') {
+        if (status.phase === 'restarting') {
+          if (attempt < 36) {
+            btn.textContent = status.message || ('Đang chờ panel khởi động lại (' + (attempt + 1) + '/36)...');
+            setTimeout(function() { pollUpdateJob(job, expected, attempt + 1, fallbackError); }, 1500);
+            return;
+          }
+          throw new Error('Panel chưa xác nhận khởi động lại sau cập nhật. Vui lòng mở panel local để kiểm tra trước khi thử lại.');
+        }
+        if (status.update_ok === false) {
+          throw new Error(status.message || 'Cập nhật không thành công; hệ thống đã giữ bản đang chạy.');
+        }
+        if (versionMatches(status.current, expected)) {
+          finishVerified(String(status.current));
+          return;
+        }
+        if (status.update_ok === true || status.phase === 'skipped') {
           verifyAppliedVersion(0, null, expected);
           return;
         }

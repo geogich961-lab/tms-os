@@ -555,3 +555,8 @@
 - [x] Bổ sung chế độ opt-in “Tương thích Wi‑Fi công cộng”: sao lưu, áp dụng và hoàn tác resolver riêng của Termux khi khởi động cloudflared; không thay DNS Android, tunnel, routes hoặc token.
 - [x] Đóng gói và phát hành GitHub hotfix V17.0.4 cho Cloudflare resolver, kiểm tra đường nâng từ V17.0.3 qua Update Center và SHA-256 trước khi Xperia cài thử.
 - [ ] Xác minh V17.0.4 trên Xperia tại Wi‑Fi Highland: chỉ xác nhận khắc phục sau khi tunnel lên Active và hostname truy cập được; dừng thử nghiệm nếu mạng chặn DNS công khai hoặc Cloudflare Tunnel ở tầng mạng.
+- [x] Điều tra và khôi phục riêng lỗi Cloudflare 504 tại `/updates`: xác nhận trạng thái origin, PHP/Nginx và job cập nhật sau khi phiên đã hết hạn; không bấm cập nhật lặp lại hoặc thay đổi dữ liệu/tunnel trước khi có chẩn đoán.
+- [x] Khẩn cấp khôi phục panel local Xperia sau khi bấm Cập nhật nhanh: `127.0.0.1:8888/updates` cũng không phản hồi, cần kiểm tra process/port và trạng thái worker không phá hủy trước khi thử thêm cập nhật.
+- [x] Khắc phục triệt để Update Center: sau khi swap source phải khởi động lại dịch vụ bằng cơ chế độc lập, có thời gian chờ/health confirmation và không để panel local mất phản hồi nếu bước restart lỗi.
+- [x] Loại bỏ hoàn toàn App Marketplace để tối giản TMS OS: menu, route, controller, service, view, JavaScript, CSS/tài nguyên và liên kết liên quan; không gỡ hoặc can thiệp dịch vụ/website đã cài đặt trước đó.
+- [ ] Đóng gói và phát hành V17.0.5 từ payload V17.0.4, gồm bootstrap repair cho thiết bị đang ở V17.0.4; xác minh SHA-256, đường nâng, restart health và bảo toàn dữ liệu trước khi Xperia cập nhật.

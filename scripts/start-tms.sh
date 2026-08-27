@@ -41,10 +41,10 @@ fi
 [ -f "$HOME/tms-os/scripts/tms-guardian.sh" ] && bash "$HOME/tms-os/scripts/tms-guardian.sh" start || true
 # Cron Jobs chạy bằng crond trong user-space Termux; thiếu cronie không làm panel dừng.
 [ -f "$HOME/tms-os/scripts/tms-cron-engine.sh" ] && bash "$HOME/tms-os/scripts/tms-cron-engine.sh" start >>"$HOME/logs/services/cron.log" 2>&1 || true
-# Khôi phục dịch vụ do Marketplace quản lý; từng script tự tránh khởi động trùng.
+# Khôi phục File Browser đã được cài từ các phiên bản cũ; từng script tự tránh khởi động trùng.
 for service_script in "$HOME"/.tms-os/scripts/start-filebrowser-*.sh; do
   [ -f "$service_script" ] || continue
-  bash "$service_script" >>"$HOME/logs/services/marketplace-services.log" 2>&1 || true
+  bash "$service_script" >>"$HOME/logs/services/managed-services.log" 2>&1 || true
 done
 # Khôi phục Cloudflare Tunnel nếu người dùng đã cấu hình; helper không in bí mật.
 [ -x "$HOME/tms-os/scripts/tms-cloudflare-tunnel.sh" ] && bash "$HOME/tms-os/scripts/tms-cloudflare-tunnel.sh" start >>"$HOME/logs/services/cloudflare-tunnel.log" 2>&1 || true

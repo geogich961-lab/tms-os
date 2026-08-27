@@ -18,6 +18,5 @@ echo json_encode([
  'shortcuts'=>[
   ['name'=>'Dashboard','short_name'=>'Dashboard','url'=>'/','icons'=>[['src'=>'/assets/icons/icon-192.png','sizes'=>'192x192']]],
   ['name'=>'Website','short_name'=>'Website','url'=>'/websites','icons'=>[['src'=>'/assets/icons/icon-192.png','sizes'=>'192x192']]],
-  ['name'=>'App Installer','short_name'=>'Apps','url'=>'/apps','icons'=>[['src'=>'/assets/icons/icon-192.png','sizes'=>'192x192']]],
  ]
 ],JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES|JSON_PRETTY_PRINT);

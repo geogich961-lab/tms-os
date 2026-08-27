@@ -163,7 +163,7 @@ update() {
     printf '{\n  "channel": "internal-test",\n  "branch": "%s",\n  "updated_at": "%s"\n}\n' "$BRANCH" "$(date -Iseconds)" > "$STATE_DIR/dev-channel.json"
     chmod 600 "$STATE_DIR/dev-channel.json"
     echo '[OK] Đã cập nhật V16.1.0-TEST từ kênh nội bộ.'
-    echo '     Mở lại panel tại http://127.0.0.1:8888 và kiểm tra App Marketplace, Cron Jobs.'
+    echo '     Mở lại panel tại http://127.0.0.1:8888 và kiểm tra Cron Jobs.'
   else
     echo '[KHẮC PHỤC] Dịch vụ không phản hồi. Đang khôi phục mã nguồn trước khi thử nghiệm...'
     rm -rf "$ROOT.failed-dev"

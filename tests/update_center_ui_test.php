@@ -46,6 +46,8 @@ foreach ([
     '/api/updates/job-status?job=',
     'status.update_ok === false',
     'status.phase === \'failed\'',
+    'status.phase === \'restart_failed\'',
+    'status.phase === \'restarting\'',
     'function versionMatches(current, expected)',
     'function finishVerified(current)',
 ] as $needle) {
@@ -53,6 +55,13 @@ foreach ([
         fwrite(STDERR, "Missing queued Update Center polling guard: {$needle}\n");
         exit(1);
     }
+}
+
+$phaseFailurePos = strpos($view, "status.phase === 'restart_failed'");
+$versionMatchPos = strpos($view, 'if (versionMatches(status.current, expected))');
+if ($phaseFailurePos === false || $versionMatchPos === false || $phaseFailurePos > $versionMatchPos) {
+    fwrite(STDERR, "Update Center must handle restart failure before accepting a matching source version.\n");
+    exit(1);
 }
 
 foreach ([
@@ -77,8 +86,9 @@ foreach ([
     "'phase'=>'queued'",
     "'phase'=>'applying'",
     "'phase'=>'failed'",
+    "'phase'=>'restarting'",
     'private function launchUpdateWorker(): void',
-    'private function scheduleRestart(): void',
+    'private function scheduleRestart(): bool',
     'private const JOB_TIMEOUT_SECONDS = 900',
     "'phase' => 'completed'",
     'Worker cập nhật đã quá thời gian chờ',
@@ -103,4 +113,4 @@ if (!str_contains($worker, '(new UpdateService())->runQueuedGitHubApply();')) {
     exit(1);
 }
 
-echo "OK: Update Center queues work, polls JSON status, and preserves API errors across restart.\n";
+echo "OK: Update Center queues work, waits for restart health, and preserves API errors.\n";
