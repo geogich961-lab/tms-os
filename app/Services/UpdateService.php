@@ -18,9 +18,18 @@ final class UpdateService
     private string $workerLock;
     private string $workerScript;
     private string $workerLog;
+    private string $updatePasswordFile;
+    private string $telegramChallengeFile;
+    private string $telegramChallengeLock;
+    private ?Closure $releaseLookup;
+    private ?Closure $githubEnqueuer;
     private const JOB_TIMEOUT_SECONDS = 900;
+    private const UPDATE_PASSWORD_MIN_LENGTH = 8;
+    private const TELEGRAM_CHALLENGE_TTL_SECONDS = 300;
+    private const TELEGRAM_CHALLENGE_MAX_ATTEMPTS = 3;
+    private const TELEGRAM_CHALLENGE_LOCK_STALE_SECONDS = 600;
 
-    public function __construct()
+    public function __construct(?callable $releaseLookup = null, ?callable $githubEnqueuer = null)
     {
         $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
         $this->dir = $this->home . '/.tms-os/updates';
@@ -31,6 +40,11 @@ final class UpdateService
         $this->workerLock = $this->dir . '/github-apply.worker.lock';
         $this->workerScript = $this->target . '/scripts/tms-update-worker.php';
         $this->workerLog = $this->home . '/logs/services/update-worker.log';
+        $this->updatePasswordFile = $this->home . '/.tms-os/update-password.json';
+        $this->telegramChallengeFile = $this->home . '/.tms-os/telegram-update-challenge.json';
+        $this->telegramChallengeLock = $this->home . '/.tms-os/telegram-update-challenge.lock';
+        $this->releaseLookup = $releaseLookup !== null ? Closure::fromCallable($releaseLookup) : null;
+        $this->githubEnqueuer = $githubEnqueuer !== null ? Closure::fromCallable($githubEnqueuer) : null;
         @mkdir($this->dir, 0700, true);
         @mkdir($this->home . '/.tms-os', 0700, true);
         @mkdir($this->home . '/logs/services', 0700, true);
@@ -41,7 +55,10 @@ final class UpdateService
     {
         $current = $this->currentVersion();
         try {
-            $release = $this->latestRelease();
+            $release = $this->releaseLookup !== null ? ($this->releaseLookup)() : $this->latestRelease();
+            if (!is_array($release)) {
+                throw new RuntimeException('Dữ liệu release không hợp lệ.');
+            }
         } catch (Throwable $e) {
             return ['current' => $current, 'available' => null, 'error' => 'Không thể kiểm tra bản mới: ' . $e->getMessage()];
         }
@@ -66,6 +83,166 @@ final class UpdateService
             return 'unknown';
         }
         return str_replace('Platform ', '', (string)($config['build'] ?? 'unknown'));
+    }
+
+    /** Chỉ trả trạng thái tối thiểu, tuyệt đối không đưa hash vào UI hoặc API. */
+    public function updatePasswordStatus(): array
+    {
+        return ['configured' => $this->updatePasswordHash() !== ''];
+    }
+
+    /** Đặt hoặc đổi mật khẩu riêng cho yêu cầu cập nhật từ Telegram. */
+    public function setUpdatePassword(string $currentPassword, string $newPassword, string $confirmation): array
+    {
+        if ($newPassword !== $confirmation) {
+            throw new RuntimeException('Xác nhận mật khẩu nâng cấp chưa khớp.');
+        }
+        if (strlen($newPassword) < self::UPDATE_PASSWORD_MIN_LENGTH) {
+            throw new RuntimeException('Mật khẩu nâng cấp cần có ít nhất ' . self::UPDATE_PASSWORD_MIN_LENGTH . ' ký tự.');
+        }
+
+        $existingHash = $this->updatePasswordHash();
+        if ($existingHash !== '' && ($currentPassword === '' || !password_verify($currentPassword, $existingHash))) {
+            throw new RuntimeException('Mật khẩu nâng cấp hiện tại không đúng.');
+        }
+
+        $hash = password_hash($newPassword, PASSWORD_DEFAULT);
+        if (!is_string($hash) || $hash === '') {
+            throw new RuntimeException('Không thể bảo vệ mật khẩu nâng cấp trên thiết bị này.');
+        }
+        $this->writeJsonAtomically($this->updatePasswordFile, [
+            'hash' => $hash,
+            'updated_at' => date('c'),
+        ]);
+        $this->withTelegramChallengeLock(function (): void {
+            $this->clearTelegramUpdateChallenge();
+        });
+        return ['configured' => true, 'message' => 'Đã lưu mật khẩu nâng cấp riêng cho Telegram.'];
+    }
+
+    /** Tắt xác thực cập nhật Telegram; luôn yêu cầu xác nhận mật khẩu hiện tại. */
+    public function clearUpdatePassword(string $currentPassword): array
+    {
+        $existingHash = $this->updatePasswordHash();
+        if ($existingHash === '') {
+            throw new RuntimeException('Chưa thiết lập mật khẩu nâng cấp.');
+        }
+        if ($currentPassword === '' || !password_verify($currentPassword, $existingHash)) {
+            throw new RuntimeException('Mật khẩu nâng cấp hiện tại không đúng.');
+        }
+        if (is_file($this->updatePasswordFile) && !@unlink($this->updatePasswordFile)) {
+            throw new RuntimeException('Không thể tắt mật khẩu nâng cấp. Hãy thử lại.');
+        }
+        $this->withTelegramChallengeLock(function (): void {
+            $this->clearTelegramUpdateChallenge();
+        });
+        return ['configured' => false, 'message' => 'Đã tắt mật khẩu nâng cấp Telegram.'];
+    }
+
+    /** Tạo đề nghị cập nhật ngắn hạn, chỉ gắn với đúng chat và người đã gọi lệnh. */
+    public function createTelegramUpdateOffer(string $chatId, string $userId, string $version, string $nonce): array
+    {
+        if (!$this->validTelegramChallengeValues($chatId, $userId, $version, $nonce)) {
+            throw new RuntimeException('Không thể tạo yêu cầu cập nhật Telegram.');
+        }
+        return $this->withTelegramChallengeLock(function () use ($chatId, $userId, $version, $nonce): array {
+            $this->writeJsonAtomically($this->telegramChallengeFile, [
+                'status' => 'offered',
+                'chat_id' => $chatId,
+                'user_id' => $userId,
+                'version' => $version,
+                'nonce' => $nonce,
+                'expires_at' => time() + self::TELEGRAM_CHALLENGE_TTL_SECONDS,
+                'attempts' => 0,
+            ]);
+            return ['ok' => true];
+        });
+    }
+
+    /** Chuyển đề nghị hợp lệ thành phiên chờ mật khẩu; không cập nhật ở bước này. */
+    public function beginTelegramUpdateChallenge(string $chatId, string $userId, string $nonce): array
+    {
+        return $this->withTelegramChallengeLock(function () use ($chatId, $userId, $nonce): array {
+            $state = $this->liveTelegramChallenge();
+            if (!$this->matchesTelegramChallenge($state, $chatId, $userId, $nonce, 'offered')) {
+                return ['ok' => false, 'code' => 'expired'];
+            }
+            if (!$this->updatePasswordStatus()['configured']) {
+                return ['ok' => false, 'code' => 'password_unconfigured'];
+            }
+
+            $check = $this->check();
+            $available = $this->normalizeVersion((string)(is_array($check['available'] ?? null) ? ($check['available']['version'] ?? '') : ''));
+            if ($available === '' || !hash_equals((string)$state['version'], $available)) {
+                $this->clearTelegramUpdateChallenge();
+                return ['ok' => false, 'code' => 'no_longer_available'];
+            }
+
+            $state['status'] = 'password_pending';
+            $state['attempts'] = 0;
+            $state['expires_at'] = time() + self::TELEGRAM_CHALLENGE_TTL_SECONDS;
+            $this->writeJsonAtomically($this->telegramChallengeFile, $state);
+            return ['ok' => true, 'code' => 'password_pending'];
+        });
+    }
+
+    /** Bỏ qua đề nghị hiện tại; callback cũ không còn có thể kích hoạt cập nhật. */
+    public function skipTelegramUpdateOffer(string $chatId, string $userId, string $nonce): array
+    {
+        return $this->withTelegramChallengeLock(function () use ($chatId, $userId, $nonce): array {
+            $state = $this->liveTelegramChallenge();
+            if (!$this->matchesTelegramChallenge($state, $chatId, $userId, $nonce, 'offered')) {
+                return ['ok' => false, 'code' => 'expired'];
+            }
+            $this->clearTelegramUpdateChallenge();
+            return ['ok' => true, 'code' => 'skipped'];
+        });
+    }
+
+    /** Cho Telegram biết liệu tin nhắn thường có thể là mật khẩu của một phiên còn hiệu lực hay không. */
+    public function hasPendingTelegramUpdateChallenge(string $chatId, string $userId): bool
+    {
+        $state = $this->liveTelegramChallenge();
+        return $this->matchesTelegramChallenge($state, $chatId, $userId, null, 'password_pending');
+    }
+
+    /** Xác thực một lần rồi mới gọi đúng hàng đợi GitHub có backup/rollback hiện hữu. */
+    public function authorizeTelegramUpdate(string $chatId, string $userId, string $password): array
+    {
+        $authorized = $this->withTelegramChallengeLock(function () use ($chatId, $userId, $password): array {
+            $state = $this->liveTelegramChallenge();
+            if (!$this->matchesTelegramChallenge($state, $chatId, $userId, null, 'password_pending')) {
+                return ['ok' => false, 'code' => 'expired'];
+            }
+            $hash = $this->updatePasswordHash();
+            if ($hash === '' || !password_verify($password, $hash)) {
+                $attempts = (int)($state['attempts'] ?? 0) + 1;
+                if ($attempts >= self::TELEGRAM_CHALLENGE_MAX_ATTEMPTS) {
+                    $this->clearTelegramUpdateChallenge();
+                    return ['ok' => false, 'code' => 'locked', 'remaining' => 0];
+                }
+                $state['attempts'] = $attempts;
+                $this->writeJsonAtomically($this->telegramChallengeFile, $state);
+                return ['ok' => false, 'code' => 'wrong_password', 'remaining' => self::TELEGRAM_CHALLENGE_MAX_ATTEMPTS - $attempts];
+            }
+
+            // Thu hồi phiên trước side effect để retry webhook không thể enqueue hai lần.
+            $this->clearTelegramUpdateChallenge();
+            return ['ok' => true, 'code' => 'authorized'];
+        });
+        if (empty($authorized['ok'])) {
+            return $authorized;
+        }
+
+        try {
+            $queued = $this->githubEnqueuer !== null ? ($this->githubEnqueuer)() : $this->enqueueGitHubApply();
+        } catch (Throwable $e) {
+            return ['ok' => false, 'code' => 'queue_error', 'message' => $this->safeUpdateMessage($e)];
+        }
+        if (!empty($queued['skipped'])) {
+            return ['ok' => false, 'code' => 'no_longer_available', 'message' => (string)($queued['message'] ?? '')];
+        }
+        return ['ok' => !empty($queued['queued']), 'code' => !empty($queued['queued']) ? 'queued' : 'queue_error', 'message' => (string)($queued['message'] ?? '')];
     }
 
     /** Lấy thông tin release mới nhất từ GitHub API (release v14.0.4+ đều có TMS_OS_LATEST.zip). */
@@ -474,6 +651,69 @@ final class UpdateService
     {
         $data = @json_decode((string)@file_get_contents($file), true);
         return is_array($data) ? $data : [];
+    }
+
+    private function updatePasswordHash(): string
+    {
+        $hash = (string)($this->readJson($this->updatePasswordFile)['hash'] ?? '');
+        return $hash !== '' ? $hash : '';
+    }
+
+    private function withTelegramChallengeLock(callable $callback): mixed
+    {
+        if (!@mkdir($this->telegramChallengeLock, 0700)) {
+            $age = is_dir($this->telegramChallengeLock) ? time() - (int)@filemtime($this->telegramChallengeLock) : 0;
+            if ($age > self::TELEGRAM_CHALLENGE_LOCK_STALE_SECONDS) {
+                @rmdir($this->telegramChallengeLock);
+            }
+            if (!@mkdir($this->telegramChallengeLock, 0700)) {
+                throw new RuntimeException('Yêu cầu cập nhật Telegram đang được xử lý. Hãy chờ vài giây rồi thử lại.');
+            }
+        }
+        try {
+            return $callback();
+        } finally {
+            @rmdir($this->telegramChallengeLock);
+        }
+    }
+
+    private function liveTelegramChallenge(): array
+    {
+        $state = $this->readJson($this->telegramChallengeFile);
+        if ($state !== [] && (int)($state['expires_at'] ?? 0) <= time()) {
+            $this->clearTelegramUpdateChallenge();
+            return [];
+        }
+        return $state;
+    }
+
+    private function clearTelegramUpdateChallenge(): void
+    {
+        if (is_file($this->telegramChallengeFile)) {
+            @unlink($this->telegramChallengeFile);
+        }
+    }
+
+    private function matchesTelegramChallenge(array $state, string $chatId, string $userId, ?string $nonce, string $status): bool
+    {
+        if ((string)($state['status'] ?? '') !== $status
+            || !hash_equals((string)($state['chat_id'] ?? ''), $chatId)
+            || !hash_equals((string)($state['user_id'] ?? ''), $userId)) {
+            return false;
+        }
+        return $nonce === null || hash_equals((string)($state['nonce'] ?? ''), $nonce);
+    }
+
+    private function validTelegramChallengeValues(string $chatId, string $userId, string $version, string $nonce): bool
+    {
+        return $chatId !== '' && $userId !== '' && $this->normalizeVersion($version) !== ''
+            && preg_match('/^[a-f0-9]{16,64}$/', $nonce) === 1;
+    }
+
+    private function safeUpdateMessage(Throwable $e): string
+    {
+        $message = trim(preg_replace('/\s+/', ' ', $e->getMessage()) ?: '');
+        return $message !== '' && strlen($message) <= 240 ? $message : 'Không thể xếp hàng cập nhật.';
     }
 
     private function isWorkerActive(): bool

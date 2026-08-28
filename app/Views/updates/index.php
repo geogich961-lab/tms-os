@@ -24,6 +24,21 @@
 		</div>
 </section>
 
+<?php $passwordConfigured=!empty($updatePassword['configured']);?>
+<section class="panel-card" id="telegram-update-password-card">
+<h2>Mật khẩu nâng cấp Telegram</h2>
+<p>Trạng thái: <strong><?= $passwordConfigured ? 'Đã thiết lập' : 'Chưa thiết lập' ?></strong></p>
+<p class="muted">Đây là mật khẩu riêng chỉ dùng để xác nhận cập nhật qua Telegram, không phải mật khẩu đăng nhập quản trị. Giá trị chỉ được lưu dưới dạng hash một chiều và không bao giờ hiển thị lại.</p>
+<form method="post" action="/updates/password" class="update-manual-form" autocomplete="off">
+<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+<?php if($passwordConfigured):?><label>Mật khẩu nâng cấp hiện tại<input type="password" name="current_update_password" autocomplete="current-password" required></label><?php endif;?>
+<label>Mật khẩu nâng cấp mới<input type="password" name="new_update_password" autocomplete="new-password" minlength="8" required></label>
+<label>Xác nhận mật khẩu mới<input type="password" name="confirm_update_password" autocomplete="new-password" minlength="8" required></label>
+<button class="btn btn-primary"><?= $passwordConfigured ? 'Đổi mật khẩu nâng cấp' : 'Thiết lập mật khẩu nâng cấp' ?></button>
+</form>
+<?php if($passwordConfigured):?><form method="post" action="/updates/password/remove" class="update-secondary-action" onsubmit="return confirm('Tắt mật khẩu nâng cấp Telegram? Bot sẽ không thể yêu cầu xác nhận cập nhật cho đến khi bạn thiết lập lại.');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><label>Mật khẩu nâng cấp hiện tại<input type="password" name="current_update_password" autocomplete="current-password" required></label><button class="btn btn-danger-soft">Tắt mật khẩu nâng cấp</button></form><?php endif;?>
+</section>
+
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>
 <p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
 

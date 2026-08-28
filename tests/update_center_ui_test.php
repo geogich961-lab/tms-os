@@ -168,6 +168,62 @@ if (!str_contains($routes, "'/api/updates/job-status'")) {
     fwrite(STDERR, "Missing authenticated update job status route.\n");
     exit(1);
 }
+foreach ([
+    "'/updates/password'",
+    "'/updates/password/remove'",
+] as $needle) {
+    if (!str_contains($routes, $needle)) {
+        fwrite(STDERR, "Missing protected update-password route: {$needle}\n");
+        exit(1);
+    }
+}
+foreach ([
+    'id="telegram-update-password-card"',
+    'Mật khẩu nâng cấp Telegram',
+    'Trạng thái:',
+    'name="new_update_password"',
+    'name="confirm_update_password"',
+    'minlength="8"',
+    'name="csrf" value="<?=tms_h($csrf)?>"',
+    'Tắt mật khẩu nâng cấp',
+] as $needle) {
+    if (!str_contains($view, $needle)) {
+        fwrite(STDERR, "Missing Update Center password protection UI: {$needle}\n");
+        exit(1);
+    }
+}
+if (str_contains($view, '$updatePassword[\'hash\']') || str_contains($view, 'update-password.json')) {
+    fwrite(STDERR, "Update Center must never render an update password hash or private state filename.\n");
+    exit(1);
+}
+foreach ([
+    'public function configurePassword(): void',
+    'public function clearPassword(): void',
+    '$this->guard();',
+    '$this->verify();',
+    'setUpdatePassword(',
+    'clearUpdatePassword(',
+    "'updatePassword' => \$this->updates->updatePasswordStatus()",
+] as $needle) {
+    if (!str_contains($controller, $needle)) {
+        fwrite(STDERR, "Missing Update Center password controller guard: {$needle}\n");
+        exit(1);
+    }
+}
+foreach ([
+    'public function updatePasswordStatus(): array',
+    'public function setUpdatePassword(',
+    'public function clearUpdatePassword(',
+    'password_hash($newPassword, PASSWORD_DEFAULT)',
+    'password_verify($currentPassword, $existingHash)',
+    "'/.tms-os/update-password.json'",
+    'UPDATE_PASSWORD_MIN_LENGTH = 8',
+] as $needle) {
+    if (!str_contains($service, $needle)) {
+        fwrite(STDERR, "Missing update-password storage safeguard: {$needle}\n");
+        exit(1);
+    }
+}
 if (!str_contains($worker, '(new UpdateService())->runQueuedGitHubApply();')) {
     fwrite(STDERR, "Update worker must only execute the internal queued apply method.\n");
     exit(1);

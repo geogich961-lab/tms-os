@@ -10,17 +10,20 @@ final class TelegramCommandService
     private string $home;
     private string $stateFile;
     private $transport;
+    private ?object $updates;
 
     public function __construct(
         private CronJobService $cron,
         private MonitoringService $monitoring,
         private CloudflareDomainService $cloudflare,
         ?callable $transport = null,
+        ?object $updates = null,
     ) {
         $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
         @mkdir($this->home . '/.tms-os', 0700, true);
         $this->stateFile = $this->home . '/.tms-os/telegram-webhook.json';
         $this->transport = $transport;
+        $this->updates = $updates;
     }
 
     /** Trạng thái đã làm sạch, an toàn để hiển thị trong panel. */
@@ -56,7 +59,7 @@ final class TelegramCommandService
         $response = $this->telegramRequest((string)$config['token'], 'setWebhook', [
             'url' => rtrim($panelUrl, '/') . '/telegram/webhook',
             'secret_token' => $secret,
-            'allowed_updates' => json_encode(['message'], JSON_UNESCAPED_SLASHES),
+            'allowed_updates' => json_encode(['message', 'callback_query'], JSON_UNESCAPED_SLASHES),
             'drop_pending_updates' => 'false',
         ]);
         if (empty($response['ok'])) {
@@ -107,51 +110,207 @@ final class TelegramCommandService
             return ['handled' => false, 'sent' => false];
         }
 
-        $message = $update['message'] ?? null;
         $updateId = isset($update['update_id']) && is_int($update['update_id']) ? $update['update_id'] : null;
-        if (!is_array($message) || $updateId === null) {
+        $event = $this->incomingEvent($update);
+        if ($event === null || $updateId === null) {
             return ['handled' => false, 'sent' => false];
         }
 
         $config = $this->cron->getTelegramConfig();
         $expectedChatId = trim((string)($config['chat_id'] ?? ''));
-        $receivedChatId = trim((string)($message['chat']['id'] ?? ''));
+        $receivedChatId = trim((string)($event['chat_id'] ?? ''));
         if ($expectedChatId === '' || $receivedChatId === '' || !hash_equals($expectedChatId, $receivedChatId)) {
             return ['handled' => false, 'sent' => false];
         }
 
-        if ($updateId <= (int)($state['last_update_id'] ?? 0)) {
+        if ($this->wasProcessed($state, $updateId)) {
             return ['handled' => false, 'sent' => false];
         }
 
-        $command = trim((string)($message['text'] ?? ''));
-        if (!preg_match('/^\/(status|help)(?:@[A-Za-z0-9_]{5,32})?$/i', $command, $matches)) {
+        if ($event['type'] === 'callback') {
+            $this->markProcessed($state, $updateId);
+            $sent = $this->handleUpdateCallback($event);
+            return ['handled' => true, 'sent' => $sent];
+        }
+
+        $command = trim((string)($event['text'] ?? ''));
+        if (preg_match('/^\/(status|help|checkupdate)(?:@[A-Za-z0-9_]{5,32})?$/i', $command, $matches)) {
+            $this->markProcessed($state, $updateId);
+            $name = strtolower((string)$matches[1]);
+            $sent = match ($name) {
+                'help' => !empty($this->sendConfiguredMessage($this->helpReport())['ok']),
+                'status' => !empty($this->sendConfiguredMessage($this->statusReport())['ok']),
+                'checkupdate' => $this->handleCheckUpdate((string)$event['user_id']),
+            };
+            return ['handled' => true, 'sent' => $sent];
+        }
+
+        if ($command === '' || str_starts_with($command, '/') || (string)$event['user_id'] === ''
+            || !$this->updateService()->hasPendingTelegramUpdateChallenge($expectedChatId, (string)$event['user_id'])) {
             return ['handled' => false, 'sent' => false];
         }
 
-        // Ghi ID trước khi gửi để Telegram retry không tạo phản hồi trùng lặp.
-        $state['last_update_id'] = $updateId;
-        $state['last_update_at'] = date('c');
-        $this->writeState($state);
-
-        $name = strtolower((string)$matches[1]);
-        $text = $name === 'help' ? $this->helpReport() : $this->statusReport();
-        $result = $this->sendConfiguredMessage($text);
-
-        return ['handled' => true, 'sent' => !empty($result['ok'])];
+        // Đánh dấu event trước side effect để Telegram retry không thể enqueue trùng.
+        $this->markProcessed($state, $updateId);
+        return ['handled' => true, 'sent' => $this->handlePasswordMessage((string)$event['user_id'], $command)];
     }
 
     /** Gửi tới đúng Chat ID đã lưu, không bao giờ dùng Chat ID từ Update nhận vào. */
-    public function sendConfiguredMessage(string $text): array
+    public function sendConfiguredMessage(string $text, ?array $replyMarkup = null): array
     {
         $config = $this->requireTelegramConfig();
-        $response = $this->telegramRequest((string)$config['token'], 'sendMessage', [
+        $payload = [
             'chat_id' => (string)$config['chat_id'],
             'text' => $this->limitText($text),
             'disable_web_page_preview' => 'true',
-        ]);
+        ];
+
+        if ($replyMarkup !== null) {
+            $payload['reply_markup'] = json_encode($replyMarkup, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $response = $this->telegramRequest((string)$config['token'], 'sendMessage', $payload);
 
         return ['ok' => !empty($response['ok'])];
+    }
+
+    private function handleCheckUpdate(string $userId): bool
+    {
+        if ($userId === '') {
+            return false;
+        }
+        $updates = $this->updateService();
+        $check = $updates->check();
+        $current = $this->cleanValue((string)($check['current'] ?? 'unknown'), 48);
+        if (($check['error'] ?? null) !== null) {
+            return !empty($this->sendConfiguredMessage("TMS OS · Kiểm tra cập nhật\n\nĐang chạy: V{$current}\nChưa thể kiểm tra bản mới. Hãy thử lại sau.")['ok']);
+        }
+        $available = is_array($check['available'] ?? null) ? $check['available'] : null;
+        $version = $this->cleanValue((string)($available['version'] ?? ''), 48);
+        if ($version === '') {
+            return !empty($this->sendConfiguredMessage("TMS OS · Kiểm tra cập nhật\n\nĐang chạy: V{$current}\nBạn đang sử dụng bản mới nhất.")['ok']);
+        }
+        if (empty($updates->updatePasswordStatus()['configured'])) {
+            return !empty($this->sendConfiguredMessage("TMS OS · Kiểm tra cập nhật\n\nĐang chạy: V{$current}\nCó bản mới: V{$version}\n\nĐể cập nhật qua Telegram, hãy thiết lập Mật khẩu nâng cấp Telegram trong Update Center trước.")['ok']);
+        }
+
+        $nonce = bin2hex(random_bytes(8));
+        $config = $this->cron->getTelegramConfig();
+        $chatId = trim((string)($config['chat_id'] ?? ''));
+        $updates->createTelegramUpdateOffer($chatId, $userId, $version, $nonce);
+        return !empty($this->sendConfiguredMessage(
+            "TMS OS · Kiểm tra cập nhật\n\nĐang chạy: V{$current}\nCó bản mới: V{$version}\n\nChọn Cập nhật để tiếp tục xác thực mật khẩu nâng cấp.",
+            ['inline_keyboard' => [[
+                ['text' => 'Cập nhật', 'callback_data' => 'u:' . $nonce],
+                ['text' => 'Bỏ qua', 'callback_data' => 's:' . $nonce],
+            ]]],
+        )['ok']);
+    }
+
+    private function handleUpdateCallback(array $event): bool
+    {
+        $callbackId = (string)($event['callback_id'] ?? '');
+        $data = (string)($event['data'] ?? '');
+        $chatId = (string)($event['chat_id'] ?? '');
+        $userId = (string)($event['user_id'] ?? '');
+        if ($callbackId === '' || $userId === '' || !preg_match('/^([us]):([a-f0-9]{16,64})$/', $data, $matches)) {
+            return $this->answerCallback($callbackId, 'Thao tác không còn hợp lệ.');
+        }
+
+        if ($matches[1] === 's') {
+            $result = $this->updateService()->skipTelegramUpdateOffer($chatId, $userId, $matches[2]);
+            if (empty($result['ok'])) {
+                return $this->answerCallback($callbackId, 'Yêu cầu đã hết hạn hoặc đã được xử lý.');
+            }
+            $acknowledged = $this->answerCallback($callbackId, 'Đã bỏ qua bản cập nhật này.');
+            $sent = $this->sendConfiguredMessage('Đã bỏ qua yêu cầu cập nhật hiện tại. Bạn có thể dùng /checkupdate bất cứ lúc nào.')['ok'];
+            return $acknowledged || !empty($sent);
+        }
+
+        $result = $this->updateService()->beginTelegramUpdateChallenge($chatId, $userId, $matches[2]);
+        if (empty($result['ok'])) {
+            $message = match ((string)($result['code'] ?? '')) {
+                'password_unconfigured' => 'Chưa thiết lập mật khẩu nâng cấp.',
+                'no_longer_available' => 'Bản mới không còn khả dụng.',
+                default => 'Yêu cầu đã hết hạn hoặc đã được xử lý.',
+            };
+            return $this->answerCallback($callbackId, $message);
+        }
+        $acknowledged = $this->answerCallback($callbackId, 'Hãy gửi mật khẩu nâng cấp trong 5 phút.');
+        $sent = $this->sendConfiguredMessage("Xác thực cập nhật\n\nHãy gửi mật khẩu nâng cấp Telegram trong 5 phút. Mật khẩu sai sẽ không thể cập nhật; sau 3 lần sai, yêu cầu sẽ tự hủy. Tin nhắn mật khẩu có thể vẫn lưu trong lịch sử chat, vì vậy hãy xóa thủ công sau khi bot phản hồi.")['ok'];
+        return $acknowledged || !empty($sent);
+    }
+
+    private function handlePasswordMessage(string $userId, string $password): bool
+    {
+        $config = $this->cron->getTelegramConfig();
+        $result = $this->updateService()->authorizeTelegramUpdate(trim((string)($config['chat_id'] ?? '')), $userId, $password);
+        $message = match ((string)($result['code'] ?? '')) {
+            'queued' => 'Đã xác thực. Yêu cầu cập nhật đã được xếp hàng an toàn; TMS OS sẽ tải, kiểm checksum, sao lưu và xác nhận trước khi hoàn tất.',
+            'wrong_password' => 'Mật khẩu nâng cấp không đúng. Còn ' . max(0, (int)($result['remaining'] ?? 0)) . ' lần thử.',
+            'locked' => 'Đã nhập sai quá số lần cho phép. Yêu cầu cập nhật đã bị hủy.',
+            'no_longer_available' => 'Không có bản mới để cập nhật. Hãy dùng /checkupdate để kiểm tra lại.',
+            'expired' => 'Yêu cầu xác thực đã hết hạn. Hãy dùng /checkupdate để bắt đầu lại.',
+            default => 'Không thể xếp hàng cập nhật. Bản đang chạy vẫn được giữ nguyên; hãy kiểm tra Update Center.',
+        };
+        return !empty($this->sendConfiguredMessage($message)['ok']);
+    }
+
+    private function answerCallback(string $callbackId, string $text): bool
+    {
+        if ($callbackId === '') {
+            return false;
+        }
+        $config = $this->requireTelegramConfig();
+        $response = $this->telegramRequest((string)$config['token'], 'answerCallbackQuery', [
+            'callback_query_id' => $callbackId,
+            'text' => mb_substr($text, 0, 180),
+        ]);
+        return !empty($response['ok']);
+    }
+
+    private function incomingEvent(array $update): ?array
+    {
+        if (is_array($update['message'] ?? null)) {
+            $message = $update['message'];
+            return [
+                'type' => 'message',
+                'chat_id' => trim((string)($message['chat']['id'] ?? '')),
+                'user_id' => trim((string)($message['from']['id'] ?? '')),
+                'text' => (string)($message['text'] ?? ''),
+            ];
+        }
+        if (is_array($update['callback_query'] ?? null)) {
+            $callback = $update['callback_query'];
+            return [
+                'type' => 'callback',
+                'chat_id' => trim((string)($callback['message']['chat']['id'] ?? '')),
+                'user_id' => trim((string)($callback['from']['id'] ?? '')),
+                'callback_id' => (string)($callback['id'] ?? ''),
+                'data' => (string)($callback['data'] ?? ''),
+            ];
+        }
+        return null;
+    }
+
+    private function wasProcessed(array $state, int $updateId): bool
+    {
+        $ids = array_map('intval', (array)($state['processed_update_ids'] ?? []));
+        return $updateId <= (int)($state['last_update_id'] ?? 0) || in_array($updateId, $ids, true);
+    }
+
+    private function markProcessed(array &$state, int $updateId): void
+    {
+        $ids = array_values(array_unique(array_map('intval', (array)($state['processed_update_ids'] ?? []))));
+        $ids[] = $updateId;
+        $state['processed_update_ids'] = array_slice(array_values(array_unique($ids)), -64);
+        $state['last_update_id'] = max((int)($state['last_update_id'] ?? 0), $updateId);
+        $state['last_update_at'] = date('c');
+        $this->writeState($state);
+    }
+
+    private function updateService(): object
+    {
+        return $this->updates ??= new UpdateService();
     }
 
     private function statusReport(): string
@@ -218,7 +377,7 @@ final class TelegramCommandService
 
     private function helpReport(): string
     {
-        return "TMS OS Bot\n\n/status — xem trạng thái an toàn của thiết bị và TMS OS\n/help — xem hướng dẫn ngắn\n\nChỉ chat đã được cấu hình mới có thể dùng các lệnh này.";
+        return "TMS OS Bot\n\n/status — xem trạng thái an toàn của thiết bị và TMS OS\n/checkupdate — kiểm tra bản mới và yêu cầu cập nhật có xác thực\n/help — xem hướng dẫn ngắn\n\nChỉ chat đã được cấu hình mới có thể dùng các lệnh này.";
     }
 
     private function requireTelegramConfig(): array

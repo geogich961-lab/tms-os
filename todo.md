@@ -594,3 +594,9 @@
 - [x] Đóng gói và kiểm thử V17.0.13: mô phỏng V17.0.12 → V17.0.13, kiểm tra submit dự phòng, checksum, ZIP, verifier UCI, báo cáo Telegram, worker cập nhật, phiên đăng nhập và bảo toàn storage/Cloudflare.
 - [x] Phát hành V17.0.13 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
 - [ ] Xác minh thực địa V17.0.13 trên Xperia: từ V17.0.12, bấm Kiểm tra cập nhật rồi bấm Cập nhật ngay trong khung Phiên bản hiện tại; xác nhận cập nhật trực tiếp hoàn tất và thông báo lỗi upload (nếu có) rõ ràng.
+- [x] Nâng cấp lệnh Telegram `/checkupdate`: kiểm tra bản mới, xác thực quản trị hai bước bằng mật khẩu trước khi áp dụng cập nhật, từ chối tuyệt đối khi sai mật khẩu và không ghi/lộ thông tin nhạy cảm.
+- [x] Thêm phản hồi inline cho `/checkupdate`: khi có release mới, hiện đúng hai nút Telegram `Cập nhật` và `Bỏ qua`; nút `Cập nhật` yêu cầu mật khẩu nâng cấp do quản trị viên tự đặt trong Update Center.
+- [x] Thêm mục mật khẩu nâng cấp trong Update Center: lưu hash một chiều, xác nhận khi thay đổi, không hiển thị lại giá trị, giới hạn thử sai và hết hạn phiên xác nhận Telegram trước khi áp dụng update.
+- [x] Tách riêng tệp mật khẩu nâng cấp và phiên Telegram, ghi nguyên tử quyền 0600; xác thực nonce, hết hạn 5 phút, tối đa 3 lần sai và chống phát lại trước khi gọi hàng đợi GitHub sẵn có.
+- [x] Mở rộng webhook Telegram nhận callback_query, xác thực secret/chat/user nhất quán, trả xác nhận callback và duy trì tương thích `/status`, `/help`.
+- [ ] Bổ sung hồi quy cho `/checkupdate`, nút Cập nhật/Bỏ qua, phiên mật khẩu đúng/sai/hết hạn/phát lại, CSRF Update Center và kiểm tra payload phát hành trước khi đóng gói.

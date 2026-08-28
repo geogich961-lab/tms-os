@@ -46,6 +46,7 @@ final class UpdateController
         tms_view('updates.index', [
             'items' => $this->updates->staged(),
             'status' => $status,
+            'updatePassword' => $this->updates->updatePasswordStatus(),
             'flash' => tms_pull_flash(),
             'csrf' => tms_csrf_token(),
         ]);
@@ -176,6 +177,38 @@ final class UpdateController
             }
             $this->updates->delete($names);
             tms_flash('success', 'Đã xóa các gói cập nhật được chọn.');
+        } catch (Throwable $e) {
+            tms_flash('error', $e->getMessage());
+        }
+        tms_redirect('/updates');
+    }
+
+    /** Đặt hoặc đổi mật khẩu riêng dùng duy nhất cho yêu cầu cập nhật Telegram. */
+    public function configurePassword(): void
+    {
+        $this->guard();
+        try {
+            $this->verify();
+            $result = $this->updates->setUpdatePassword(
+                (string)($_POST['current_update_password'] ?? ''),
+                (string)($_POST['new_update_password'] ?? ''),
+                (string)($_POST['confirm_update_password'] ?? ''),
+            );
+            tms_flash('success', (string)$result['message']);
+        } catch (Throwable $e) {
+            tms_flash('error', $e->getMessage());
+        }
+        tms_redirect('/updates');
+    }
+
+    /** Tắt mật khẩu Telegram sau khi xác nhận mật khẩu nâng cấp hiện tại. */
+    public function clearPassword(): void
+    {
+        $this->guard();
+        try {
+            $this->verify();
+            $result = $this->updates->clearUpdatePassword((string)($_POST['current_update_password'] ?? ''));
+            tms_flash('success', (string)$result['message']);
         } catch (Throwable $e) {
             tms_flash('error', $e->getMessage());
         }
