@@ -4,6 +4,10 @@ set -Eeuo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 OUTPUT="${1:-$ROOT/TMS_OS_LATEST.zip}"
+case "$OUTPUT" in
+  /*) ;;
+  *) OUTPUT="$ROOT/$OUTPUT" ;;
+esac
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/tms-os-release.XXXXXX")"
 SOURCE="$WORK/source"
 PAYLOAD="$WORK/payload"
