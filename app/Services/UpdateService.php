@@ -260,6 +260,25 @@ final class UpdateService
             if (is_array($parsed) && !empty($parsed['tag_name'])) { $data = $parsed; break; }
         }
         if ($data === null) {
+            // Một số mạng/PHP trên Android 7 không truy cập được api.github.com,
+            // nhưng vẫn truy cập được asset redirect của GitHub Releases.
+            $metadataUrl = 'https://github.com/geogich961-lab/tms-os/releases/latest/download/RELEASE.json';
+            $metadata = json_decode($this->httpGet($metadataUrl, 20, 'TMS-OS-Updater/1.4'), true);
+            if (is_array($metadata) && !empty($metadata['version'])) {
+                $version = ltrim((string)$metadata['version'], 'vV');
+                $tag = (string)($metadata['tag'] ?? ('v' . $version));
+                $data = [
+                    'tag_name' => $tag,
+                    'body' => (string)($metadata['notes'] ?? ''),
+                    'published_at' => '',
+                    'assets' => [[
+                        'name' => 'TMS_OS_LATEST.zip',
+                        'browser_download_url' => 'https://github.com/geogich961-lab/tms-os/releases/download/' . rawurlencode($tag) . '/TMS_OS_LATEST.zip',
+                    ]],
+                ];
+            }
+        }
+        if ($data === null) {
             throw new RuntimeException('Không thể kết nối GitHub — kiểm tra thiết bị đã có mạng và thử lại sau vài giây.');
         }
         $zipUrl = '';
@@ -992,26 +1011,53 @@ final class UpdateService
         return (string)($data['checksum_sha256'] ?? '');
     }
 
-    /** GET HTTP với retry — V14.1.6: chống lỗi mạng thoáng qua (DNS chặn api.github.com trên một số mạng di động). */
+    /** GET HTTP có retry, ưu tiên cURL và giữ fallback stream cho PHP Termux tối giản. */
     private function httpGet(string $url, int $timeout, string $ua): string
     {
-        $lastError = '';
         for ($attempt = 1; $attempt <= 3; $attempt++) {
+            if (function_exists('curl_init')) {
+                $ch = curl_init($url);
+                if ($ch !== false) {
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_FOLLOWLOCATION => true,
+                        CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
+                        CURLOPT_TIMEOUT => $timeout,
+                        CURLOPT_USERAGENT => $ua,
+                        CURLOPT_HTTPHEADER => ['Accept: */*'],
+                        CURLOPT_SSL_VERIFYPEER => true,
+                        CURLOPT_SSL_VERIFYHOST => 2,
+                    ]);
+                    $content = curl_exec($ch);
+                    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+                    curl_close($ch);
+                    if (is_string($content) && $content !== '' && $status >= 200 && $status < 400) {
+                        return $content;
+                    }
+                }
+            }
+
             $ctx = stream_context_create([
                 'http' => [
                     'method' => 'GET',
                     'timeout' => $timeout,
                     'follow_location' => true,
                     'header' => "User-Agent: {$ua}\r\nAccept: */*\r\n",
-                    'ignore_errors' => true,
+                    'ignore_errors' => false,
+                ],
+                'ssl' => [
+                    'verify_peer' => true,
+                    'verify_peer_name' => true,
+                    'SNI_enabled' => true,
                 ],
             ]);
             $content = @file_get_contents($url, false, $ctx);
-            if ($content !== false) {
+            if ($content !== false && $content !== '') {
                 return $content;
             }
-            $lastError = (error_get_last()['message'] ?? '');
-            if ($attempt < 3) { usleep(1000000 * $attempt); }
+            if ($attempt < 3) {
+                usleep(1000000 * $attempt);
+            }
         }
         return '';
     }

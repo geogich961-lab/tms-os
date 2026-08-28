@@ -603,3 +603,4 @@
 - [ ] Chẩn đoán và khắc phục cài mới bị dừng khi mirror Termux trả HTTP 403: installer phải chọn mirror còn truy cập được hoặc dừng với hướng dẫn an toàn, không báo thiếu PHP gây hiểu nhầm.
 - [x] Chẩn đoán và khắc phục Nginx 502 sau cài mới: kiểm tra PHP engine, cổng FastCGI, thư mục runtime và script khởi động trên Termux Android 7; không cài lại hoặc xóa dữ liệu để phục hồi panel.
 - [x] Sửa Service Manager để Start/Restart Nginx xác minh PHP runtime trên loopback trước khi báo thành công, bổ sung hồi quy 502 và phát hành hotfix cập nhật trực tiếp.
+- [ ] Chẩn đoán lỗi Update Center V17.0.14 không kết nối được GitHub trên thiết bị mới để nhận V17.0.15; thêm xử lý chịu lỗi hoặc hotfix chỉ khi xác định có lỗi mã nguồn.
