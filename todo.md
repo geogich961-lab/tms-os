@@ -573,4 +573,5 @@
 - [x] Đóng gói, phát hành và xác minh V17.0.8: restart PHP hẹp để không dừng Nginx/Cloudflare trong update; polling kiểm tra source trước khi kết luận thất bại.
 - [ ] Xác minh thực địa V17.0.8 trên Xperia từ panel local: cập nhật phải hoàn tất không phát sinh 502 và không còn cảnh báo “Chưa xác nhận cập nhật” sai.
 - [x] Tinh gọn Update Center: ẩn hoàn toàn Cập nhật nhanh khi mở trang và khi đã mới nhất; chỉ hiện thông tin bản mới cùng nút cập nhật sau lần Kiểm tra cập nhật xác nhận có release mới.
-- [ ] Đóng gói, phát hành và xác minh V17.0.9: giao diện Update Center chỉ hiện Cập nhật nhanh sau khi kiểm tra xác nhận có release mới.
+- [x] Đóng gói, phát hành và xác minh V17.0.9: giao diện Update Center chỉ hiện Cập nhật nhanh sau khi kiểm tra xác nhận có release mới.
+- [ ] Xác minh thực địa V17.0.9 trên Xperia: trước khi kiểm tra không có khối Cập nhật nhanh; sau khi phát hiện bản mới mới hiện nút cập nhật bên dưới thông tin release.
