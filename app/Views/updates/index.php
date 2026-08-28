@@ -2,26 +2,27 @@
 <div class="page-head"><div><p class="eyebrow">SAFE UPDATE</p><h1>Update Center</h1><p>Kiểm tra, tải và áp dụng cập nhật an toàn — tự sao lưu và khôi phục nếu lỗi.</p></div></div>
 <?php if(!empty($flash)):?><div class="alert <?=($flash['type']??'')==='success'?'alert-success':'alert-error'?>" data-flash-toast="<?=($flash['type']??'')==='success'?'success':'error'?>" hidden><?=nl2br(tms_h($flash['message']??''))?></div><?php endif;?>
 
-<section class="panel-card"><h2>Phiên bản hiện tại</h2>
+<section class="panel-card" id="current-version-card"><h2>Phiên bản hiện tại</h2>
 <p>Bản đang chạy: <strong><?=tms_h($status['current']??'unknown')?></strong>
 <?php if(!empty($status['previous_exists'])):?><span class="status-pill running">Có bản sao lưu gần đây</span><?php endif;?>
 </p>
-	<div class="update-btn-group" style="display: flex; gap: 8px; flex-wrap: wrap;">
+	<div class="update-btn-group">
     <button class="btn btn-secondary" id="check-update-btn" style="flex: 1; min-width: 160px;">Kiểm tra cập nhật</button>
     <?php if(!empty($status['previous_exists'])):?>
-    <form method="post" action="/updates/rollback" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');" style="flex: 1; min-width: 160px; margin: 0;">
+    <form method="post" action="/updates/rollback" onsubmit="return confirm('Khôi phục về bản trước? Dữ liệu hiện tại sẽ được giữ trong thư mục sao lưu.');" class="update-secondary-action">
         <input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
         <button class="btn btn-danger-soft" style="width: 100%;">Khôi phục bản trước</button>
     </form>
     <?php endif;?>
 </div>
-<p class="muted" id="check-result"></p></section>
-
-<section class="panel-card" id="online-update-card" hidden aria-live="polite">
-	<p class="eyebrow">NEW RELEASE</p><h2>Bản cập nhật sẵn sàng</h2>
-	<p id="online-update-summary"></p>
-	<form id="github-update-form" method="post" action="/updates/apply"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật nhanh</button></form>
-	<p class="muted">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p></section>
+	<p class="muted" id="check-result" role="status"></p>
+	<div class="update-available-action" id="online-update-action" hidden aria-live="polite">
+		<strong>Bản cập nhật sẵn sàng</strong>
+		<p id="online-update-summary" class="muted"></p>
+		<form id="github-update-form" method="post" action="/updates/apply" class="update-action-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
+		<p class="muted update-action-note">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p>
+	</div>
+</section>
 
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>
 <p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
@@ -65,8 +66,8 @@ function parseUpdateJson(response) {
 }
 
 function setOnlineUpdateVisibility(visible) {
-	  var card = document.getElementById('online-update-card');
-	  if (card) card.hidden = !visible;
+	  var action = document.getElementById('online-update-action');
+	  if (action) action.hidden = !visible;
 }
 
 function showAvailableUpdate(available) {
@@ -88,7 +89,7 @@ document.getElementById('check-update-btn')?.addEventListener('click',function()
 	    btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
 	    if(d.error){out.textContent='Lỗi: '+d.error;return;}
 	    if(d.available){
-	      out.textContent='Đã tìm thấy bản cập nhật mới. Bạn có thể áp dụng ở phần bên dưới.';
+	      out.textContent='Đã tìm thấy bản cập nhật mới.';
 	      showAvailableUpdate(d.available);
 	    }else{
 	      out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';

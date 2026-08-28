@@ -10,12 +10,15 @@ $worker = (string) file_get_contents($root . '/scripts/tms-update-worker.php');
 $login = (string) file_get_contents($root . '/app/Views/auth/login.php');
 
 $required = [
-	' id="online-update-card" hidden',
+	' id="current-version-card"',
+	' id="online-update-action" hidden',
+	'class="update-available-action"',
 	'function setOnlineUpdateVisibility(visible)',
 	'function showAvailableUpdate(available)',
 	'setOnlineUpdateVisibility(false);',
 	'showAvailableUpdate(d.available);',
-	'Đã tìm thấy bản cập nhật mới. Bạn có thể áp dụng ở phần bên dưới.',
+	'Đã tìm thấy bản cập nhật mới.',
+	'id="apply-github-btn">Cập nhật ngay</button>',
     "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
@@ -34,12 +37,20 @@ foreach ($required as $needle) {
     }
 }
 
-$quickCardPos = strpos($view, 'id="online-update-card" hidden');
+$currentCardPos = strpos($view, 'id="current-version-card"');
+$quickCardPos = strpos($view, 'id="online-update-action" hidden');
 $checkHandlerPos = strpos($view, "document.getElementById('check-update-btn')");
 $availableRevealPos = strpos($view, 'showAvailableUpdate(d.available);');
-if ($quickCardPos === false || $checkHandlerPos === false || $availableRevealPos === false || $availableRevealPos < $checkHandlerPos) {
-    fwrite(STDERR, "Quick update must remain hidden until a successful update check reports a new release.\n");
-    exit(1);
+if ($currentCardPos === false || $quickCardPos === false || $checkHandlerPos === false || $availableRevealPos === false || $availableRevealPos < $checkHandlerPos) {
+	fwrite(STDERR, "Update action must remain hidden until a successful update check reports a new release.\n");
+	exit(1);
+}
+
+$checkResultPos = strpos($view, 'id="check-result"');
+$manualCardPos = strpos($view, 'Tải gói cập nhật thủ công');
+if ($quickCardPos < $currentCardPos || $checkResultPos === false || $quickCardPos < $checkResultPos || $manualCardPos === false || $quickCardPos > $manualCardPos || str_contains($view, 'online-update-card') || str_contains($view, 'NEW RELEASE') || str_contains($view, '>Cập nhật nhanh<')) {
+	fwrite(STDERR, "Available-update action must be a single current-version-card action, not a separate quick-update card.\n");
+	exit(1);
 }
 
 $oldFalsePositive = "// Nếu bị lỗi kết nối (thường do PHP bị kill ngay lập tức), vẫn đợi rồi reload";

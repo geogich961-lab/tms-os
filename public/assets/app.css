@@ -343,6 +343,22 @@ code, pre { font-family: var(--font-mono); }
 .panel-card { padding: 20px 22px; }
 .card-title h2 { margin: 0 0 14px; font-size: 1.05rem; font-weight: 750; }
 
+/* Update Center: show the primary action inside the current-version card only after a successful check. */
+.update-btn-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.update-secondary-action { flex: 1; min-width: 160px; margin: 0; }
+.update-available-action {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface2);
+}
+.update-available-action > strong { display: block; font-size: 0.95rem; }
+.update-available-action #online-update-summary { margin: 6px 0 0; }
+.update-action-form { margin: 12px 0 0; }
+.update-action-form .btn { width: 100%; }
+.update-action-note { margin: 10px 0 0; font-size: 0.83rem; line-height: 1.45; }
+
 /* Status pills */
 .status-pill {
   display: inline-flex;
