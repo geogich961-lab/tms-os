@@ -584,3 +584,7 @@
 - [x] Phát hành V17.0.11 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
 - [ ] Xác minh thực địa V17.0.11 trên Xperia: nút `Cập nhật ngay` phải xuất hiện ngay dưới dòng phát hiện bản mới trong khung `Phiên bản hiện tại`, rồi cập nhật thành công.
 - [x] Khắc phục artifact V17.0.11 bị CI từ chối: loại script xác minh nội bộ khỏi ZIP thiết bị, tái tạo checksum/metadata và xác minh lại release hiện có mà không tạo bản phát hành trùng.
+- [x] Khắc phục markup form Update Center V17.0.11: đóng đúng thẻ hidden CSRF để nút `Cập nhật ngay` là phần tử HTML có thể thao tác, sau đó phát hành V17.0.12 cho đường nâng thủ công từ V17.0.9.
+- [x] Đóng gói và kiểm thử payload V17.0.12: mô phỏng đường nâng V17.0.9 → V17.0.12, xác minh HTML nút cập nhật, checksum, ZIP sạch, UCI matrix và bảo toàn storage/Cloudflare.
+- [ ] Phát hành V17.0.12 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
+- [ ] Xác minh thực địa V17.0.12 trên Xperia: nút `Cập nhật ngay` trong khung `Phiên bản hiện tại` phải bấm được, đưa panel lên V17.0.12 và giữ nguyên dữ liệu/cấu hình.

@@ -16,12 +16,12 @@
     <?php endif;?>
 </div>
 	<p class="muted" id="check-result" role="status"></p>
-	<div class="update-available-action" id="online-update-action" hidden aria-live="polite">
-		<strong>Bản cập nhật sẵn sàng</strong>
-		<p id="online-update-summary" class="muted"></p>
-		<form id="github-update-form" method="post" action="/updates/apply" class="update-action-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
-		<p class="muted update-action-note">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p>
-	</div>
+		<div class="update-available-action" id="online-update-action" hidden aria-live="polite">
+			<strong>Bản cập nhật sẵn sàng</strong>
+			<p id="online-update-summary" class="muted"></p>
+			<form id="github-update-form" method="post" action="/updates/apply" class="update-action-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
+			<p class="muted update-action-note">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p>
+		</div>
 </section>
 
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>

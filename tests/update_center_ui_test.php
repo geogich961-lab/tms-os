@@ -17,9 +17,10 @@ $required = [
 	'function showAvailableUpdate(available)',
 	'setOnlineUpdateVisibility(false);',
 	'showAvailableUpdate(d.available);',
-	'Đã tìm thấy bản cập nhật mới.',
-	'id="apply-github-btn">Cập nhật ngay</button>',
-    "verifyAppliedVersion(0)",
+		'Đã tìm thấy bản cập nhật mới.',
+		'id="apply-github-btn">Cập nhật ngay</button>',
+		'<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button>',
+	    "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
     "Không thể xác minh trạng thái cập nhật:",
@@ -35,6 +36,11 @@ foreach ($required as $needle) {
         fwrite(STDERR, "Missing Update Center verification guard: {$needle}\n");
         exit(1);
     }
+}
+
+if (str_contains($view, 'name="csrf" value="<?=tms_h($csrf)?><button')) {
+    fwrite(STDERR, "Update Center has a malformed CSRF input that swallows the apply button.\n");
+    exit(1);
 }
 
 $currentCardPos = strpos($view, 'id="current-version-card"');
