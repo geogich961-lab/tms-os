@@ -158,13 +158,17 @@ final class UpdateService
     /** Stage file upload thủ công (giữ lại tính năng cũ). */
     public function stage(array $upload): array
     {
-        if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-            throw new RuntimeException('Tải gói cập nhật thất bại.');
+        $uploadError = (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE);
+        if ($uploadError !== UPLOAD_ERR_OK) {
+            throw new RuntimeException($this->uploadErrorMessage($uploadError));
         }
         if (($upload['size'] ?? 0) > 100 * 1024 * 1024) {
             throw new RuntimeException('Gói cập nhật vượt quá 100 MB.');
         }
         $tmp = (string)$upload['tmp_name'];
+        if ($tmp === '' || !is_file($tmp)) {
+            throw new RuntimeException('Tệp tải lên không còn trong vùng tạm. Hãy chọn lại ZIP và thử một lần nữa.');
+        }
         $this->validateZip($tmp);
         $name = 'tms-update-' . date('Ymd_His') . '.zip';
         $dest = $this->dir . '/' . $name;
@@ -172,6 +176,20 @@ final class UpdateService
             throw new RuntimeException('Không thể lưu gói cập nhật.');
         }
         return ['ok' => true, 'message' => 'Đã kiểm tra và lưu gói cập nhật.', 'name' => $name];
+    }
+
+    /** Diễn giải mã upload PHP theo cách an toàn, không hiển thị đường dẫn hoặc dữ liệu hệ thống. */
+    private function uploadErrorMessage(int $error): string
+    {
+        return match ($error) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Tệp ZIP vượt giới hạn tải lên của PHP. Hãy dùng nút Cập nhật ngay hoặc chọn gói nhỏ hơn.',
+            UPLOAD_ERR_PARTIAL => 'Tệp ZIP chưa được tải lên hoàn tất. Hãy kiểm tra kết nối rồi chọn lại tệp.',
+            UPLOAD_ERR_NO_FILE => 'Chưa chọn tệp ZIP cập nhật.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Không có vùng tạm để nhận tệp. Hãy khởi động lại PHP Engine rồi thử lại.',
+            UPLOAD_ERR_CANT_WRITE => 'Không thể ghi tệp ZIP vào vùng tạm. Hãy kiểm tra dung lượng lưu trữ rồi thử lại.',
+            UPLOAD_ERR_EXTENSION => 'PHP đã chặn tệp ZIP do một tiện ích mở rộng. Hãy khởi động lại PHP Engine rồi thử lại.',
+            default => 'Tải gói cập nhật thất bại (mã ' . $error . '). Hãy chọn lại ZIP hoặc dùng Cập nhật ngay.',
+        };
     }
 
     public function delete(string|array $names): void

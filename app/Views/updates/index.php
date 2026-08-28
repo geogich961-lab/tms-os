@@ -19,7 +19,7 @@
 		<div class="update-available-action" id="online-update-action" hidden aria-live="polite">
 			<strong>Bản cập nhật sẵn sàng</strong>
 			<p id="online-update-summary" class="muted"></p>
-			<form id="github-update-form" method="post" action="/updates/apply" class="update-action-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
+			<form id="github-update-form" method="post" action="/updates/apply" class="update-action-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="submit" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
 			<p class="muted update-action-note">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p>
 		</div>
 </section>
@@ -117,16 +117,19 @@ document.getElementById('batch-delete-btn')?.addEventListener('click', function(
 	  }
 	});
 
-	// V16.0.14: Xử lý cập nhật bất đồng bộ để tránh lỗi 502 Bad Gateway
-	document.getElementById('apply-github-btn')?.addEventListener('click', function() {
-	  if (!confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ khởi động lại dịch vụ sau khi hoàn tất.')) return;
-	  
-	  var btn = this;
-	  btn.disabled = true;
-	  btn.textContent = 'Đang tải & áp dụng...';
-	  
-	  var form = document.getElementById('github-update-form');
-	  var formData = new FormData(form);
+		// V16.0.14: Xử lý cập nhật bất đồng bộ để tránh lỗi 502 Bad Gateway.
+		// Button vẫn là submit chuẩn, nên form còn có đường dự phòng khi JavaScript không chạy.
+		document.getElementById('github-update-form')?.addEventListener('submit', function(event) {
+		  event.preventDefault();
+		  if (!confirm('Áp dụng bản cập nhật mới nhất từ GitHub? Panel sẽ khởi động lại dịch vụ sau khi hoàn tất.')) return;
+
+		  var form = this;
+		  var btn = document.getElementById('apply-github-btn');
+		  if (!btn) return;
+		  btn.disabled = true;
+		  btn.textContent = 'Đang tải & áp dụng...';
+
+		  var formData = new FormData(form);
 	  
 	  fetch(form.action, {
 	    method: 'POST',

@@ -588,3 +588,9 @@
 - [x] Đóng gói và kiểm thử payload V17.0.12: mô phỏng đường nâng V17.0.9 → V17.0.12, xác minh HTML nút cập nhật, checksum, ZIP sạch, UCI matrix và bảo toàn storage/Cloudflare.
 - [x] Phát hành V17.0.12 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
 - [ ] Xác minh thực địa V17.0.12 trên Xperia: nút `Cập nhật ngay` trong khung `Phiên bản hiện tại` phải bấm được, đưa panel lên V17.0.12 và giữ nguyên dữ liệu/cấu hình.
+- [ ] Khắc phục V17.0.9 từ chối `TMS_OS_LATEST.zip` ở bước `Kiểm tra và lưu`: xác định lỗi tương thích upload/staging và cung cấp đường nâng không yêu cầu cài lại Termux hoặc thay đổi dữ liệu.
+- [ ] Khắc phục hồi quy đường nâng V17.0.9: người dùng phải hạ về V17.0.7 mới có thể cập nhật lên V17.0.12; cần kiểm thử và bảo đảm V17.0.9 tự nâng trực tiếp được ở các bản sau, không cần hạ phiên bản trung gian.
+- [x] Củng cố Update Center sau hồi quy V17.0.9: nút `Cập nhật ngay` dùng submit chuẩn có dự phòng không phụ thuộc riêng vào JavaScript; lỗi tải ZIP thủ công hiển thị nguyên nhân theo mã upload an toàn, không lộ dữ liệu hệ thống.
+- [x] Đóng gói và kiểm thử V17.0.13: mô phỏng V17.0.12 → V17.0.13, kiểm tra submit dự phòng, checksum, ZIP, verifier UCI, báo cáo Telegram, worker cập nhật, phiên đăng nhập và bảo toàn storage/Cloudflare.
+- [ ] Phát hành V17.0.13 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
+- [ ] Xác minh thực địa V17.0.13 trên Xperia: từ V17.0.12, bấm Kiểm tra cập nhật rồi bấm Cập nhật ngay trong khung Phiên bản hiện tại; xác nhận cập nhật trực tiếp hoàn tất và thông báo lỗi upload (nếu có) rõ ràng.

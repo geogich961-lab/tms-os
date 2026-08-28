@@ -19,7 +19,9 @@ $required = [
 	'showAvailableUpdate(d.available);',
 		'Đã tìm thấy bản cập nhật mới.',
 		'id="apply-github-btn">Cập nhật ngay</button>',
-		'<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button>',
+		'<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="submit" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button>',
+		"document.getElementById('github-update-form')?.addEventListener('submit', function(event)",
+		'event.preventDefault();',
 	    "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
@@ -140,11 +142,24 @@ foreach ([
     'foreach ($parts as $part)',
     "'TMS_UPDATE_SKIP_RESTART'",
     "'Payload đã xử lý nhưng phiên bản source chưa đổi sang V'",
-    "'Cập nhật chưa đổi được source sang V'",
-    'tms_clear_cache(false)',
+	    "'Cập nhật chưa đổi được source sang V'",
+	    'tms_clear_cache(false)',
 ] as $needle) {
     if (!str_contains($service, $needle)) {
         fwrite(STDERR, "Missing queued worker safety guard: {$needle}\n");
+        exit(1);
+	}
+}
+
+foreach ([
+    'private function uploadErrorMessage(int $error): string',
+    'UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE',
+    'Tệp ZIP chưa được tải lên hoàn tất.',
+    'Chưa chọn tệp ZIP cập nhật.',
+    'Tệp tải lên không còn trong vùng tạm.',
+] as $needle) {
+    if (!str_contains($service, $needle)) {
+        fwrite(STDERR, "Missing safe upload diagnostic: {$needle}\n");
         exit(1);
     }
 }
