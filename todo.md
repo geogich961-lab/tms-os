@@ -581,5 +581,6 @@
 - [ ] Xác minh thực địa V17.0.10 trên Xperia: báo cáo Telegram tiếp theo phải hiển thị `Mốc gửi` đúng giờ Việt Nam (+07:00) so với thời điểm Telegram nhận tin.
 - [x] Khắc phục Update Center V17.0.9 không có nút cập nhật khả dụng dù đã phát hiện V17.0.10: hợp nhất thông tin release và nút `Cập nhật ngay` vào khung `Phiên bản hiện tại` sau khi kiểm tra thành công.
 - [x] Đóng gói và kiểm thử hotfix Update Center V17.0.11: xác minh đường nâng V17.0.9 → V17.0.11 một chạm, checksum, ZIP sạch và bảo toàn dữ liệu runtime/cấu hình dịch vụ.
-- [ ] Phát hành V17.0.11 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
+- [x] Phát hành V17.0.11 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
 - [ ] Xác minh thực địa V17.0.11 trên Xperia: nút `Cập nhật ngay` phải xuất hiện ngay dưới dòng phát hiện bản mới trong khung `Phiên bản hiện tại`, rồi cập nhật thành công.
+- [x] Khắc phục artifact V17.0.11 bị CI từ chối: loại script xác minh nội bộ khỏi ZIP thiết bị, tái tạo checksum/metadata và xác minh lại release hiện có mà không tạo bản phát hành trùng.

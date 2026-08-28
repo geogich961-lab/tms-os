@@ -29,6 +29,14 @@ try {
     $metadata = json_decode((string) file_get_contents($metadataFile), true);
     expectV1711(is_array($metadata) && ($metadata['version'] ?? '') === '17.0.11', 'RELEASE.json phải khai báo V17.0.11.');
     expectV1711(hash_file('sha256', $releaseZip) === ($metadata['checksum_sha256'] ?? ''), 'Checksum V17.0.11 không khớp RELEASE.json.');
+    $releaseArchive = new ZipArchive();
+    expectV1711($releaseArchive->open($releaseZip) === true, 'Không mở được payload V17.0.11.');
+    $releaseEntries = [];
+    for ($index = 0; $index < $releaseArchive->numFiles; $index++) {
+        $releaseEntries[] = (string) $releaseArchive->getNameIndex($index);
+    }
+    $releaseArchive->close();
+    expectV1711(!in_array('scripts/verify-uci-payload.sh', $releaseEntries, true), 'Payload thiết bị không được kèm script xác minh nội bộ.');
 
     @mkdir($target, 0700, true);
     $zip = new ZipArchive();
