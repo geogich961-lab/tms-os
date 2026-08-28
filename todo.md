@@ -575,3 +575,7 @@
 - [x] Tinh gọn Update Center: ẩn hoàn toàn Cập nhật nhanh khi mở trang và khi đã mới nhất; chỉ hiện thông tin bản mới cùng nút cập nhật sau lần Kiểm tra cập nhật xác nhận có release mới.
 - [x] Đóng gói, phát hành và xác minh V17.0.9: giao diện Update Center chỉ hiện Cập nhật nhanh sau khi kiểm tra xác nhận có release mới.
 - [ ] Xác minh thực địa V17.0.9 trên Xperia: trước khi kiểm tra không có khối Cập nhật nhanh; sau khi phát hiện bản mới mới hiện nút cập nhật bên dưới thông tin release.
+- [x] Khắc phục báo cáo Telegram theo giờ ghi mốc UTC thay vì giờ Việt Nam: chuẩn hóa mốc báo cáo theo `Asia/Ho_Chi_Minh` và giữ nguyên lịch, dữ liệu truy cập cùng cấu hình bot.
+- [x] Đóng gói và xác minh payload V17.0.10: checksum SHA-256, cấu trúc ZIP, đường nâng V17.0.9 → V17.0.10, storage và cấu hình Cloudflare đều được bảo toàn.
+- [ ] Phát hành V17.0.10 trên GitHub: đính kèm đúng `TMS_OS_LATEST.zip` và `RELEASE.json`, không tạo tag hoặc release trùng.
+- [ ] Xác minh thực địa V17.0.10 trên Xperia: báo cáo Telegram tiếp theo phải hiển thị `Mốc gửi` đúng giờ Việt Nam (+07:00) so với thời điểm Telegram nhận tin.

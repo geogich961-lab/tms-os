@@ -10,6 +10,7 @@ final class AccessReportService
     private const MAX_BYTES_PER_FILE = 2_000_000;
     private const MAX_IPS_PER_MESSAGE = 42;
     private const MAX_REPORT_MESSAGES = 3;
+    private const REPORT_TIMEZONE = 'Asia/Ho_Chi_Minh';
 
     private string $home;
     private string $configFile;
@@ -59,7 +60,7 @@ final class AccessReportService
         $this->baselineLogs();
         $this->writeJson($this->configFile, [
             'enabled' => true,
-            'activated_at' => date('c'),
+            'activated_at' => $this->reportTimestamp(),
         ]);
         $this->ensureScheduledJob(true);
 
@@ -87,7 +88,7 @@ final class AccessReportService
             $this->ensureTrustedVisitorIpConfiguration();
         } catch (Throwable) {
             $state = $this->readJson($this->stateFile);
-            $state['last_run_at'] = date('c');
+            $state['last_run_at'] = $this->reportTimestamp();
             $state['last_status'] = 'nginx_config_failed';
             $this->writeJson($this->stateFile, $state);
             return ['ok' => false, 'status' => 'nginx_config_failed'];
@@ -106,7 +107,7 @@ final class AccessReportService
             foreach ($messages as $message) {
                 $sent = $this->telegram->sendConfiguredMessage($message);
                 if (empty($sent['ok'])) {
-                    $state['last_run_at'] = date('c');
+                    $state['last_run_at'] = $this->reportTimestamp();
                     $state['last_status'] = 'send_failed';
                     $this->writeJson($this->stateFile, $state);
                     return ['ok' => false, 'status' => 'send_failed'];
@@ -114,8 +115,8 @@ final class AccessReportService
             }
 
             $state['files'] = $nextFiles;
-            $state['last_run_at'] = date('c');
-            $state['last_sent_at'] = date('c');
+            $state['last_run_at'] = $this->reportTimestamp();
+            $state['last_sent_at'] = $this->reportTimestamp();
             $state['last_status'] = $summary['requests'] > 0 ? 'sent' : 'sent_empty';
             $this->writeJson($this->stateFile, $state);
             return ['ok' => true, 'status' => (string)$state['last_status'], 'requests' => $summary['requests']];
@@ -192,7 +193,7 @@ final class AccessReportService
     /** @return list<string> */
     private function formatReportMessages(array $summary): array
     {
-        $now = date('H:i · d/m/Y');
+        $now = $this->reportNow()->format('H:i · d/m/Y');
         $destinations = $summary['destinations'];
         uasort($destinations, static fn(array $a, array $b): int => $b['requests'] <=> $a['requests']);
         $lines = [
@@ -239,6 +240,16 @@ final class AccessReportService
             $messages[count($messages) - 1] .= "\n… Còn {$remaining} IP không hiển thị để giới hạn tin nhắn.";
         }
         return $messages;
+    }
+
+    private function reportNow(): DateTimeImmutable
+    {
+        return new DateTimeImmutable('now', new DateTimeZone(self::REPORT_TIMEZONE));
+    }
+
+    private function reportTimestamp(): string
+    {
+        return $this->reportNow()->format(DATE_ATOM);
     }
 
     private function baselineLogs(): void

@@ -16,6 +16,7 @@ file_put_contents($prefix . '/etc/nginx/sites-enabled/demo.conf', "server { acce
 file_put_contents($prefix . '/bin/nginx', "#!/bin/sh\nexit 0\n");
 chmod($prefix . '/bin/nginx', 0700);
 putenv('PREFIX=' . $prefix);
+date_default_timezone_set('UTC');
 
 require $root . '/app/Services/UnifiedSystemCoreService.php';
 require $root . '/app/Services/SystemService.php';
@@ -72,6 +73,7 @@ NGINX;
 file_put_contents($prefix . '/etc/nginx/nginx.conf', $unmarkedInstallerConfig);
 $ensureRealIp();
 $unmarkedAfterEnsure = (string)file_get_contents($prefix . '/etc/nginx/nginx.conf');
+$expectedVietnamTime = (new DateTimeImmutable('now', new DateTimeZone('Asia/Ho_Chi_Minh')))->format('H:i · d/m/Y');
 $first = $reports->runHourly();
 $firstText = (string)($sent[0]['data']['text'] ?? '');
 $statePath = $home . '/.tms-os/access-report-state.json';
@@ -95,6 +97,7 @@ $ok = !empty($first['ok'])
     && str_contains($firstText, 'Website: demo')
     && str_contains($firstText, '1 × 4xx')
     && str_contains($firstText, '1 × 5xx')
+    && str_contains($firstText, 'Mốc gửi: ' . $expectedVietnamTime)
     && str_contains($secondText, 'Chưa ghi nhận request mới')
     && $noSensitiveData
     && $mode === 0600
@@ -108,7 +111,8 @@ $ok = !empty($first['ok'])
     && str_contains($migratedSiteConfig, 'demo-access.log tms_access;')
     && substr_count($unmarkedAfterEnsure, 'map $realip_remote_addr $tms_from_cloudflared') === 1
     && substr_count($unmarkedAfterEnsure, 'log_format tms_access') === 1
-    && isset($state['files'][$home . '/logs/nginx/tms-access.log']['offset']);
+    && isset($state['files'][$home . '/logs/nginx/tms-access.log']['offset'])
+    && str_ends_with((string)($state['last_sent_at'] ?? ''), '+07:00');
 
 exec('rm -rf ' . escapeshellarg($base));
 if (!$ok) {
