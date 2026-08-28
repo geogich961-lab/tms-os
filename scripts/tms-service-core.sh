@@ -64,10 +64,30 @@ pid_service(){
   esac
 }
 
+# Nginx chỉ là reverse proxy/FastCGI frontend. Khởi động riêng Nginx khi PHP
+# chưa lắng nghe cổng loopback 9000 sẽ tạo 502 và dễ khiến người dùng nghĩ
+# panel bị hỏng. Bảo đảm dependency trước khi chạm vào Nginx.
+ensure_php_up_for_nginx(){
+  local i=0
+  status_service php && return 0
+  printf '%s\n' '[INFO] PHP runtime chưa chạy; khởi động trước Nginx.' >>"$LOG_DIR/nginx.log"
+  bash "$ROOT/scripts/tms-php-engine.sh" start >>"$LOG_DIR/php-engine.log" 2>&1 || {
+    printf '%s\n' '[ERROR] PHP runtime không khởi động được; không khởi động Nginx để tránh 502.' >>"$LOG_DIR/nginx.log"
+    return 1
+  }
+  while [ "$i" -lt 12 ]; do
+    status_service php && return 0
+    sleep 1; i=$((i+1))
+  done
+  printf '%s\n' '[ERROR] PHP runtime chưa lắng nghe cổng 9000; không khởi động Nginx để tránh 502.' >>"$LOG_DIR/nginx.log"
+  return 1
+}
+
 start_service(){
   status_service "$service" && return 0
   case "$service" in
     nginx)
+      ensure_php_up_for_nginx || return 1
       nginx -t >>"$LOG_DIR/nginx.log" 2>&1 || return 1
       nginx >>"$LOG_DIR/nginx.log" 2>&1 || return 1
       wait_until up 8
@@ -127,6 +147,7 @@ stop_service(){
 restart_service(){
   case "$service" in
     nginx)
+      ensure_php_up_for_nginx || return 1
       nginx -t >>"$LOG_DIR/nginx.log" 2>&1 || return 1
       if status_service nginx; then nginx -s reload >>"$LOG_DIR/nginx.log" 2>&1 || return 1; else start_service; fi
       wait_until up 8

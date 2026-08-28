@@ -600,3 +600,6 @@
 - [x] Tách riêng tệp mật khẩu nâng cấp và phiên Telegram, ghi nguyên tử quyền 0600; xác thực nonce, hết hạn 5 phút, tối đa 3 lần sai và chống phát lại trước khi gọi hàng đợi GitHub sẵn có.
 - [x] Mở rộng webhook Telegram nhận callback_query, xác thực secret/chat/user nhất quán, trả xác nhận callback và duy trì tương thích `/status`, `/help`.
 - [x] Bổ sung hồi quy cho `/checkupdate`, nút Cập nhật/Bỏ qua, phiên mật khẩu đúng/sai/hết hạn/phát lại, CSRF Update Center và kiểm tra payload phát hành trước khi đóng gói.
+- [ ] Chẩn đoán và khắc phục cài mới bị dừng khi mirror Termux trả HTTP 403: installer phải chọn mirror còn truy cập được hoặc dừng với hướng dẫn an toàn, không báo thiếu PHP gây hiểu nhầm.
+- [ ] Chẩn đoán và khắc phục Nginx 502 sau cài mới: kiểm tra PHP engine, cổng FastCGI, thư mục runtime và script khởi động trên Termux Android 7; không cài lại hoặc xóa dữ liệu để phục hồi panel.
+- [ ] Sửa Service Manager để Start/Restart Nginx xác minh PHP runtime trên loopback trước khi báo thành công, bổ sung hồi quy 502 và phát hành hotfix cập nhật trực tiếp.

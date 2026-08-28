@@ -16,7 +16,12 @@ if [ "${1:-}" = '9000/tcp' ] && [ -f "${FAKE_SERVICE_STATE:?}" ]; then
 fi
 exit 1
 FUSER
-chmod +x "$TMP/bin/fuser"
+cat > "$TMP/bin/pgrep" <<'PGREP'
+#!/usr/bin/env bash
+# Hồi quy phải chỉ quan sát state mô phỏng, không nhận nhầm PHP của sandbox.
+exit 1
+PGREP
+chmod +x "$TMP/bin/fuser" "$TMP/bin/pgrep"
 
 cat > "$TMP/home/tms-os/scripts/tms-php-engine.sh" <<'ENGINE'
 #!/usr/bin/env bash
