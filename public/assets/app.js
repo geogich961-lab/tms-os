@@ -117,6 +117,57 @@ window.tmsToast=(msg,type,ms)=>{
     if(text && input.files?.[0]) text.textContent=input.files[0].name;
   }));
 
+  // Upload qua Cloudflare: mỗi request nhỏ và tuần tự để Android 7 không bị 524.
+  document.querySelectorAll('[data-chunked-upload]').forEach(form=>form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const input=form.querySelector('input[type="file"]');
+    const file=input?.files?.[0];
+    const button=form.querySelector('[data-upload-submit]');
+    const status=form.querySelector('[data-upload-status]');
+    const message=form.querySelector('[data-upload-message]');
+    const percent=form.querySelector('[data-upload-percent]');
+    const progress=form.querySelector('[data-upload-progress]');
+    if(!file){tmsToast('Hãy chọn tệp trước khi tải lên.','error');return;}
+    const csrf=form.querySelector('input[name="csrf"]')?.value||'';
+    const root=form.querySelector('input[name="root"]')?.value||'websites';
+    const path=form.querySelector('input[name="path"]')?.value||'';
+    const chunkSize=4*1024*1024;
+    const totalChunks=Math.max(1,Math.ceil(file.size/chunkSize));
+    const randomPart=()=>{try{const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}catch(_){return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);}};
+    const uploadId='web_'+randomPart();
+    const setProgress=(value,text)=>{const v=Math.max(0,Math.min(100,Math.round(value)));if(status)status.hidden=false;if(progress){progress.value=v;progress.setAttribute('aria-valuenow',String(v));}if(percent)percent.textContent=v+'%';if(message)message.textContent=text;};
+    const requestJson=async(url,body)=>{
+      const controller=typeof AbortController==='function'?new AbortController():null; const timer=setTimeout(()=>controller?.abort(),90000);
+      try{
+        const response=await fetch(url,{method:'POST',body,credentials:'same-origin',cache:'no-store',...(controller?{signal:controller.signal}:{})});
+        let data=null; try{data=await response.json();}catch(_){throw new Error(response.status===524?'Origin xử lý quá lâu (524). Hãy thử lại với tệp nhỏ hơn.':'Máy chủ trả về phản hồi không hợp lệ.');}
+        if(!response.ok||data?.ok!==true) throw new Error(data?.message||`Upload thất bại (HTTP ${response.status}).`);
+        return data;
+      }catch(error){if(error?.name==='AbortError')throw new Error('Một phần upload mất quá lâu. Hãy kiểm tra mạng rồi thử lại.');throw error;}finally{clearTimeout(timer);}
+    };
+    if(button)button.disabled=true;
+    if(input)input.disabled=true;
+    try{
+      for(let index=0;index<totalChunks;index++){
+        const start=index*chunkSize; const end=Math.min(file.size,start+chunkSize);
+        const body=new FormData(); body.append('csrf',csrf);body.append('root',root);body.append('path',path);body.append('upload_id',uploadId);body.append('chunk_index',String(index));body.append('total_chunks',String(totalChunks));body.append('name',file.name);body.append('total_size',String(file.size));body.append('chunk',file.slice(start,end),file.name+'.part');
+        const result=await requestJson('/files/upload-chunk',body);
+        setProgress(((index+1)/totalChunks)*98,`Đang tải phần ${index+1}/${totalChunks}...`);
+        if(Number(result.received_bytes||0)<end) throw new Error('Máy chủ chưa nhận đủ dữ liệu của phần upload.');
+      }
+      setProgress(99,'Đang hoàn tất và kiểm tra tệp...');
+      const done=new FormData();done.append('csrf',csrf);done.append('upload_id',uploadId);
+      await requestJson('/files/upload-complete',done);
+      setProgress(100,'Đã tải lên thành công.');
+      tmsToast('Đã tải lên: '+file.name,'success',2200);
+      setTimeout(()=>window.location.reload(),350);
+    }catch(error){
+      const text=error instanceof Error?error.message:'Không thể tải tệp lên.';
+      setProgress(0,text);tmsToast(text,'error');
+      if(button){button.disabled=false;button.textContent='Thử lại';}if(input)input.disabled=false;
+    }
+  }));
+
   const sheet=document.getElementById('file-action-sheet');
   const sheetTitle=document.getElementById('action-sheet-title');
   const sheetIcon=document.getElementById('action-sheet-icon');

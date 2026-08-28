@@ -39,8 +39,10 @@ opt_block = """  # V15.0.6: tối ưu hiệu năng — nén gzip + keepalive + c
   tcp_nopush on;
   tcp_nodelay on;
   keepalive_timeout 65;
-	client_max_body_size 500M;
-	server_tokens off;
+		client_max_body_size 512M;
+		client_body_timeout 300s;
+		send_timeout 300s;
+		server_tokens off;
 
 	# Chỉ tin CF-Connecting-IP từ cloudflared chạy trên loopback.
 	# Request LAN trực tiếp không thể giả IP bằng header này.
@@ -59,25 +61,53 @@ for directive in ['tcp_nopush', 'tcp_nodelay', 'keepalive_timeout', 'client_max_
     if re.search(r'(?m)\b' + directive, old, re.M):
         opt_block = re.sub(r'^\s*' + re.escape(directive).replace(r'\ ', r' ') + r'.*$', '', opt_block, flags=re.M)
 
-# Nếu đã có http block tối ưu rồi thì giữ nguyên
-if re.search(r'gzip on;\s*\n\s*gzip_vary', old):
-    print('ALREADY')
-    sys.exit(0)
+# Chuẩn hóa các giá trị upload/timeout kể cả khi gzip đã được bật từ bản cũ.
+if re.search(r'(?m)^\s*client_max_body_size\s+', old):
+    old = re.sub(r'(?m)^\s*client_max_body_size\s+[^;]+;', '  client_max_body_size 512M;', old, count=1)
+if 'client_body_timeout' not in old:
+    old = old.replace('http {', 'http {\n  client_body_timeout 300s;', 1)
+if 'send_timeout' not in old:
+    old = old.replace('http {', 'http {\n  send_timeout 300s;', 1)
 
-# Chiến lược an toàn: không parse block — chỉ chèn block tối ưu ngay sau 'http {'
-# (không trùng lặp với cấu hình cũ vì đã kiểm tra ALREADY ở trên)
-idx = old.find('http {')
-if idx < 0:
-    # Không có http block — prepend vào đầu file
-    new = 'worker_processes auto;\nevents { worker_connections 1024; }\n' + opt_block + old
+# Chiến lược an toàn: chỉ chèn block tối ưu khi chưa có; timeout ở trên luôn được ghi.
+if re.search(r'gzip on;\s*\n\s*gzip_vary', old):
+    new = old
+    print('ALREADY — timeouts normalized')
 else:
-    insert_at = idx + len('http {')
-    new = old[:insert_at] + '\n' + opt_block + old[insert_at:]
+    idx = old.find('http {')
+    if idx < 0:
+        new = 'worker_processes auto;\nevents { worker_connections 1024; }\n' + opt_block + old
+    else:
+        insert_at = idx + len('http {')
+        new = old[:insert_at] + '\n' + opt_block + old[insert_at:]
+    print('REWRITTEN')
 open(conf_path, 'w').write(new)
-print('REWRITTEN')
 PY
 
-# 3. Thêm cache tĩnh vào mọi server block trong sites-enabled (chưa có thì thêm)
+# 3. Cập nhật timeout/body limit cho vhost hiện có và thêm cache tĩnh.
+for f in "$SITES"/*.conf; do
+  [ -f "$f" ] || continue
+  python3 - "$f" <<'PY'
+import sys, re
+p = sys.argv[1]
+text = open(p).read()
+if not re.search(r'(?m)^\s*client_max_body_size\s+', text):
+    text = text.replace('server {', 'server {\n    client_max_body_size 512M;\n    client_body_timeout 300s;\n    send_timeout 300s;', 1)
+else:
+    text = re.sub(r'(?m)^\s*client_max_body_size\s+[^;]+;', '    client_max_body_size 512M;', text, count=1)
+if 'client_body_timeout' not in text:
+    text = text.replace('server {', 'server {\n    client_body_timeout 300s;', 1)
+if 'send_timeout' not in text:
+    text = text.replace('server {', 'server {\n    send_timeout 300s;', 1)
+if 'fastcgi_pass' in text and 'fastcgi_read_timeout' not in text:
+    text = text.replace('fastcgi_pass', 'fastcgi_read_timeout 300s;\n        fastcgi_send_timeout 300s;\n        fastcgi_pass', 1)
+if 'proxy_pass' in text and 'proxy_read_timeout' not in text:
+    text = text.replace('proxy_pass', 'proxy_request_buffering off;\n        proxy_read_timeout 300s;\n        proxy_send_timeout 300s;\n        proxy_pass', 1)
+open(p, 'w').write(text)
+print('TIMEOUT ' + p)
+PY
+done
+
 for f in "$SITES"/*.conf; do
   [ -f "$f" ] || continue
   if ! grep -q 'expires 1y' "$f" 2>/dev/null; then

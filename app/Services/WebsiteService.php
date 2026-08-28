@@ -412,7 +412,14 @@ final class WebsiteService
             $lan=$this->normalizeDomain((string)($record['lan_domain']??($name.'.lan')),false);
             $smart=filter_var($lanIp,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4) && !str_starts_with($lanIp,'127.') ? strtolower(str_replace('_','-',(string)$name)).'.'.$lanIp.'.sslip.io' : '';
             $serverNames=trim($local.' '.$lan.' '.$smart);
-            $blocks[]="server {\n    listen 0.0.0.0:{$port};\n    server_name {$serverNames};\n    location / {\n        proxy_pass http://127.0.0.1:{$targetPort};\n        proxy_http_version 1.1;\n        proxy_set_header Host \$host;\n        proxy_set_header X-Real-IP \$remote_addr;\n        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto \$scheme;\n        proxy_set_header X-Forwarded-Host \$host;\n    }\n}";
+            $blocks[]="server {\n    listen 0.0.0.0:{$port};\n    server_name {$serverNames};\n    location / {\n        proxy_pass http://127.0.0.1:{$targetPort};\n        proxy_http_version 1.1;\n        proxy_set_header Host \$host;\n        proxy_set_header X-Real-IP \$remote_addr;\n        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto \$scheme;\n        proxy_set_header X-Forwarded-Host \$host;
+        proxy_request_buffering off;
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+    }
+    client_max_body_size 512M;
+    client_body_timeout 300s;
+}";
         }
         $tmp=$this->gatewayConfig.'.tmp';file_put_contents($tmp,implode("\n\n",$blocks)."\n",LOCK_EX);rename($tmp,$this->gatewayConfig);
         try{$this->validateAndReload();}catch(Throwable $e){@unlink($this->gatewayConfig);$this->tryReloadAfterRollback();throw $e;}
@@ -460,6 +467,9 @@ server {
 
     root {{ROOT}};
     index index.php index.html;
+    client_max_body_size 512M;
+    client_body_timeout 300s;
+    send_timeout 300s;
 
     access_log {{HOME}}/logs/nginx/{{NAME}}-access.log tms_access;
     error_log  {{HOME}}/logs/nginx/{{NAME}}-error.log;
@@ -472,6 +482,8 @@ server {
         try_files $uri =404;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        fastcgi_read_timeout 300s;
+        fastcgi_send_timeout 300s;
         fastcgi_pass 127.0.0.1:9000;
     }
 

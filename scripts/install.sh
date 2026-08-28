@@ -317,13 +317,13 @@ find "$STAGING" -type f -name '*.php' -print0 | while IFS= read -r -d '' f; do T
   case "$TMS_COMPAT_ENGINE" in
     php-http)
       echo '[OK] Dùng PHP built-in HTTP server qua loopback (fallback tương thích).'
-      PANEL_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_set_header Host $host; proxy_set_header X-TMS-Root $TARGET/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
-      SITE_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_set_header Host $host; proxy_set_header X-TMS-Root $HOME/websites/default/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
+      PANEL_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_request_buffering off; proxy_read_timeout 300s; proxy_send_timeout 300s; proxy_set_header Host $host; proxy_set_header X-TMS-Root $TARGET/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
+      SITE_HANDLER='location / { proxy_pass http://127.0.0.1:9000; proxy_request_buffering off; proxy_read_timeout 300s; proxy_send_timeout 300s; proxy_set_header Host $host; proxy_set_header X-TMS-Root $HOME/websites/default/public; proxy_set_header X-Real-IP $remote_addr; proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; }'
       ;;
     fastcgi)
       echo '[OK] Dùng PHP FastCGI (FPM/CGI đã qua health probe).'
-      PANEL_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }'
-      SITE_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_pass 127.0.0.1:9000; }'
+      PANEL_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_read_timeout 300s; fastcgi_send_timeout 300s; fastcgi_pass 127.0.0.1:9000; }'
+      SITE_HANDLER='location / { try_files $uri $uri/ /index.php?$query_string; } location ~ \.php$ { try_files $uri =404; include fastcgi_params; fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; fastcgi_read_timeout 300s; fastcgi_send_timeout 300s; fastcgi_pass 127.0.0.1:9000; }'
       ;;
     *) echo '[LỖI] Engine compatibility không hợp lệ; dừng trước khi ghi Nginx.' >&2; exit 30 ;;
   esac
@@ -357,7 +357,9 @@ http {
   tcp_nopush on;
   tcp_nodelay on;
   keepalive_timeout 65;
-  client_max_body_size 500M;
+  client_max_body_size 512M;
+  client_body_timeout 300s;
+  send_timeout 300s;
 	server_tokens off;
 
 	# TMS OS: chỉ cloudflared chạy nội bộ mới được phép chuyển IP khách từ Cloudflare.

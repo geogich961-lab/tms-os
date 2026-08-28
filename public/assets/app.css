@@ -952,7 +952,13 @@ body.sheet-open { overflow: hidden; }
 }
 .breadcrumb-separator { color: var(--muted); }
 
-.explorer-upload { display: flex; align-items: center; gap: 9px; }
+.explorer-upload { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.explorer-upload-status { flex: 1 1 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--muted); font-size: .78rem; }
+.explorer-upload-status-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+.explorer-upload-status-row strong { color: var(--primary); white-space: nowrap; }
+.explorer-upload-status progress { display: block; width: 100%; height: 8px; border: 0; border-radius: 999px; overflow: hidden; accent-color: var(--primary); }
+.explorer-upload-status progress::-webkit-progress-bar { background: var(--border); border-radius: 999px; }
+.explorer-upload-status progress::-webkit-progress-value { background: var(--primary); border-radius: 999px; transition: width .18s ease; }
 .explorer-file-picker {
   display: flex;
   align-items: center;

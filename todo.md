@@ -620,3 +620,9 @@
 - [x] Đóng gói, kiểm thử và phát hành V17.0.20: mô phỏng nâng cấp V17.0.19 → V17.0.20, hồi quy operational_alerts_service_test.php.
 - [ ] Xác minh thực địa V17.0.20 trên Xperia: cài termux-api, bật cảnh báo, thử ngưỡng thấp để nhận Telegram; tunnel rớt phải được Guardian tự khởi động lại.
 - [x] Hạ tầng kỹ thuật: CI chạy toàn bộ test PHP trên ubuntu (workflow php-tests, 2 tầng — lỗi môi trường Termux/Windows chỉ cảnh báo), license MIT, CHANGELOG tự sinh từ RELEASE.json (scripts/generate-changelog.php) và đã điền mục V17.0.17–V17.0.20.
+
+- [x] Fix lỗi không thể upload tệp vào thư mục website mới tạo trong TMS OS, gồm kiểm tra quyền thư mục, kích thước request, timeout và phản hồi lỗi.
+
+- [x] Bổ sung kiểm thử hồi quy cho upload vào thư mục website mới tạo và các trường hợp upload thất bại.
+
+- [x] Cập nhật README GitHub với hướng dẫn preflight Termux, cài đủ pkg bắt buộc và kiểm tra trước khi chạy installer TMS OS.

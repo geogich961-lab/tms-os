@@ -4,13 +4,17 @@ declare(strict_types=1);
 final class FileManagerService
 {
     private array $roots;
+    private string $uploadPartsDir;
     private array $editableExtensions = ['php','html','htm','css','js','json','xml','txt','md','ini','conf','env','sql','log','yml','yaml','sh'];
 
     public function __construct()
     {
         $home=getenv('HOME') ?: '/data/data/com.termux/files/home';
         $this->roots=['websites'=>$home.'/websites','backups'=>$home.'/backups','logs'=>$home.'/logs'];
+        $this->uploadPartsDir=$home.'/.tms-os/upload-parts';
         foreach($this->roots as $root) if(!is_dir($root)) @mkdir($root,0700,true);
+        if(!is_dir($this->uploadPartsDir)) @mkdir($this->uploadPartsDir,0700,true);
+        $this->cleanupUploadParts();
     }
     public function roots(): array { return $this->roots; }
     public function browse(string $rootKey,string $relative=''): array
@@ -25,11 +29,74 @@ final class FileManagerService
     }
     public function upload(string $rootKey,string $relative,array $file): string
     {
-        if(($file['error']??UPLOAD_ERR_NO_FILE)!==UPLOAD_ERR_OK) throw new RuntimeException('Tải tệp thất bại hoặc chưa chọn tệp.');
-        $dir=$this->resolveDirectory($this->basePath($rootKey),$relative); $name=$this->validName((string)($file['name']??'')); $target=$dir.'/'.$name;
+        $error=(int)($file['error']??UPLOAD_ERR_NO_FILE);
+        if($error!==UPLOAD_ERR_OK){
+            $message=match($error){UPLOAD_ERR_INI_SIZE,UPLOAD_ERR_FORM_SIZE=>'Tệp vượt giới hạn upload của PHP.',UPLOAD_ERR_PARTIAL=>'Tệp chỉ được tải lên một phần.',UPLOAD_ERR_NO_FILE=>'Chưa chọn tệp.',default=>'Tải tệp thất bại.'};
+            throw new RuntimeException($message);
+        }
+        $dir=$this->resolveDirectory($this->basePath($rootKey),$relative);
+        if(!is_writable($dir)) throw new RuntimeException('Thư mục đích không có quyền ghi. Hãy mở Quyền tệp và đặt thư mục ở 700 hoặc 755.');
+        $name=$this->validName((string)($file['name']??'')); $target=$dir.'/'.$name;
         if(file_exists($target)) throw new RuntimeException('Tệp đã tồn tại.');
-        $tmp=(string)($file['tmp_name']??''); if(!is_uploaded_file($tmp)||!@move_uploaded_file($tmp,$target)) throw new RuntimeException('Không thể lưu tệp.'); @chmod($target,0600); return $name;
+        $tmp=(string)($file['tmp_name']??'');
+        if(!is_uploaded_file($tmp)||!@move_uploaded_file($tmp,$target)) throw new RuntimeException('Không thể lưu tệp vào thư mục đích.');
+        @chmod($target,0600); return $name;
     }
+    /** Lưu một phần upload nhỏ để tránh request kéo dài qua Cloudflare Tunnel. */
+    public function uploadChunk(string $rootKey,string $relative,array $file,string $uploadId,int $chunkIndex,int $totalChunks,string $name,int $totalSize): array
+    {
+        $this->validateUploadPlan($uploadId,$chunkIndex,$totalChunks,$name,$totalSize);
+        $dir=$this->resolveDirectory($this->basePath($rootKey),$relative);
+        if(!is_writable($dir)) throw new RuntimeException('Thư mục đích không có quyền ghi. Hãy mở Quyền tệp và đặt thư mục ở 700 hoặc 755.');
+        $error=(int)($file['error']??UPLOAD_ERR_NO_FILE);
+        if($error!==UPLOAD_ERR_OK) throw new RuntimeException($error===UPLOAD_ERR_INI_SIZE?'Phần tệp vượt giới hạn PHP. Hãy chạy repair rồi thử lại.':'Không thể nhận phần tệp.');
+        $tmp=(string)($file['tmp_name']??''); if(!is_uploaded_file($tmp)) throw new RuntimeException('Phần tệp upload không hợp lệ.');
+        $size=(int)(@filesize($tmp)?:0); if($size>8*1024*1024) throw new RuntimeException('Mỗi phần upload không được vượt 8 MB.');
+        $work=$this->uploadWorkDir($uploadId); $metaPath=$work.'/meta.json';
+        $meta=['root'=>$rootKey,'relative'=>trim($relative,'/'),'name'=>$this->validName($name),'total_chunks'=>$totalChunks,'total_size'=>$totalSize,'owner'=>$this->uploadOwner()];
+        if(is_file($metaPath)){
+            $old=json_decode((string)@file_get_contents($metaPath),true);
+            if(!is_array($old)||$old!==$meta) throw new RuntimeException('Thông tin upload không khớp. Hãy chọn lại tệp.');
+        } else {
+            $tmpMeta=$metaPath.'.tmp';
+            if(@file_put_contents($tmpMeta,json_encode($meta,JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),LOCK_EX)===false||!@rename($tmpMeta,$metaPath)){ @unlink($tmpMeta); throw new RuntimeException('Không thể tạo phiên upload.'); }
+            @chmod($metaPath,0600);
+        }
+        $part=$work.'/part-'.str_pad((string)$chunkIndex,6,'0',STR_PAD_LEFT);
+        if(is_file($part)){
+            if((int)(@filesize($part)?:-1)!==$size) throw new RuntimeException('Phần upload đã tồn tại nhưng không hợp lệ.');
+        } elseif(!@move_uploaded_file($tmp,$part)) throw new RuntimeException('Không thể lưu phần upload.');
+        @chmod($part,0600);
+        return ['chunk_index'=>$chunkIndex,'received_bytes'=>$this->uploadedBytes($work,$totalChunks),'total_size'=>$totalSize];
+    }
+
+    public function completeUpload(string $uploadId): array
+    {
+        $this->validateUploadId($uploadId); $work=$this->uploadWorkDir($uploadId); $metaPath=$work.'/meta.json';
+        $meta=json_decode((string)@file_get_contents($metaPath),true);
+        if(!is_array($meta)||($meta['owner']??'')!==$this->uploadOwner()) throw new RuntimeException('Phiên upload không hợp lệ hoặc đã hết hạn.');
+        $totalChunks=(int)($meta['total_chunks']??0); $totalSize=(int)($meta['total_size']??-1);
+        $destination=$this->resolveDirectory($this->basePath((string)$meta['root']),(string)$meta['relative']);
+        if(!is_writable($destination)) throw new RuntimeException('Thư mục đích không có quyền ghi.');
+        $name=$this->validName((string)($meta['name']??'')); $target=$destination.'/'.$name;
+        if(file_exists($target)) throw new RuntimeException('Tệp đã tồn tại.');
+        $temp=$destination.'/.'.bin2hex(random_bytes(8)).'.tms-upload'; $out=@fopen($temp,'wb');
+        if($out===false) throw new RuntimeException('Không thể tạo tệp đích tạm thời.');
+        $bytes=0;
+        try{
+            for($i=0;$i<$totalChunks;$i++){
+                $part=$work.'/part-'.str_pad((string)$i,6,'0',STR_PAD_LEFT); if(!is_file($part)) throw new RuntimeException('Upload chưa đủ phần, vui lòng thử lại.');
+                $in=@fopen($part,'rb'); if($in===false||stream_copy_to_stream($in,$out)===false){if(is_resource($in))fclose($in);throw new RuntimeException('Không thể ghép tệp upload.');}
+                $bytes+=(int)(@filesize($part)?:0); fclose($in);
+            }
+            fflush($out); fclose($out); $out=null;
+            if($bytes!==$totalSize){@unlink($temp);throw new RuntimeException('Kích thước tệp sau khi ghép không khớp.');}
+            if(!@rename($temp,$target)){@unlink($temp);throw new RuntimeException('Không thể đưa tệp vào thư mục website.');}
+            @chmod($target,0600); $this->removeRecursive($work);
+            return ['name'=>$name,'size'=>$bytes];
+        } catch(Throwable $e){ if(is_resource($out))fclose($out); @unlink($temp); throw $e; }
+    }
+
     public function create(string $rootKey,string $relative,string $name,bool $directory): void
     {
         $dir=$this->resolveDirectory($this->basePath($rootKey),$relative); $name=$this->validName($name); $target=$dir.'/'.$name;
@@ -156,6 +223,34 @@ final class FileManagerService
         return basename($target);
     }
 
+    private function validateUploadId(string $uploadId): void
+    {
+        if(!preg_match('/^[a-zA-Z0-9_-]{16,80}$/',$uploadId)) throw new RuntimeException('Mã phiên upload không hợp lệ.');
+    }
+    private function validateUploadPlan(string $uploadId,int $chunkIndex,int $totalChunks,string $name,int $totalSize): void
+    {
+        $this->validateUploadId($uploadId); $this->validName($name);
+        if($totalChunks<1||$totalChunks>4096||$chunkIndex<0||$chunkIndex>=$totalChunks) throw new RuntimeException('Số phần upload không hợp lệ.');
+        if($totalSize<0||$totalSize>4*1024*1024*1024) throw new RuntimeException('Kích thước tệp không hợp lệ.');
+    }
+    private function uploadWorkDir(string $uploadId): string
+    {
+        $this->validateUploadId($uploadId); $dir=$this->uploadPartsDir.'/'.$uploadId;
+        if(!is_dir($dir)&&!@mkdir($dir,0700,true)) throw new RuntimeException('Không thể tạo vùng tạm upload.');
+        return $dir;
+    }
+    private function uploadOwner(): string { return hash('sha256',(string)session_id()); }
+    private function uploadedBytes(string $work,int $totalChunks): int
+    {
+        $bytes=0; for($i=0;$i<$totalChunks;$i++){ $part=$work.'/part-'.str_pad((string)$i,6,'0',STR_PAD_LEFT); if(is_file($part))$bytes+=(int)(@filesize($part)?:0); } return $bytes;
+    }
+    private function cleanupUploadParts(): void
+    {
+        foreach(@scandir($this->uploadPartsDir)?:[] as $id){
+            if($id==='.'||$id==='..')continue; $dir=$this->uploadPartsDir.'/'.$id;
+            if(is_dir($dir)&&(@filemtime($dir)?:time())<time()-86400){ try{$this->removeRecursive($dir);}catch(Throwable $e){} }
+        }
+    }
     private function uniqueName(string $dir,string $name): string
     {
         $ext=pathinfo($name,PATHINFO_EXTENSION); $base=$ext!==''?substr($name,0,-strlen($ext)-1):$name;

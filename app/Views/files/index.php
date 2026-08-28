@@ -51,7 +51,7 @@ $path = (string)$listing['relative'];
                 <?php endforeach; ?>
             </div>
 
-            <form method="post" action="/files/upload" enctype="multipart/form-data" class="explorer-upload" id="explorer-upload-form">
+            <form method="post" action="/files/upload" enctype="multipart/form-data" class="explorer-upload" id="explorer-upload-form" data-chunked-upload>
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
                 <input type="hidden" name="path" value="<?= tms_h($path) ?>">
@@ -60,7 +60,11 @@ $path = (string)$listing['relative'];
                     <span class="picker-icon">＋</span>
                     <span class="picker-text" data-file-picker-text>Chọn tệp để tải lên</span>
                 </label>
-                <button class="btn btn-primary" type="submit">Tải lên</button>
+                <button class="btn btn-primary" type="submit" data-upload-submit>Tải lên</button>
+                <div class="explorer-upload-status" data-upload-status hidden aria-live="polite">
+                    <div class="explorer-upload-status-row"><span data-upload-message>Đang chuẩn bị upload...</span><strong data-upload-percent>0%</strong></div>
+                    <progress data-upload-progress value="0" max="100"></progress>
+                </div>
             </form>
         </div>
 
