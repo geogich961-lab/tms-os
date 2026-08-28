@@ -599,4 +599,4 @@
 - [x] Thêm mục mật khẩu nâng cấp trong Update Center: lưu hash một chiều, xác nhận khi thay đổi, không hiển thị lại giá trị, giới hạn thử sai và hết hạn phiên xác nhận Telegram trước khi áp dụng update.
 - [x] Tách riêng tệp mật khẩu nâng cấp và phiên Telegram, ghi nguyên tử quyền 0600; xác thực nonce, hết hạn 5 phút, tối đa 3 lần sai và chống phát lại trước khi gọi hàng đợi GitHub sẵn có.
 - [x] Mở rộng webhook Telegram nhận callback_query, xác thực secret/chat/user nhất quán, trả xác nhận callback và duy trì tương thích `/status`, `/help`.
-- [ ] Bổ sung hồi quy cho `/checkupdate`, nút Cập nhật/Bỏ qua, phiên mật khẩu đúng/sai/hết hạn/phát lại, CSRF Update Center và kiểm tra payload phát hành trước khi đóng gói.
+- [x] Bổ sung hồi quy cho `/checkupdate`, nút Cập nhật/Bỏ qua, phiên mật khẩu đúng/sai/hết hạn/phát lại, CSRF Update Center và kiểm tra payload phát hành trước khi đóng gói.
