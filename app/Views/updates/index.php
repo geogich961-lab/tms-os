@@ -17,10 +17,11 @@
 </div>
 <p class="muted" id="check-result"></p></section>
 
-<section class="panel-card" id="online-update-card"><h2>Cập nhật nhanh</h2>
-<p>TMS OS sẽ tải bản mới nhất từ kho chính thức, kiểm tra checksum SHA-256, sao lưu source hiện tại, rồi áp dụng. Nếu panel không hoạt động sau khi áp dụng, hệ thống tự động khôi phục bản trước.</p>
-<form id="github-update-form" method="post" action="/updates/apply"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật ngay</button></form>
-<p class="muted">Hoặc qua lệnh (từ thiết bị khác trên mạng LAN): <code>curl -sS -X POST http://127.0.0.1:8888/api/updates/run -d "token=TOKEN_CỦA_BẠN"</code></p></section>
+<section class="panel-card" id="online-update-card" hidden aria-live="polite">
+	<p class="eyebrow">NEW RELEASE</p><h2>Bản cập nhật sẵn sàng</h2>
+	<p id="online-update-summary"></p>
+	<form id="github-update-form" method="post" action="/updates/apply"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?><button type="button" class="btn btn-primary" id="apply-github-btn">Cập nhật nhanh</button></form>
+	<p class="muted">TMS OS sẽ tải gói chính thức, kiểm tra checksum SHA-256, sao lưu source rồi áp dụng an toàn.</p></section>
 
 <section class="panel-card"><h2>Tải gói cập nhật thủ công</h2><form method="post" action="/updates/stage" enctype="multipart/form-data" class="update-manual-form"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><div style="margin-bottom: 8px;"><input type="file" name="package" accept=".zip,application/zip" required></div><button class="btn btn-primary">Kiểm tra và lưu</button></form>
 <p class="muted">Tải file ZIP gói cập nhật (TMS_OS_V*.zip) rồi dùng nút "Áp dụng" bên dưới. Cách này an toàn vì không ghi đè lõi đang chạy từ trình duyệt.</p></section>
@@ -63,17 +64,37 @@ function parseUpdateJson(response) {
   });
 }
 
+function setOnlineUpdateVisibility(visible) {
+	  var card = document.getElementById('online-update-card');
+	  if (card) card.hidden = !visible;
+}
+
+function showAvailableUpdate(available) {
+	  var summary = document.getElementById('online-update-summary');
+	  if (summary) {
+	    var notes = (available.notes || '').split('\n').filter(function(line) {
+	      return line.trim().startsWith('-');
+	    }).slice(0, 6).join('<br>');
+	    summary.innerHTML = 'Có bản mới <strong>' + available.version + '</strong> (từ ' + available.tag + ').' + (notes ? '<br>' + notes : '');
+	  }
+	  setOnlineUpdateVisibility(true);
+}
+
 document.getElementById('check-update-btn')?.addEventListener('click',function(){
-  var btn=this;btn.disabled=true;btn.textContent='Đang kiểm tra…';
-  var out=document.getElementById('check-result');out.textContent='Đang kết nối GitHub…';
-  fetch('/api/updates/check',{credentials:'same-origin'}).then(parseUpdateJson).then(function(d){
-    btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
-    if(d.error){out.textContent='Lỗi: '+d.error;return;}
-    if(d.available){
-      var notes=(d.available.notes||'').split('\n').filter(function(l){return l.trim().startsWith('-');}).slice(0,6).join('<br>');
-      out.innerHTML='Có bản mới <strong>'+d.available.version+'</strong> (từ '+d.available.tag+').<br>'+notes+'<br><p class="muted small" style="margin-top:8px">Vui lòng sử dụng mục "Cập nhật nhanh" bên dưới để áp dụng.</p>';
-    }else{out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';}
-  }).catch(function(error){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent=(error && error.message) ? error.message : 'Không thể kiểm tra — hãy thử lại.';});
+	  var btn=this;btn.disabled=true;btn.textContent='Đang kiểm tra…';
+	  var out=document.getElementById('check-result');out.textContent='Đang kết nối GitHub…';
+	  setOnlineUpdateVisibility(false);
+	  fetch('/api/updates/check',{credentials:'same-origin'}).then(parseUpdateJson).then(function(d){
+	    btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
+	    if(d.error){out.textContent='Lỗi: '+d.error;return;}
+	    if(d.available){
+	      out.textContent='Đã tìm thấy bản cập nhật mới. Bạn có thể áp dụng ở phần bên dưới.';
+	      showAvailableUpdate(d.available);
+	    }else{
+	      out.textContent='Bạn đang dùng phiên bản mới nhất ('+d.current+').';
+	      setOnlineUpdateVisibility(false);
+	    }
+	  }).catch(function(error){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent=(error && error.message) ? error.message : 'Không thể kiểm tra — hãy thử lại.';});
 });
 
 document.getElementById('select-all-packages')?.addEventListener('change', function() {

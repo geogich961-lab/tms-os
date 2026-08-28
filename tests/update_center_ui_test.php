@@ -10,6 +10,12 @@ $worker = (string) file_get_contents($root . '/scripts/tms-update-worker.php');
 $login = (string) file_get_contents($root . '/app/Views/auth/login.php');
 
 $required = [
+	' id="online-update-card" hidden',
+	'function setOnlineUpdateVisibility(visible)',
+	'function showAvailableUpdate(available)',
+	'setOnlineUpdateVisibility(false);',
+	'showAvailableUpdate(d.available);',
+	'Đã tìm thấy bản cập nhật mới. Bạn có thể áp dụng ở phần bên dưới.',
     "verifyAppliedVersion(0)",
     "cache:'no-store'",
     "Đang xác minh phiên bản",
@@ -26,6 +32,14 @@ foreach ($required as $needle) {
         fwrite(STDERR, "Missing Update Center verification guard: {$needle}\n");
         exit(1);
     }
+}
+
+$quickCardPos = strpos($view, 'id="online-update-card" hidden');
+$checkHandlerPos = strpos($view, "document.getElementById('check-update-btn')");
+$availableRevealPos = strpos($view, 'showAvailableUpdate(d.available);');
+if ($quickCardPos === false || $checkHandlerPos === false || $availableRevealPos === false || $availableRevealPos < $checkHandlerPos) {
+    fwrite(STDERR, "Quick update must remain hidden until a successful update check reports a new release.\n");
+    exit(1);
 }
 
 $oldFalsePositive = "// Nếu bị lỗi kết nối (thường do PHP bị kill ngay lập tức), vẫn đợi rồi reload";
