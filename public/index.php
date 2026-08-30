@@ -14,8 +14,9 @@ header('Permissions-Policy: camera=(), microphone=(), geolocation=()');
 $basePath = dirname(__DIR__);
 require $basePath . '/app/Core/helpers.php';
 require $basePath . '/app/Core/Router.php';
+require $basePath . '/app/Core/CommandRunner.php';
 
-foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'CronJobService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService', 'SqlQueryService'] as $class) {
+foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'AutoBackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'CronJobService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService', 'SqlQueryService'] as $class) {
     require $basePath . '/app/Services/' . $class . '.php';
 }
 
