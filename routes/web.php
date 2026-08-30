@@ -59,6 +59,7 @@ $router->get('/notifications',fn()=>$notificationController->index());
 $router->get('/api/notifications/status',fn()=>$notificationController->status());
 $router->get('/updates',fn()=>$updateController->index());
 $router->get('/api/updates/check',fn()=>$updateController->check());
+$router->get('/api/updates/diagnose',fn()=>$updateController->diagnose());
 $router->get('/api/updates/job-status',fn()=>$updateController->jobStatus());
 $router->get('/api/updates/status',fn()=>$updateController->apiStatus());
 $router->post('/updates/stage',fn()=>$updateController->stage());

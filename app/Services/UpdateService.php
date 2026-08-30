@@ -23,13 +23,14 @@ final class UpdateService
     private string $telegramChallengeLock;
     private ?Closure $releaseLookup;
     private ?Closure $githubEnqueuer;
+    private ?Closure $httpClient;
     private const JOB_TIMEOUT_SECONDS = 900;
     private const UPDATE_PASSWORD_MIN_LENGTH = 8;
     private const TELEGRAM_CHALLENGE_TTL_SECONDS = 300;
     private const TELEGRAM_CHALLENGE_MAX_ATTEMPTS = 3;
     private const TELEGRAM_CHALLENGE_LOCK_STALE_SECONDS = 600;
 
-    public function __construct(?callable $releaseLookup = null, ?callable $githubEnqueuer = null)
+    public function __construct(?callable $releaseLookup = null, ?callable $githubEnqueuer = null, ?callable $httpClient = null)
     {
         $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
         $this->dir = $this->home . '/.tms-os/updates';
@@ -45,6 +46,7 @@ final class UpdateService
         $this->telegramChallengeLock = $this->home . '/.tms-os/telegram-update-challenge.lock';
         $this->releaseLookup = $releaseLookup !== null ? Closure::fromCallable($releaseLookup) : null;
         $this->githubEnqueuer = $githubEnqueuer !== null ? Closure::fromCallable($githubEnqueuer) : null;
+        $this->httpClient = $httpClient !== null ? Closure::fromCallable($httpClient) : null;
         @mkdir($this->dir, 0700, true);
         @mkdir($this->home . '/.tms-os', 0700, true);
         @mkdir($this->home . '/logs/services', 0700, true);
@@ -248,22 +250,19 @@ final class UpdateService
     /** Lấy thông tin release mới nhất từ GitHub API (release v14.0.4+ đều có TMS_OS_LATEST.zip). */
     public function latestRelease(): array
     {
-        $endpoints = [
-            'https://api.github.com/repos/geogich961-lab/tms-os/releases/latest',
-            'https://www.github.com/api/v3/repos/geogich961-lab/tms-os/releases/latest',
-        ];
+        $apiUrl = 'https://api.github.com/repos/geogich961-lab/tms-os/releases/latest';
+        $metadataUrl = 'https://github.com/geogich961-lab/tms-os/releases/latest/download/RELEASE.json';
         $data = null;
-        foreach ($endpoints as $url) {
-            $result = $this->httpGet($url, 20, 'TMS-OS-Updater/1.4');
-            if ($result === '') { continue; }
-            $parsed = json_decode($result, true);
-            if (is_array($parsed) && !empty($parsed['tag_name'])) { $data = $parsed; break; }
+        $apiResult = $this->httpGetDetailed($apiUrl, 20, 'TMS-OS-Updater/1.4');
+        $parsed = json_decode($apiResult['body'], true);
+        if (is_array($parsed) && !empty($parsed['tag_name'])) {
+            $data = $parsed;
         }
         if ($data === null) {
             // Một số mạng/PHP trên Android 7 không truy cập được api.github.com,
             // nhưng vẫn truy cập được asset redirect của GitHub Releases.
-            $metadataUrl = 'https://github.com/geogich961-lab/tms-os/releases/latest/download/RELEASE.json';
-            $metadata = json_decode($this->httpGet($metadataUrl, 20, 'TMS-OS-Updater/1.4'), true);
+            $metadataResult = $this->httpGetDetailed($metadataUrl, 20, 'TMS-OS-Updater/1.4');
+            $metadata = json_decode($metadataResult['body'], true);
             if (is_array($metadata) && !empty($metadata['version'])) {
                 $version = ltrim((string)$metadata['version'], 'vV');
                 $tag = (string)($metadata['tag'] ?? ('v' . $version));
@@ -279,7 +278,15 @@ final class UpdateService
             }
         }
         if ($data === null) {
-            throw new RuntimeException('Không thể kết nối GitHub — kiểm tra thiết bị đã có mạng và thử lại sau vài giây.');
+            $errors = [
+                'api.github.com' => $apiResult['error'] !== '' ? $apiResult['error'] : 'phản hồi không hợp lệ',
+                'github.com (metadata)' => isset($metadataResult) && $metadataResult['error'] !== '' ? $metadataResult['error'] : 'phản hồi không hợp lệ',
+            ];
+            $detail = '';
+            foreach ($errors as $endpoint => $error) {
+                $detail .= ($detail === '' ? '' : '; ') . $endpoint . ': ' . $error;
+            }
+            throw new RuntimeException('Không thể kết nối GitHub (' . $detail . ') — kiểm tra thiết bị đã có mạng và thử lại sau vài giây.');
         }
         $zipUrl = '';
         $zipName = '';
@@ -315,12 +322,14 @@ final class UpdateService
             $zipUrl = $release['zip_url'];
         }
         $tmp = $this->dir . '/.download-' . bin2hex(random_bytes(8));
-        $content = $this->httpGet($zipUrl, 90, 'TMS-OS-Updater/1.4');
+        $download = $this->httpGetDetailed($zipUrl, 90, 'TMS-OS-Updater/1.4');
+        $content = $download['body'];
         $bytes = $content === '' ? false : @file_put_contents($tmp, $content);
         unset($content);
         if ($bytes === false || $bytes < 1000) {
             @unlink($tmp);
-            throw new RuntimeException('Tải gói cập nhật thất bại (kết nối GitHub) — kiểm tra mạng và thử lại.');
+            $reason = $download['error'] !== '' ? ' (' . $download['error'] . ')' : '';
+            throw new RuntimeException('Tải gói cập nhật thất bại' . $reason . ' — kiểm tra mạng và thử lại.');
         }
         $this->validateZip($tmp);
 
@@ -1014,11 +1023,33 @@ final class UpdateService
     /** GET HTTP có retry, ưu tiên cURL và giữ fallback stream cho PHP Termux tối giản. */
     private function httpGet(string $url, int $timeout, string $ua): string
     {
+        return $this->httpGetDetailed($url, $timeout, $ua)['body'];
+    }
+
+    /** Như httpGet nhưng trả kèm nguyên nhân lỗi cuối cùng để chẩn đoán kết nối. */
+    private function httpGetDetailed(string $url, int $timeout, string $ua): array
+    {
+        $lastError = '';
         for ($attempt = 1; $attempt <= 3; $attempt++) {
+            if ($this->httpClient !== null) {
+                $result = ($this->httpClient)($url, $timeout, $ua);
+                if (is_array($result)) {
+                    if (($result['body'] ?? '') !== '') {
+                        return ['body' => (string)$result['body'], 'error' => ''];
+                    }
+                    $lastError = (string)($result['error'] ?? '');
+                } elseif (is_string($result) && $result !== '') {
+                    return ['body' => $result, 'error' => ''];
+                }
+                if ($attempt < 3) {
+                    usleep(1000000 * $attempt);
+                }
+                continue;
+            }
             if (function_exists('curl_init')) {
                 $ch = curl_init($url);
                 if ($ch !== false) {
-                    curl_setopt_array($ch, [
+                    $options = [
                         CURLOPT_RETURNTRANSFER => true,
                         CURLOPT_FOLLOWLOCATION => true,
                         CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
@@ -1027,13 +1058,22 @@ final class UpdateService
                         CURLOPT_HTTPHEADER => ['Accept: */*'],
                         CURLOPT_SSL_VERIFYPEER => true,
                         CURLOPT_SSL_VERIFYHOST => 2,
-                    ]);
+                        // Trên nhiều máy Android, DNS trả về IPv6 không thể định tuyến
+                        // và curl treo chờ kết nối; ép IPv4 giúp api.github.com phản hồi.
+                        CURLOPT_NOSIGNAL => true,
+                    ];
+                    if (defined('CURLOPT_IPRESOLVE') && defined('CURL_IPRESOLVE_V4')) {
+                        $options[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;
+                    }
+                    curl_setopt_array($ch, $options);
                     $content = curl_exec($ch);
                     $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+                    $curlError = (string) curl_error($ch);
                     curl_close($ch);
                     if (is_string($content) && $content !== '' && $status >= 200 && $status < 400) {
-                        return $content;
+                        return ['body' => $content, 'error' => ''];
                     }
+                    $lastError = $curlError !== '' ? $curlError : 'HTTP ' . ($status > 0 ? $status : 'không phản hồi');
                 }
             }
 
@@ -1053,13 +1093,45 @@ final class UpdateService
             ]);
             $content = @file_get_contents($url, false, $ctx);
             if ($content !== false && $content !== '') {
-                return $content;
+                return ['body' => $content, 'error' => ''];
+            }
+            if ($lastError === '') {
+                $warning = error_get_last()['message'] ?? '';
+                $lastError = $warning !== '' ? preg_replace('/^file_get_contents\([^)]*\):\s*/', '', $warning) : 'Không có phản hồi.';
             }
             if ($attempt < 3) {
                 usleep(1000000 * $attempt);
             }
         }
-        return '';
+        return ['body' => '', 'error' => mb_substr($lastError, 0, 160)];
+    }
+
+    /** Dò từng endpoint GitHub để panel hiển thị đúng bước kết nối bị kẹt. */
+    public function networkDiagnostics(): array
+    {
+        $endpoints = [
+            'api.github.com (API release)' => 'https://api.github.com/repos/geogich961-lab/tms-os/releases/latest',
+            'github.com (metadata RELEASE.json)' => 'https://github.com/geogich961-lab/tms-os/releases/latest/download/RELEASE.json',
+        ];
+        $results = [];
+        foreach ($endpoints as $label => $url) {
+            $result = $this->httpGetDetailed($url, 10, 'TMS-OS-Updater/1.4');
+            $ok = $result['body'] !== '';
+            if ($ok) {
+                $decoded = json_decode($result['body'], true);
+                $ok = is_array($decoded) && (!empty($decoded['tag_name']) || !empty($decoded['version']));
+            }
+            $results[] = [
+                'endpoint' => $label,
+                'ok' => $ok,
+                'error' => $result['error'],
+            ];
+        }
+        return [
+            'curl' => function_exists('curl_init'),
+            'json' => function_exists('json_decode'),
+            'endpoints' => $results,
+        ];
     }
 
     private function normalizeVersion(string $v): string

@@ -16,6 +16,8 @@
     <?php endif;?>
 </div>
 	<p class="muted" id="check-result" role="status"></p>
+	<p class="muted" id="diagnose-result" role="status" hidden></p>
+	<button type="button" class="btn btn-secondary update-secondary-action" id="diagnose-btn" hidden>Chẩn đoán kết nối GitHub</button>
 		<div class="update-available-action" id="online-update-action" hidden aria-live="polite">
 			<strong>Bản cập nhật sẵn sàng</strong>
 			<p id="online-update-summary" class="muted"></p>
@@ -99,10 +101,14 @@ function showAvailableUpdate(available) {
 document.getElementById('check-update-btn')?.addEventListener('click',function(){
 	  var btn=this;btn.disabled=true;btn.textContent='Đang kiểm tra…';
 	  var out=document.getElementById('check-result');out.textContent='Đang kết nối GitHub…';
+	  var diagOut=document.getElementById('diagnose-result'),diagBtn=document.getElementById('diagnose-btn');
+	  if(diagOut){diagOut.hidden=true;diagOut.textContent='';}
+	  if(diagBtn){diagBtn.hidden=true;}
 	  setOnlineUpdateVisibility(false);
 	  fetch('/api/updates/check',{credentials:'same-origin'}).then(parseUpdateJson).then(function(d){
 	    btn.disabled=false;btn.textContent='Kiểm tra cập nhật';
-	    if(d.error){out.textContent='Lỗi: '+d.error;return;}
+	    if(d.error){out.textContent='Lỗi: '+d.error;if(diagBtn){diagBtn.hidden=false;}return;}
+	    if(diagBtn){diagBtn.hidden=true;}
 	    if(d.available){
 	      out.textContent='Đã tìm thấy bản cập nhật mới.';
 	      showAvailableUpdate(d.available);
@@ -111,6 +117,22 @@ document.getElementById('check-update-btn')?.addEventListener('click',function()
 	      setOnlineUpdateVisibility(false);
 	    }
 	  }).catch(function(error){btn.disabled=false;btn.textContent='Kiểm tra cập nhật';out.textContent=(error && error.message) ? error.message : 'Không thể kiểm tra — hãy thử lại.';});
+});
+
+document.getElementById('diagnose-btn')?.addEventListener('click',function(){
+	  var btn=this;btn.disabled=true;btn.textContent='Đang chẩn đoán…';
+	  var out=document.getElementById('diagnose-result');out.hidden=false;out.textContent='Đang dò từng endpoint GitHub…';
+	  fetch('/api/updates/diagnose',{credentials:'same-origin',cache:'no-store'}).then(parseUpdateJson).then(function(d){
+	    btn.disabled=false;btn.textContent='Chẩn đoán kết nối GitHub';
+	    var diag=d&&d.diagnostics;var lines=[];
+	    lines.push('cURL: '+(diag&&diag.curl?'có':'không có')+' · JSON: '+(diag&&diag.json?'có':'không có'));
+	    (diag&&diag.endpoints||[]).forEach(function(ep){
+	      lines.push((ep.ok?'✓ ':'✗ ')+ep.endpoint+(ep.ok?'':' — '+(ep.error||'không phản hồi')));
+	    });
+	    var failed=((diag&&diag.endpoints)||[]).some(function(ep){return !ep.ok;});
+	    out.textContent=lines.join('\n')+ (failed ? '\n→ Thiết bị này không truy cập được một số endpoint GitHub. Dùng bản ZIP thủ công hoặc thử lại khi mạng ổn định (Wi-Fi/4G khác).' : '\n→ Tất cả endpoint GitHub đều phản hồi. Hãy bấm Kiểm tra cập nhật lại.');
+	    out.style.whiteSpace='pre-line';
+	  }).catch(function(error){btn.disabled=false;btn.textContent='Chẩn đoán kết nối GitHub';out.textContent=(error && error.message) ? error.message : 'Không thể chẩn đoán — hãy thử lại.';});
 });
 
 document.getElementById('select-all-packages')?.addEventListener('change', function() {

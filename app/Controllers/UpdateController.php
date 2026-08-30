@@ -66,6 +66,16 @@ final class UpdateController
         echo json_encode($result, JSON_UNESCAPED_UNICODE);
     }
 
+    /** API dò từng endpoint GitHub; giúp xác định chính xác bước kết nối bị kẹt. */
+    public function diagnose(): void
+    {
+        if (!$this->apiGuard()) {
+            return;
+        }
+        header('Content-Type: application/json; charset=UTF-8');
+        echo json_encode(['ok' => true, 'diagnostics' => $this->updates->networkDiagnostics()], JSON_UNESCAPED_UNICODE);
+    }
+
     /** API polling cho job Cập nhật nhanh; không trả token hay đường dẫn nội bộ. */
     public function jobStatus(): void
     {
