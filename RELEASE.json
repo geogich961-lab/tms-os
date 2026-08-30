@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.19",
-  "build": "20260830-v17.0.19",
+  "internal_version": "17.0.20",
+  "build": "20260830-v17.0.20",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-30",
-  "name": "TMS OS V17.0.19",
-  "version": "17.0.19",
-  "notes": "V17.0.19: Backup tự động hằng ngày qua cron + đẩy offsite lên cloud bằng rclone + khôi phục một chạm trong Backup Center; tự dọn bản cũ theo retention và thông báo Telegram.",
+  "name": "TMS OS V17.0.20",
+  "version": "17.0.20",
+  "notes": "V17.0.20: cảnh báo vận hành qua Telegram theo ngưỡng (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) kiểm tra mỗi 15 phút; Guardian tự heal Cloudflare Tunnel và crond; cấu hình trong trang Thông báo.",
   "features": [
-    "Backup tự động hằng ngày theo giờ cấu hình qua cron engine sẵn có, bản backup xuất hiện ngay trong Backup Center.",
-    "Đẩy offsite lên Google Drive/S3/Any S3 bằng rclone (pkg install rclone; remote cấu hình bằng rclone config).",
-    "Tự dọn theo retention (1–90 bản), chỉ xoá đúng các bản tự động, không đụng snapshot đã khoá.",
-    "Khôi phục một chạm: dùng đúng luồng Backup Center hiện hữu, tự tạo snapshot an toàn trước khi restore.",
-    "Tuỳ chọn thông báo kết quả (thành công/lỗi) qua Telegram; kèm bản sửa bảo mật V17.0.18."
+    "Cảnh báo Telegram theo ngưỡng: bộ nhớ trống thấp, RAM cạn, pin sạc 100% quá lâu (nguy cơ phồng pin), nhiệt độ pin cao và Cloudflare Tunnel rớt.",
+    "Kiểm tra mỗi 15 phút qua cron job tms-alerts-check; mỗi loại cảnh báo chỉ nhắc lại sau cooldown cấu hình được.",
+    "Cấu hình ngưỡng và chạy thử ngay trong trang Thông báo; đo pin/nhiệt độ cần termux-api.",
+    "Guardian tự khởi động lại cloudflared khi tunnel rớt và crond khi có cron job bật (tuỳ chọn trong cấu hình Guardian).",
+    "Kèm bảo mật V17.0.18 và backup tự động + offsite rclone V17.0.19."
   ],
-  "checksum_sha256": "4f923aa4ac748a469a1fddcdd69cf0aae7f2b6f9868b16eb3abcdd545fbd77a0",
+  "checksum_sha256": "013c65a9c6985125094d10c4048ed204eeb69f16b5bc239305b422ee27f212c5",
   "build_date": "2026-08-30",
-  "version_display": "TMS OS V17.0.19",
-  "changelog": "V17.0.19: bảo mật — khoá đăng nhập sau chuỗi sai, default-deny auth middleware, CommandRunner.",
+  "version_display": "TMS OS V17.0.20",
+  "changelog": "V17.0.20: bảo mật — khoá đăng nhập sau chuỗi sai, default-deny auth middleware, CommandRunner.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-30"
 }

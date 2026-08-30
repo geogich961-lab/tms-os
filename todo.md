@@ -616,3 +616,6 @@
 - [x] Backup tự động V17.0.19: AutoBackupService tạo backup qua BackupService (hiện trong Backup Center, khôi phục một chạm), lịch hằng ngày qua cron engine, retention 1-90 bản chỉ dọn bản [auto], offsite rclone, thông báo Telegram tuỳ chọn, CLI scripts/tms-auto-backup.php.
 - [x] Đóng gói, kiểm thử và phát hành V17.0.19: mô phỏng nâng cấp V17.0.18 → V17.0.19, hồi quy auto_backup_service_test.php.
 - [ ] Xác minh thực địa V17.0.19 trên Xperia: bật backup tự động, chạy thử ngay, kiểm tra cron job tms-auto-backup xuất hiện và (nếu có rclone) đẩy offsite thành công.
+- [x] Cảnh báo vận hành V17.0.20: OperationalAlertsService kiểm tra mỗi 15 phút (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) với cooldown từng loại, gửi qua Telegram, cấu hình trong trang Thông báo; Guardian thêm auto-heal cloudflared (dò /proc) và crond với cấu hình CHECK_TUNNEL/CHECK_CRON.
+- [x] Đóng gói, kiểm thử và phát hành V17.0.20: mô phỏng nâng cấp V17.0.19 → V17.0.20, hồi quy operational_alerts_service_test.php.
+- [ ] Xác minh thực địa V17.0.20 trên Xperia: cài termux-api, bật cảnh báo, thử ngưỡng thấp để nhận Telegram; tunnel rớt phải được Guardian tự khởi động lại.
