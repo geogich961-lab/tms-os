@@ -17,6 +17,8 @@ AUTO_REPAIR=1
 CHECK_PANEL=1
 CHECK_WEBSITE=1
 CHECK_DATABASE=1
+CHECK_TUNNEL=1
+CHECK_CRON=1
 MAX_REPAIRS_PER_HOUR=6
 CFG
 # shellcheck disable=SC1090
@@ -49,6 +51,34 @@ repair_php(){
   fi
   event error php repair "Phục hồi chưa thành công; panel=$p website=$w." 0; return 1
 }
+# pgrep không chắc có trên Termux: dò trực tiếp /proc cho cloudflared.
+cloudflared_running(){
+  local pid cmdline
+  pid="$(cat "$STATE/cloudflare-hosting/tunnel.pid" 2>/dev/null || true)"
+  if [ -n "$pid" ] && [ -d "/proc/$pid" ]; then
+    cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+    case "$cmdline" in *cloudflared*) return 0 ;; esac
+  fi
+  for d in /proc/[0-9]*; do
+    cmdline="$(tr '\0' ' ' < "$d/cmdline" 2>/dev/null || true)"
+    case "$cmdline" in *cloudflared*connector*|*cloudflared*tunnel*) return 0 ;; esac
+  done
+  return 1
+}
+repair_tunnel(){
+  repair_allowed || { event warn tunnel repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
+  event warn tunnel repair 'Cloudflare Tunnel đã cấu hình nhưng cloudflared không chạy, tự khởi động lại.' 1
+  bash "$ROOT/scripts/tms-cloudflare-tunnel.sh" start >>"$LOGDIR/guardian.log" 2>&1 || true
+  sleep 2
+  if cloudflared_running; then event info tunnel recovered 'Cloudflare Tunnel đã chạy lại.' 1; return 0; fi
+  event error tunnel repair 'Khởi động lại Tunnel chưa thành công (có thể do mạng/DNS).' 0; return 1
+}
+repair_crond(){
+  repair_allowed || return 1
+  event warn cron repair 'crond không chạy dù có cron job bật, tự khởi động lại.' 1
+  bash "$ROOT/scripts/tms-cron-engine.sh" start >>"$LOGDIR/guardian.log" 2>&1 || true
+  return 0
+}
 check_once(){
   local panel website
   if ! bash "$ROOT/scripts/tms-service-core.sh" nginx status >/dev/null 2>&1; then
@@ -75,6 +105,12 @@ check_once(){
   local disk
   disk=$(df -P "$HOME" 2>/dev/null | awk 'NR==2{gsub(/%/,"",$5);print $5}')
   [ -n "$disk" ] && [ "$disk" -ge 90 ] && event warn storage threshold "Dung lượng đã dùng ${disk}%." 0 || true
+  if [ "${CHECK_TUNNEL:-1}" = 1 ] && [ -f "$STATE/cloudflare-hosting/config.json" ] && ! cloudflared_running; then
+    [ "$AUTO_REPAIR" = 1 ] && repair_tunnel || event warn tunnel down 'Cloudflare Tunnel không chạy (auto repair tắt).' 0
+  fi
+  if [ "${CHECK_CRON:-1}" = 1 ] && [ -s "$STATE/cron-jobs.json" ] && ! bash "$ROOT/scripts/tms-cron-engine.sh" status >/dev/null 2>&1; then
+    [ "$AUTO_REPAIR" = 1 ] && repair_crond || event warn cron down 'crond không chạy (auto repair tắt).' 0
+  fi
   printf '{"updated_at":"%s","panel":"%s","website":"%s","nginx":%s,"php":%s,"mariadb":%s}\n' \
     "$(date -Iseconds)" "$panel" "$website" \
     "$(bash "$ROOT/scripts/tms-service-core.sh" nginx status >/dev/null 2>&1 && echo true || echo false)" \

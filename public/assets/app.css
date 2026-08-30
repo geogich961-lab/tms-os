@@ -2448,3 +2448,10 @@ html[data-theme="dark"] .cfd-sync-note b { color: #f0b94a; }
 .cfh-stat > span, .cfh-stat > small { display: block; color: var(--muted); font-size: .78rem; }.cfh-stat > span { font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }.cfh-stat > strong { display: block; margin: 7px 0 3px; font-size: 1.16rem; }
 .cfd-overview-hosts { display: grid; gap: 8px; margin-top: 12px; }.cfd-overview-host { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--text); text-decoration: none; }.cfd-overview-host:hover { border-color: var(--primary-border); color: var(--primary); }.cfd-overview-host span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; }.cfd-overview-host em { font-style: normal; }.cfd-overview-note { margin: 13px 0 0; font-size: .8rem; line-height: 1.55; }
 @media (max-width: 560px) { .cfd-overview .section-title-row { flex-direction: column; gap: 9px; }.cfd-overview .btn { width: 100%; }.cfd-overview-grid { grid-template-columns: 1fr; }.cfd-overview-host { align-items: flex-start; flex-direction: column; }.cfd-overview-host em { align-self: flex-start; } }
+
+/* Backup tự động + Cảnh báo vận hành (V17.0.19+) */
+.form-stack { display: grid; gap: 12px; }
+.auto-backup-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.auto-backup-row label { display: grid; gap: 6px; font-size: .82rem; color: var(--muted); }
+.auto-backup-row input, .auto-backup-row select { padding: 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+@media (max-width: 560px) { .auto-backup-row { grid-template-columns: 1fr; } }

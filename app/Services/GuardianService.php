@@ -66,6 +66,8 @@ final class GuardianService
             'CHECK_PANEL'=>!empty($input['check_panel'])?1:0,
             'CHECK_WEBSITE'=>!empty($input['check_website'])?1:0,
             'CHECK_DATABASE'=>!empty($input['check_database'])?1:0,
+            'CHECK_TUNNEL'=>!empty($input['check_tunnel'])?1:0,
+            'CHECK_CRON'=>!empty($input['check_cron'])?1:0,
             'MAX_REPAIRS_PER_HOUR'=>$max,
         ];
         $lines=[];foreach($config as $key=>$value)$lines[]=$key.'='.$value;
@@ -93,14 +95,14 @@ final class GuardianService
             if(!str_contains($line,'='))continue;
             [$key,$value]=explode('=',$line,2);$result[trim($key)]=(int)trim($value);
         }
-        return array_merge(['ENABLED'=>1,'INTERVAL'=>30,'AUTO_REPAIR'=>1,'CHECK_PANEL'=>1,'CHECK_WEBSITE'=>1,'CHECK_DATABASE'=>1,'MAX_REPAIRS_PER_HOUR'=>6],$result);
+        return array_merge(['ENABLED'=>1,'INTERVAL'=>30,'AUTO_REPAIR'=>1,'CHECK_PANEL'=>1,'CHECK_WEBSITE'=>1,'CHECK_DATABASE'=>1,'CHECK_TUNNEL'=>1,'CHECK_CRON'=>1,'MAX_REPAIRS_PER_HOUR'=>6],$result);
     }
 
     private function ensureConfig(): void
     {
         $file=$this->state.'/guardian.conf';
         if(is_file($file))return;
-        file_put_contents($file,"ENABLED=1\nINTERVAL=30\nAUTO_REPAIR=1\nCHECK_PANEL=1\nCHECK_WEBSITE=1\nCHECK_DATABASE=1\nMAX_REPAIRS_PER_HOUR=6\n",LOCK_EX);
+        file_put_contents($file,"ENABLED=1\nINTERVAL=30\nAUTO_REPAIR=1\nCHECK_PANEL=1\nCHECK_WEBSITE=1\nCHECK_DATABASE=1\nCHECK_TUNNEL=1\nCHECK_CRON=1\nMAX_REPAIRS_PER_HOUR=6\n",LOCK_EX);
         @chmod($file,0600);
     }
 

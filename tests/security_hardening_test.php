@@ -83,9 +83,9 @@ try {
     $out = tms_capture(function () use ($router) { $router->dispatch('GET', '/api/updates/run', fn(): bool => false); });
     expectSec($out === 'RUN-OK', '/api/updates/run phải public (xác thực bằng token riêng).');
 
-    // ===== web.php thật: hợp đồng 136 route + 6 path public (phân tích tĩnh) =====
+    // ===== web.php thật: hợp đồng 138 route + 6 path public (phân tích tĩnh) =====
     $web = (string)file_get_contents($root . '/routes/web.php');
-    expectSec(preg_match_all('/\$router->(?:get|post)\(/', $web) === 136, 'web.php phải đăng ký đúng 136 route.');
+    expectSec(preg_match_all('/\$router->(?:get|post)\(/', $web) === 138, 'web.php phải đăng ký đúng 138 route.');
     foreach (['/', '/login', '/telegram/webhook', '/status', '/api/public-status', '/api/updates/run'] as $p) {
         expectSec(str_contains($web, "\$router->public('" . $p . "');"), 'web.php phải khai báo public cho ' . $p);
     }
