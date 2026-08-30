@@ -7,6 +7,11 @@ Ngôn ngữ làm việc: **tiếng Việt** (code comment, tài liệu, commit b
 Sau mỗi thay đổi được merge vào `main`, **KHÔNG cần hỏi lại** — luôn đóng gói và
 phát hành release mới lên GitHub theo đủ quy trình dưới đây.
 
+**Phạm vi áp dụng:** chỉ những thay đổi chạm vào source chạy trên thiết bị
+(`app/`, `config/`, `public/`, `routes/`, `scripts/`) mới bump version + release.
+Thay đổi chỉ docs/tests (`todo.md`, `AGENTS.md`, `CHANGELOG.md`, `tests/`,
+`docs/`, `.github/`) thì commit + push bình thường, không tạo release trống.
+
 ### 1. Xác định version kế tiếp
 
 - Release mới nhất là ground truth: `https://api.github.com/repos/geogich961-lab/tms-os/releases/latest`.
