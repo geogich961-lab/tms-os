@@ -52,7 +52,7 @@ jobs:
           soft_fail=0
           for test in tests/*_test.php; do
             case "$test" in
-              tests/v17_0_*_update_payload_test.php)
+              tests/*_update_payload_test.php)
                 echo "SKIP (cần artifact .build, chạy trong luồng release): $test"
                 continue
                 ;;
