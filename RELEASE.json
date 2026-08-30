@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.17",
-  "build": "20260830-v17.0.17",
+  "internal_version": "17.0.18",
+  "build": "20260830-v17.0.18",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-08-30",
-  "name": "TMS OS V17.0.17",
-  "version": "17.0.17",
-  "notes": "V17.0.17: Update Center chịu lỗi kết nối GitHub — báo đúng nguyên nhân từng endpoint, ép IPv4 dự phòng, thêm Chẩn đoán kết nối; PHP engine nâng giới hạn upload 100M/110M để upload ZIP thủ công không bị chặn.",
+  "name": "TMS OS V17.0.18",
+  "version": "17.0.18",
+  "notes": "V17.0.18: cứng hoá bảo mật panel — đăng nhập bị khoá tạm sau 5 lần sai liên tiếp; mọi route mặc định yêu cầu đăng nhập trừ danh sách public trắng; thêm CommandRunner làm điểm gọi lệnh hệ thống chuẩn; routes/web.php tổ chức lại dễ đọc.",
   "features": [
-    "Update Center báo rõ nguyên nhân lỗi từng endpoint GitHub (DNS, TLS, HTTP 403) thay vì thông báo chung chung.",
-    "Ép IPv4 và bỏ endpoint hỏng — chịu lỗi mạng IPv6/DNS phổ biến trên Android.",
-    "Nút Chẩn đoán kết nối GitHub và API /api/updates/diagnose để xác định bước kết nối bị kẹt.",
-    "PHP-CGI, PHP HTTP và PHP-FPM nâng upload_max_filesize/post_max_size lên 100M/110M — gói TMS_OS_LATEST.zip tải thủ công không còn bị từ chối.",
-    "Fallback metadata RELEASE.json và kiểm tra checksum SHA-256 giữ nguyên, bảo toàn storage/Cloudflare khi nâng cấp."
+    "Rate limit đăng nhập: sai 5 lần trong 15 phút bị khoá 15 phút, hiển thị thời gian chờ còn lại.",
+    "Default-deny auth middleware ở Router: quên guard() trong controller không còn làm lộ endpoint; /login, /, /status, /telegram/webhook, /api/public-status, /api/updates/run là public có chủ đích.",
+    "API chưa đăng nhập trả JSON 401 AUTH_REQUIRED thống nhất; trang thường redirect /login?next= giữ nguyên điểm đến sau đăng nhập.",
+    "CommandRunner: điểm gọi lệnh hệ thống tập trung với escapeshellarg bắt buộc cho mọi dữ liệu từ request.",
+    "Giữ nguyên các bản sửa V17.0.17: Update Center chịu lỗi kết nối GitHub, giới hạn upload 100M/110M."
   ],
-  "checksum_sha256": "0d583cd99ec39113ae9fc3ad8a873a5907f082ab396e9fc387e218069bb3ebdd",
+  "checksum_sha256": "acd38dff8590a2fc00d1dae0e800843604336826921f0bc555cf9086e7b23882",
   "build_date": "2026-08-30",
-  "version_display": "TMS OS V17.0.17",
-  "changelog": "V17.0.17: chịu lỗi kết nối GitHub Update Center + nâng giới hạn upload PHP engine cho đường nâng thủ công.",
+  "version_display": "TMS OS V17.0.18",
+  "changelog": "V17.0.18: bảo mật — khoá đăng nhập sau chuỗi sai, default-deny auth middleware, CommandRunner.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-08-30"
 }
