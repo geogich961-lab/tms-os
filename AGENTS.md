@@ -24,7 +24,11 @@ phát hành release mới lên GitHub theo đủ quy trình dưới đây.
 
 - Tạo `tests/build_v<M>_<m>_<p>_payload.sh` theo mẫu `tests/build_v17_0_17_payload.sh`
   (build trực tiếp từ source đã review trên main, không cần backup BASE).
-- Nén bằng `tests/make_payload_zip.php` (máy không có lệnh `zip`).
+- Nén bằng `tests/make_payload_zip.php` (máy không có lệnh `zip`). **Bắt buộc:**
+  builder phải ép LF cho mọi file text khi nén — checkout Windows (autocrlf)
+  sinh CRLF làm bash script vỡ trên Ubuntu/Termux, và grep của MSYS không dò
+  được CRLF nên không được dùng làm guard. Payload test phải đọc nội dung
+  trực tiếp từ ZIP (không phải thư mục payload trên đĩa) để assert không có `\r\n`.
 - **Quy tắc ZIP bắt buộc:** chỉ chứa `app/ config/ public/ routes/ scripts/`.
   - Loại `scripts/verify-uci-payload.sh` (chỉ dùng cho CI).
   - Không chứa `RELEASE.json`, `storage/`, `tests/`, `docs/`, file ẩn (.gitkeep, .DS_Store…).
