@@ -613,3 +613,6 @@
 - [x] Cứng hoá bảo mật panel V17.0.18: default-deny auth middleware ở Router (public trắng: /, /login, /telegram/webhook, /status, /api/public-status, /api/updates/run token riêng), rate limit đăng nhập 5 lần sai/15 phút khoá 15 phút, CommandRunner làm điểm gọi lệnh chuẩn, tổ chức lại routes/web.php giữ nguyên 134 route.
 - [x] Đóng gói, kiểm thử và phát hành V17.0.18: mô phỏng nâng cấp V17.0.17 → V17.0.18, hồi quy security_hardening_test.php.
 - [ ] Xác minh thực địa V17.0.18 trên Xperia: đăng nhập đúng vẫn vào được panel; sai 5 lần hiện thông báo khoá; API public status vẫn hoạt động khi chưa đăng nhập.
+- [x] Backup tự động V17.0.19: AutoBackupService tạo backup qua BackupService (hiện trong Backup Center, khôi phục một chạm), lịch hằng ngày qua cron engine, retention 1-90 bản chỉ dọn bản [auto], offsite rclone, thông báo Telegram tuỳ chọn, CLI scripts/tms-auto-backup.php.
+- [x] Đóng gói, kiểm thử và phát hành V17.0.19: mô phỏng nâng cấp V17.0.18 → V17.0.19, hồi quy auto_backup_service_test.php.
+- [ ] Xác minh thực địa V17.0.19 trên Xperia: bật backup tự động, chạy thử ngay, kiểm tra cron job tms-auto-backup xuất hiện và (nếu có rclone) đẩy offsite thành công.
