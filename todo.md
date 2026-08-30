@@ -625,4 +625,5 @@
 
 - [x] Bổ sung kiểm thử hồi quy cho upload vào thư mục website mới tạo và các trường hợp upload thất bại.
 
+- [x] Dọn GitHub Releases: chỉ giữ lại 5 release gần nhất và giữ V17.0.20 làm bản ổn định mới.
 - [x] Cập nhật README GitHub với hướng dẫn preflight Termux, cài đủ pkg bắt buộc và kiểm tra trước khi chạy installer TMS OS.
