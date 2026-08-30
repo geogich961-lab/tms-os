@@ -60,4 +60,5 @@ session_start();
 
 $router = new Router();
 require $basePath . '/routes/web.php';
-$router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI']);
+// Default-deny: route không nằm trong danh sách public() đều yêu cầu đăng nhập.
+$router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], static fn(): bool => $authService->check());

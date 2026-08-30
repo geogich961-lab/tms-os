@@ -5,12 +5,17 @@ final class AuthService
 {
     private array $credentials;
     private string $credentialsFile;
+    private string $throttleFile;
+    private const THROTTLE_MAX_ATTEMPTS = 5;
+    private const THROTTLE_WINDOW_SECONDS = 900;
+    private const THROTTLE_LOCK_SECONDS = 900;
 
     public function __construct()
     {
         $home = getenv('HOME') ?: '/data/data/com.termux/files/home';
         $newFile = $home . '/.tms-os/config/panel-secret.php';
         $legacyFile = $home . '/.redmi-mini-vps/config/panel-secret.php';
+        $this->throttleFile = $home . '/.tms-os/config/login-throttle.json';
 
         // Đường dẫn mới ưu tiên; vẫn tương thích ngược với bản cài cũ.
         $file = is_file($newFile) ? $newFile : $legacyFile;
@@ -41,16 +46,69 @@ final class AuthService
 
     public function attempt(string $username, string $password): bool
     {
+        // Khoá vững cả khi ai đó gọi thẳng attempt() bỏ qua view đăng nhập.
+        if ($this->lockedFor() > 0) {
+            return false;
+        }
         $valid = hash_equals((string)($this->credentials['username'] ?? ''), $username)
             && password_verify($password, (string)($this->credentials['password_hash'] ?? ''));
 
         if ($valid) {
+            $this->writeThrottle(['count' => 0, 'window_started_at' => 0, 'locked_until' => 0]);
             session_regenerate_id(true);
             $_SESSION['tms_authenticated'] = true;
             $_SESSION['tms_username'] = $username;
+            return true;
         }
 
-        return $valid;
+        $this->recordFailedAttempt();
+        return false;
+    }
+
+    /** Số giây còn bị khoá đăng nhập sau chuỗi sai liên tiếp; 0 nếu không bị khoá. */
+    public function lockedFor(): int
+    {
+        return max(0, (int)($this->readThrottle()['locked_until'] ?? 0) - time());
+    }
+
+    private function recordFailedAttempt(): void
+    {
+        $state = $this->readThrottle();
+        $now = time();
+        $count = (int)($state['count'] ?? 0);
+        $startedAt = (int)($state['window_started_at'] ?? 0);
+        if ($count <= 0 || ($now - $startedAt) > self::THROTTLE_WINDOW_SECONDS) {
+            $count = 0;
+            $startedAt = $now;
+        }
+        $count++;
+        $state = [
+            'count' => $count,
+            'window_started_at' => $startedAt,
+            'locked_until' => $count >= self::THROTTLE_MAX_ATTEMPTS ? $now + self::THROTTLE_LOCK_SECONDS : 0,
+        ];
+        $this->writeThrottle($state);
+    }
+
+    private function readThrottle(): array
+    {
+        $data = @json_decode((string)@file_get_contents($this->throttleFile), true);
+        return is_array($data) ? $data : [];
+    }
+
+    private function writeThrottle(array $data): void
+    {
+        $dir = dirname($this->throttleFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        $tmp = $this->throttleFile . '.tmp-' . bin2hex(random_bytes(4));
+        if (@file_put_contents($tmp, json_encode($data) . "\n", LOCK_EX) !== false) {
+            @chmod($tmp, 0600);
+            @rename($tmp, $this->throttleFile);
+        } else {
+            @unlink($tmp);
+        }
     }
 
     public function check(): bool

@@ -40,6 +40,18 @@ final class AuthController
         $username = trim((string)($_POST['username'] ?? ''));
         $password = (string)($_POST['password'] ?? '');
 
+        $lockSeconds = $this->auth->lockedFor();
+        if ($lockSeconds > 0) {
+            $minutes = (int)ceil($lockSeconds / 60);
+            tms_view('auth.login', [
+                'error' => 'Đã khoá tạm thời do sai mật khẩu quá nhiều lần. Thử lại sau ' . $minutes . ' phút.',
+                'csrf' => tms_csrf_token(),
+                'next' => $next,
+                'notice' => '',
+            ]);
+            return;
+        }
+
         if ($this->auth->attempt($username, $password)) {
             tms_redirect($next);
         }
