@@ -34,10 +34,30 @@ try {
     expectV1717($archive->open($releaseZip) === true, 'Không mở được payload V17.0.17.');
     $entries = [];
     for ($index = 0; $index < $archive->numFiles; $index++) { $entries[] = (string)$archive->getNameIndex($index); }
-    $archive->close();
-    foreach ($entries as $entry) { expectV1717((bool)preg_match('#^(app|config|public|routes|scripts)/#', $entry), 'Payload chỉ được chứa các source root cho phép: ' . $entry); }
     expectV1717(!in_array('scripts/verify-uci-payload.sh', $entries, true), 'Payload thiết bị không được kèm verifier nội bộ.');
     expectV1717(!in_array('RELEASE.json', $entries, true) && !in_array('storage/', $entries, true), 'Payload không được kèm metadata tự tham chiếu hoặc dữ liệu runtime.');
+    $zipRead = static fn(string $name): string => (string)$archive->getFromName($name);
+    $service = $zipRead('app/Services/UpdateService.php');
+    $routes = $zipRead('routes/web.php');
+    $engine = $zipRead('scripts/tms-php-engine.sh');
+    $core = $zipRead('scripts/tms-service-core.sh');
+    $installScript = $zipRead('scripts/install.sh');
+    $archive->close();
+    foreach ($entries as $entry) { expectV1717((bool)preg_match('#^(app|config|public|routes|scripts)/#', $entry), 'Payload chỉ được chứa các source root cho phép: ' . $entry); }
+
+    // Bản sửa #606 phải nằm trong payload: tầng HTTP chi tiết lỗi + route chẩn đoán.
+    expectV1717(str_contains($service, 'httpGetDetailed') && str_contains($service, 'CURL_IPRESOLVE_V4'), 'Payload thiếu tầng HTTP chịu lỗi (httpGetDetailed/IPv4).');
+    expectV1717(str_contains($service, 'networkDiagnostics'), 'Payload thiếu API chẩn đoán kết nối GitHub.');
+    expectV1717(str_contains($routes, '/api/updates/diagnose'), 'Payload thiếu route /api/updates/diagnose.');
+    // Bản sửa #591 phải nằm trong payload: giới hạn upload 100M/110M ở cả CGI, HTTP, FPM.
+    foreach (['php-cgi -n', 'php -n'] as $mode) {
+        expectV1717(preg_match('/' . preg_quote($mode, '/') . '[^\n]*upload_max_filesize=100M/', $engine) === 1, "Payload thiếu upload_max_filesize=100M cho {$mode}.");
+    }
+    expectV1717(preg_match('/php_admin_value\[upload_max_filesize\]\s*=\s*100M/', $engine) === 1, 'Payload thiếu php_admin_value upload_max_filesize cho php-fpm.');
+    // Payload phải dùng LF tuyệt đối — bash trên Ubuntu/Termux vỡ với CRLF.
+    foreach (['scripts/install.sh' => $installScript, 'scripts/tms-php-engine.sh' => $engine, 'scripts/tms-service-core.sh' => $core] as $script => $content) {
+        expectV1717(!str_contains($content, "\r\n"), "Payload script vẫn còn CRLF: {$script}.");
+    }
 
     @mkdir($target, 0700, true);
     $base = new ZipArchive();
@@ -49,19 +69,6 @@ try {
     @mkdir($cloudflareDir, 0700, true);
     $cloudflareConfig = "{\n  \"tunnel_id\": \"unchanged\"\n}\n";
     file_put_contents($cloudflareDir . '/config.json', $cloudflareConfig);
-
-    // Bản sửa #606 phải nằm trong payload: tầng HTTP chi tiết lỗi + route chẩn đoán.
-    $service = (string)file_get_contents($root . '/.build/v17.0.17/payload/app/Services/UpdateService.php');
-    expectV1717(str_contains($service, 'httpGetDetailed') && str_contains($service, 'CURL_IPRESOLVE_V4'), 'Payload thiếu tầng HTTP chịu lỗi (httpGetDetailed/IPv4).');
-    expectV1717(str_contains($service, 'networkDiagnostics'), 'Payload thiếu API chẩn đoán kết nối GitHub.');
-    $routes = (string)file_get_contents($root . '/.build/v17.0.17/payload/routes/web.php');
-    expectV1717(str_contains($routes, '/api/updates/diagnose'), 'Payload thiếu route /api/updates/diagnose.');
-    // Bản sửa #591 phải nằm trong payload: giới hạn upload 100M/110M ở cả CGI, HTTP, FPM.
-    $engine = (string)file_get_contents($root . '/.build/v17.0.17/payload/scripts/tms-php-engine.sh');
-    foreach (['php-cgi -n', 'php -n'] as $mode) {
-        expectV1717(preg_match('/' . preg_quote($mode, '/') . '[^\n]*upload_max_filesize=100M/', $engine) === 1, "Payload thiếu upload_max_filesize=100M cho {$mode}.");
-    }
-    expectV1717(preg_match('/php_admin_value\[upload_max_filesize\]\s*=\s*100M/', $engine) === 1, 'Payload thiếu php_admin_value upload_max_filesize cho php-fpm.');
 
     $updates = $home . '/.tms-os/updates';
     @mkdir($updates, 0700, true);

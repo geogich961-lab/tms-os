@@ -16,7 +16,7 @@
     "PHP-CGI, PHP HTTP và PHP-FPM nâng upload_max_filesize/post_max_size lên 100M/110M — gói TMS_OS_LATEST.zip tải thủ công không còn bị từ chối.",
     "Fallback metadata RELEASE.json và kiểm tra checksum SHA-256 giữ nguyên, bảo toàn storage/Cloudflare khi nâng cấp."
   ],
-  "checksum_sha256": "d21eba4c6cdfec9886e77d9e375f3638fb88fe248077e1598323eafddcdcab8a",
+  "checksum_sha256": "0d583cd99ec39113ae9fc3ad8a873a5907f082ab396e9fc387e218069bb3ebdd",
   "build_date": "2026-08-30",
   "version_display": "TMS OS V17.0.17",
   "changelog": "V17.0.17: chịu lỗi kết nối GitHub Update Center + nâng giới hạn upload PHP engine cho đường nâng thủ công.",

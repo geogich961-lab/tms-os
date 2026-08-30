@@ -18,14 +18,17 @@ rm -rf -- "$BUILD_ROOT"
 mkdir -p -- "$PAYLOAD" "$OUT"
 
 # Chỉ 5 source root vào ZIP thiết bị; storage/tests/docs/assets stay out.
-for rel in app config public routes scripts; do
-  cp -a "$ROOT/$rel" "$PAYLOAD/$rel"
-done
+# Trích từ git archive (object store) để đảm bảo LF tuyệt đối — build trên máy
+# Windows với autocrlf sẽ làm bash script CRLF vỡ trên Ubuntu/Termux.
+rm -rf -- "$PAYLOAD"
+mkdir -p -- "$PAYLOAD"
+git -C "$ROOT" archive HEAD -- app config public routes scripts | tar -x -C "$PAYLOAD"
 
 # Verifier nội bộ chỉ dùng cho CI, không lên thiết bị.
 rm -f -- "$PAYLOAD/scripts/verify-uci-payload.sh"
 # File ẩn từ hệ điều hành/editor không vào payload.
 find "$PAYLOAD" -name '.*' -not -name '.' -type f -delete
+# Ép LF cho file text khi nén do make_payload_zip.php (grep MSYS không dò được CRLF).
 
 chmod 700 "$PAYLOAD/scripts/"*.sh 2>/dev/null || true
 chmod 700 "$PAYLOAD/scripts/tms-update-worker.php" "$PAYLOAD/scripts/tms-package-worker.php" 2>/dev/null || true
