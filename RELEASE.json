@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.4",
-  "build": "20260826-v17.0.4",
+  "internal_version": "17.0.17",
+  "build": "20260830-v17.0.17",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-26",
-  "name": "TMS OS V17.0.4",
-  "version": "17.0.4",
-  "notes": "V17.0.4: hoàn tất job cập nhật trước restart, tự nhận diện source đã đổi version và tự dọn hàng đợi quá hạn.",
+  "released_at": "2026-08-30",
+  "name": "TMS OS V17.0.17",
+  "version": "17.0.17",
+  "notes": "V17.0.17: Update Center chịu lỗi kết nối GitHub — báo đúng nguyên nhân từng endpoint, ép IPv4 dự phòng, thêm Chẩn đoán kết nối; PHP engine nâng giới hạn upload 100M/110M để upload ZIP thủ công không bị chặn.",
   "features": [
-    "Worker ghi kết quả completed trước khi lên lịch restart PHP-CGI/Nginx.",
-    "Status tự xác nhận và dọn job còn sót khi source đã đổi đúng version mục tiêu.",
-    "Job không còn worker quá 15 phút tự chuyển lỗi và dọn queue để người dùng thử lại.",
-    "Giao diện đối chiếu version đích của yêu cầu để không kẹt xác minh state cũ.",
-    "Giữ nguyên Runtime Package Cloudflared nền, Universal Compatibility Installer, Repair và dữ liệu người dùng."
+    "Update Center báo rõ nguyên nhân lỗi từng endpoint GitHub (DNS, TLS, HTTP 403) thay vì thông báo chung chung.",
+    "Ép IPv4 và bỏ endpoint hỏng — chịu lỗi mạng IPv6/DNS phổ biến trên Android.",
+    "Nút Chẩn đoán kết nối GitHub và API /api/updates/diagnose để xác định bước kết nối bị kẹt.",
+    "PHP-CGI, PHP HTTP và PHP-FPM nâng upload_max_filesize/post_max_size lên 100M/110M — gói TMS_OS_LATEST.zip tải thủ công không còn bị từ chối.",
+    "Fallback metadata RELEASE.json và kiểm tra checksum SHA-256 giữ nguyên, bảo toàn storage/Cloudflare khi nâng cấp."
   ],
-  "checksum_sha256": "ac7983f86f28258c1dc047f33175e036691148317d5c9d31c7b1283227d50260",
-  "build_date": "2026-08-26",
-  "version_display": "TMS OS V17.0.4",
-  "changelog": "V17.0.4: hotfix Update Center — hoàn tất state trước restart, tự dọn job kẹt và xác nhận version đích.",
+  "checksum_sha256": "d21eba4c6cdfec9886e77d9e375f3638fb88fe248077e1598323eafddcdcab8a",
+  "build_date": "2026-08-30",
+  "version_display": "TMS OS V17.0.17",
+  "changelog": "V17.0.17: chịu lỗi kết nối GitHub Update Center + nâng giới hạn upload PHP engine cho đường nâng thủ công.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
-  "release_date": "2026-08-26"
+  "release_date": "2026-08-30"
 }
