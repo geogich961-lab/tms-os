@@ -1,4 +1,39 @@
 # Changelog
+## [17.0.20] — 2026-08-30
+
+V17.0.20: cảnh báo vận hành qua Telegram theo ngưỡng (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) kiểm tra mỗi 15 phút; Guardian tự heal Cloudflare Tunnel và crond; cấu hình trong trang Thông báo.
+- Cảnh báo Telegram theo ngưỡng: bộ nhớ trống thấp, RAM cạn, pin sạc 100% quá lâu (nguy cơ phồng pin), nhiệt độ pin cao và Cloudflare Tunnel rớt.
+- Kiểm tra mỗi 15 phút qua cron job tms-alerts-check; mỗi loại cảnh báo chỉ nhắc lại sau cooldown cấu hình được.
+- Cấu hình ngưỡng và chạy thử ngay trong trang Thông báo; đo pin/nhiệt độ cần termux-api.
+- Guardian tự khởi động lại cloudflared khi tunnel rớt và crond khi có cron job bật (tuỳ chọn trong cấu hình Guardian).
+- Kèm bảo mật V17.0.18 và backup tự động + offsite rclone V17.0.19.
+
+## [17.0.19] — 2026-08-30
+
+V17.0.19: Backup tự động hằng ngày qua cron + đẩy offsite lên cloud bằng rclone + khôi phục một chạm trong Backup Center; tự dọn bản cũ theo retention và thông báo Telegram.
+- Backup tự động hằng ngày theo giờ cấu hình qua cron engine sẵn có, bản backup xuất hiện ngay trong Backup Center.
+- Đẩy offsite lên Google Drive/S3/Any S3 bằng rclone (pkg install rclone; remote cấu hình bằng rclone config).
+- Tự dọn theo retention (1–90 bản), chỉ xoá đúng các bản tự động, không đụng snapshot đã khoá.
+- Khôi phục một chạm: dùng đúng luồng Backup Center hiện hữu, tự tạo snapshot an toàn trước khi restore.
+- Tuỳ chọn thông báo kết quả (thành công/lỗi) qua Telegram; kèm bản sửa bảo mật V17.0.18.
+
+## [17.0.18] — 2026-08-30
+
+V17.0.18: cứng hoá bảo mật panel — đăng nhập bị khoá tạm sau 5 lần sai liên tiếp; mọi route mặc định yêu cầu đăng nhập trừ danh sách public trắng; thêm CommandRunner làm điểm gọi lệnh hệ thống chuẩn; routes/web.php tổ chức lại dễ đọc.
+- Rate limit đăng nhập: sai 5 lần trong 15 phút bị khoá 15 phút, hiển thị thời gian chờ còn lại.
+- Default-deny auth middleware ở Router: quên guard() trong controller không còn làm lộ endpoint; /login, /, /status, /telegram/webhook, /api/public-status, /api/updates/run là public có chủ đích.
+- API chưa đăng nhập trả JSON 401 AUTH_REQUIRED thống nhất; trang thường redirect /login?next= giữ nguyên điểm đến sau đăng nhập.
+- CommandRunner: điểm gọi lệnh hệ thống tập trung với escapeshellarg bắt buộc cho mọi dữ liệu từ request.
+- Giữ nguyên các bản sửa V17.0.17: Update Center chịu lỗi kết nối GitHub, giới hạn upload 100M/110M.
+
+## [17.0.17] — 2026-08-30
+
+V17.0.17: Update Center chịu lỗi kết nối GitHub — báo đúng nguyên nhân từng endpoint, ép IPv4 dự phòng, thêm Chẩn đoán kết nối; PHP engine nâng giới hạn upload 100M/110M để upload ZIP thủ công không bị chặn.
+- Update Center báo rõ nguyên nhân lỗi từng endpoint GitHub (DNS, TLS, HTTP 403) thay vì thông báo chung chung.
+- Ép IPv4 và bỏ endpoint hỏng — chịu lỗi mạng IPv6/DNS phổ biến trên Android.
+- Nút Chẩn đoán kết nối GitHub và API /api/updates/diagnose để xác định bước kết nối bị kẹt.
+- PHP-CGI, PHP HTTP và PHP-FPM nâng upload_max_filesize/post_max_size lên 100M/110M — gói TMS_OS_LATEST.zip tải thủ công không còn bị từ chối.
+- Fallback metadata RELEASE.json và kiểm tra checksum SHA-256 giữ nguyên, bảo toàn storage/Cloudflare khi nâng cấp.
 
 ## V16.1.1 (2026-08-22)
 

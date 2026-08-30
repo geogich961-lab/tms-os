@@ -619,3 +619,4 @@
 - [x] Cảnh báo vận hành V17.0.20: OperationalAlertsService kiểm tra mỗi 15 phút (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) với cooldown từng loại, gửi qua Telegram, cấu hình trong trang Thông báo; Guardian thêm auto-heal cloudflared (dò /proc) và crond với cấu hình CHECK_TUNNEL/CHECK_CRON.
 - [x] Đóng gói, kiểm thử và phát hành V17.0.20: mô phỏng nâng cấp V17.0.19 → V17.0.20, hồi quy operational_alerts_service_test.php.
 - [ ] Xác minh thực địa V17.0.20 trên Xperia: cài termux-api, bật cảnh báo, thử ngưỡng thấp để nhận Telegram; tunnel rớt phải được Guardian tự khởi động lại.
+- [x] Hạ tầng kỹ thuật: CI chạy toàn bộ test PHP trên ubuntu (workflow php-tests, 2 tầng — lỗi môi trường Termux/Windows chỉ cảnh báo), license MIT, CHANGELOG tự sinh từ RELEASE.json (scripts/generate-changelog.php) và đã điền mục V17.0.17–V17.0.20.

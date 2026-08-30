@@ -58,6 +58,8 @@ Thay đổi chỉ docs/tests (`todo.md`, `AGENTS.md`, `CHANGELOG.md`, `tests/`,
 - Conventional commits (`fix:`, `feat:`, `docs:`, `test:`), commit vào branch riêng
   rồi merge fast-forward vào `main` nếu không có xung đột.
 - Commit **source + test + todo.md + RELEASE.json gốc**, KHÔNG commit artifact `.build/`.
+- Sau khi build, chạy `php scripts/generate-changelog.php .build/v<M>.<m>.<p>/release/RELEASE.json`
+  để tự thêm mục CHANGELOG (script bỏ qua nếu mục đã tồn tại).
 - Ghi nhật ký công việc vào `todo.md` theo đúng format mục có sẵn
   (`- [x] Đóng gói, kiểm thử và phát hành V…`; mục xác minh thực đặt `- [ ]` chờ Xperia).
 - Tạo tag `v<M>.<m>.<p>` trên commit release, push `main` + tag.
@@ -74,5 +76,7 @@ Thay đổi chỉ docs/tests (`todo.md`, `AGENTS.md`, `CHANGELOG.md`, `tests/`,
 
 - Không bao giờ tự chạy `install.sh` hay script thiết lập của repo (an toàn).
 - Thay đổi phải có test hồi quy kèm theo nếu chạm UpdateService, PHP engine, installer.
-- CI workflow `verify-uci-payload` chạy trên push/PR vào `main` (lọc theo
-  install.sh/scripts/tests/docs) — giữ verifier contract với `scripts/verify-uci-payload.sh`.
+- CI workflow `verify-uci-payload` chạy khi release; `php-tests` chạy toàn bộ
+  `tests/*_test.php` trên ubuntu mỗi push chạm source (test lệ thuộc Termux/Windows
+  nằm trong danh sách KNOWN_ENV_DEPENDENT — lỗi chỉ cảnh báo, không làm đỏ job).
+- Repo phát hành theo license MIT (LICENSE) — giữ nguyên header khi phát hành lại.

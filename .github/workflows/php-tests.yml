@@ -1,0 +1,77 @@
+name: PHP regression tests
+
+on:
+  push:
+    branches: [main]
+    paths: ['app/**', 'config/**', 'public/**', 'routes/**', 'scripts/**', 'tests/**']
+  pull_request:
+    paths: ['app/**', 'config/**', 'public/**', 'routes/**', 'scripts/**', 'tests/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-tests:
+    name: Run PHP regression suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+          ini-values: memory_limit=512M
+
+      - name: Run PHP regression suite
+        shell: bash
+        run: |
+          set -uo pipefail
+          # Các test này lệ thuộc môi trường Termux/Windows (chmod 0600, /proc,
+          # crontab, nginx binary, termux-api...). Lỗi của chúng chỉ cảnh báo,
+          # còn test ngoài danh sách mà fail sẽ làm job đỏ.
+          KNOWN_ENV_DEPENDENT="
+            tests/access_report_service_test.php
+            tests/access_report_worker_bootstrap_test.php
+            tests/admin_password_change_test.php
+            tests/cloudflare_public_wifi_dns_compatibility_test.php
+            tests/cloudflare_public_wifi_update_payload_test.php
+            tests/cloudflare_tunnel_autostart_test.php
+            tests/cron_job_service_id_test.php
+            tests/cron_telegram_status_test.php
+            tests/runtime_package_async_test.php
+            tests/update_password_service_test.php
+            tests/update_repair_script_test.php
+            tests/update_restart_worker_test.php
+            tests/website_service_delete_test.php
+          "
+          fail=0
+          soft_fail=0
+          for test in tests/*_test.php; do
+            case "$test" in
+              tests/v17_0_*_update_payload_test.php)
+                echo "SKIP (cần artifact .build, chạy trong luồng release): $test"
+                continue
+                ;;
+            esac
+            echo "::group::$test"
+            set +e
+            timeout 240 php "$test" 2>&1 | tail -5
+            rc=${PIPESTATUS[0]}
+            set -e
+            echo "::endgroup::"
+            if [ "$rc" -ne 0 ]; then
+              if grep -qx "tests/$(basename "$test")" <<<"$KNOWN_ENV_DEPENDENT"; then
+                echo "::warning file=$test::Test lệ thuộc môi trường bị lỗi (chỉ cảnh báo): rc=$rc"
+                soft_fail=$((soft_fail+1))
+              else
+                echo "::error file=$test::Test hồi quy thất bại: rc=$rc"
+                fail=$((fail+1))
+              fi
+            fi
+          done
+          echo "Kết quả: $fail lỗi cứng, $soft_fail lỗi môi trường (chỉ cảnh báo)."
+          exit "$fail"
