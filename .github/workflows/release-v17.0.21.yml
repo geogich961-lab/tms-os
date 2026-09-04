@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tests/build_v17_0_21_payload.sh'
+      - '.github/workflows/release-v17.0.21.yml'
 
 permissions:
   contents: write
@@ -59,15 +60,15 @@ jobs:
           if ! grep -q '^## Phát hành ổn định V17.0.21$' todo.md; then
             cat >> todo.md <<'EOF'
 
-## Phát hành ổn định V17.0.21
+          ## Phát hành ổn định V17.0.21
 
-- [x] Sửa lỗi Nginx `server_names_hash` khi Website Control Center tạo thêm hostname.
-- [x] Tự repair `nginx.conf` cho máy nâng cấp từ V17.0.20 và kiểm tra bằng `nginx -t`.
-- [x] Sửa HTML pattern tên website cho Chrome mới.
-- [x] Kiểm thử payload V17.0.20 → V17.0.21, bảo toàn storage và Cloudflare.
-- [x] Đóng gói, checksum và phát hành GitHub Release V17.0.21.
-- [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật.
-EOF
+          - [x] Sửa lỗi Nginx `server_names_hash` khi Website Control Center tạo thêm hostname.
+          - [x] Tự repair `nginx.conf` cho máy nâng cấp từ V17.0.20 và kiểm tra bằng `nginx -t`.
+          - [x] Sửa HTML pattern tên website cho Chrome mới.
+          - [x] Kiểm thử payload V17.0.20 → V17.0.21, bảo toàn storage và Cloudflare.
+          - [x] Đóng gói, checksum và phát hành GitHub Release V17.0.21.
+          - [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật.
+          EOF
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -90,18 +91,18 @@ EOF
           git tag -a v17.0.21 -m 'TMS OS V17.0.21'
           git push origin v17.0.21
           cat > .build/v17.0.21/release/NOTES.md <<'EOF'
-TMS OS V17.0.21 — Hotfix Website Control Center / Nginx
+          TMS OS V17.0.21 — Hotfix Website Control Center / Nginx
 
-## Sửa lỗi
-- Sửa lỗi `nginx: [emerg] could not build server_names_hash` khi tạo website hoặc hostname mới.
-- Tự bổ sung `server_names_hash_bucket_size 128` và `server_names_hash_max_size 4096` cho cấu hình cũ theo cách idempotent.
-- Update Center tự repair và chạy `nginx -t` trước khi xác nhận cập nhật hoàn tất; không yêu cầu cài lại TMS OS.
-- Sửa `pattern` tên website/clone website để tương thích Chrome mới.
-- Làm mới cache PWA lên V17.0.21.
+          ## Sửa lỗi
+          - Sửa lỗi `nginx: [emerg] could not build server_names_hash` khi tạo website hoặc hostname mới.
+          - Tự bổ sung `server_names_hash_bucket_size 128` và `server_names_hash_max_size 4096` cho cấu hình cũ theo cách idempotent.
+          - Update Center tự repair và chạy `nginx -t` trước khi xác nhận cập nhật hoàn tất; không yêu cầu cài lại TMS OS.
+          - Sửa `pattern` tên website/clone website để tương thích Chrome mới.
+          - Làm mới cache PWA lên V17.0.21.
 
-## Nâng cấp
-Vào **Update Center** trên TMS OS V17.0.20 và chọn cập nhật. Website, database, storage và cấu hình Cloudflare được giữ nguyên.
-EOF
+          ## Nâng cấp
+          Vào **Update Center** trên TMS OS V17.0.20 và chọn cập nhật. Website, database, storage và cấu hình Cloudflare được giữ nguyên.
+          EOF
           gh release create v17.0.21 \
             .build/v17.0.21/release/TMS_OS_LATEST.zip \
             .build/v17.0.21/release/RELEASE.json \
