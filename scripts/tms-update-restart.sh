@@ -65,21 +65,22 @@ ensure_tunnel() {
 sleep 2
 write_state 'restarting' 'Đang xác nhận source mới mà không làm gián đoạn panel hoặc Cloudflare Tunnel.'
 
-# Giữ bản sửa Nginx của V17.0.21 nhưng chỉ reload khi cấu hình hợp lệ.
+# Giữ bản sửa Nginx của V17.0.21. Chỉ validate/reload khi payload có helper
+# compatibility; môi trường test/repair tối giản không bị phụ thuộc Nginx hệ thống.
 if [ -f "$SCRIPT_DIR/tms-nginx-compat.php" ]; then
   if ! php "$SCRIPT_DIR/tms-nginx-compat.php" >/dev/null 2>&1; then
     write_state 'restart_failed' 'Source mới đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích.'
     clear_queue
     exit 1
   fi
-fi
-if command -v nginx >/dev/null 2>&1; then
-  if ! nginx -t >/dev/null 2>&1; then
-    write_state 'restart_failed' 'Source mới đã áp dụng nhưng nginx.conf chưa hợp lệ.'
-    clear_queue
-    exit 1
+  if command -v nginx >/dev/null 2>&1; then
+    if ! nginx -t >/dev/null 2>&1; then
+      write_state 'restart_failed' 'Source mới đã áp dụng nhưng nginx.conf chưa hợp lệ.'
+      clear_queue
+      exit 1
+    fi
+    nginx -s reload >/dev/null 2>&1 || true
   fi
-  nginx -s reload >/dev/null 2>&1 || true
 fi
 
 # Không restart PHP nếu panel đã phản hồi. PHP của TMS OS đọc source mới ở request kế tiếp;
