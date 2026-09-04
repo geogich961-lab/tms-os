@@ -1,4 +1,4 @@
-const VERSION='tms-os-v17.0.21';
+const VERSION='tms-os-v17.0.22';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
   '/offline.html','/tms-pwa-v21.json?v=17.0.16',
@@ -28,9 +28,7 @@ self.addEventListener('fetch',event=>{
         return res;
       }).catch(()=>caches.match(req)));
     }else{
-      event.respondWith(caches.match(req).then(hit=>hit||fetch(req).then(res=>{
-        const copy=res.clone(); caches.open(STATIC_CACHE).then(c=>c.put(req,copy)); return res;
-      })));
+      event.respondWith(caches.match(req).then(cached=>cached||fetch(req).then(res=>{const copy=res.clone();caches.open(STATIC_CACHE).then(c=>c.put(req,copy)).catch(()=>{});return res;})));
     }
   }
 });
