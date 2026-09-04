@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tests/build_v17_0_21_payload.sh'
+      - 'tests/v17_0_21_update_payload_test.php'
       - '.github/workflows/release-v17.0.21.yml'
 
 permissions:
