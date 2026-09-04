@@ -627,3 +627,12 @@
 
 - [x] Dọn GitHub Releases: chỉ giữ lại 5 release gần nhất và giữ V17.0.20 làm bản ổn định mới.
 - [x] Cập nhật README GitHub với hướng dẫn preflight Termux, cài đủ pkg bắt buộc và kiểm tra trước khi chạy installer TMS OS.
+
+## Phát hành ổn định V17.0.21
+
+- [x] Sửa lỗi Nginx `server_names_hash` khi Website Control Center tạo thêm hostname.
+- [x] Tự repair `nginx.conf` cho máy nâng cấp từ V17.0.20 và kiểm tra bằng `nginx -t`.
+- [x] Sửa HTML pattern tên website cho Chrome mới.
+- [x] Kiểm thử payload V17.0.20 → V17.0.21, bảo toàn storage và Cloudflare.
+- [x] Đóng gói, checksum và phát hành GitHub Release V17.0.21.
+- [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật.

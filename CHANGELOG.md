@@ -1,4 +1,13 @@
 # Changelog
+## [17.0.21] — 2026-09-04
+
+V17.0.21: sửa lỗi Website Control Center trên Nginx khi server_names_hash bucket mặc định quá nhỏ; tự repair nginx.conf khi nâng cấp và khi mở panel; sửa HTML pattern tên website cho Chrome mới.
+- Tự bổ sung server_names_hash_bucket_size 128 và server_names_hash_max_size 4096 vào nginx.conf cũ theo cách idempotent.
+- Update Center tự repair, chạy nginx -t và reload Nginx an toàn trước khi xác nhận cập nhật hoàn tất.
+- Panel tự repair cấu hình Nginx còn thiếu để các máy nâng cấp từ V17.0.20 không cần cài lại TMS OS.
+- Sửa pattern tên website/clone website để tương thích biểu thức chính quy Unicode v trên Chrome mới.
+- Làm mới cache PWA bằng Service Worker V17.0.21.
+
 ## [17.0.20] — 2026-08-30
 
 V17.0.20: cảnh báo vận hành qua Telegram theo ngưỡng (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) kiểm tra mỗi 15 phút; Guardian tự heal Cloudflare Tunnel và crond; cấu hình trong trang Thông báo.

@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.20",
-  "build": "20260830-v17.0.20",
+  "internal_version": "17.0.21",
+  "build": "20260904-v17.0.21",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-08-30",
-  "name": "TMS OS V17.0.20",
-  "version": "17.0.20",
-  "notes": "V17.0.20: cảnh báo vận hành qua Telegram theo ngưỡng (bộ nhớ, RAM, pin 100% quá lâu, nhiệt độ, Tunnel rớt) kiểm tra mỗi 15 phút; Guardian tự heal Cloudflare Tunnel và crond; cấu hình trong trang Thông báo.",
+  "released_at": "2026-09-04",
+  "name": "TMS OS V17.0.21",
+  "version": "17.0.21",
+  "notes": "V17.0.21: sửa lỗi Website Control Center trên Nginx khi server_names_hash bucket mặc định quá nhỏ; tự repair nginx.conf khi nâng cấp và khi mở panel; sửa HTML pattern tên website cho Chrome mới.",
   "features": [
-    "Cảnh báo Telegram theo ngưỡng: bộ nhớ trống thấp, RAM cạn, pin sạc 100% quá lâu (nguy cơ phồng pin), nhiệt độ pin cao và Cloudflare Tunnel rớt.",
-    "Kiểm tra mỗi 15 phút qua cron job tms-alerts-check; mỗi loại cảnh báo chỉ nhắc lại sau cooldown cấu hình được.",
-    "Cấu hình ngưỡng và chạy thử ngay trong trang Thông báo; đo pin/nhiệt độ cần termux-api.",
-    "Guardian tự khởi động lại cloudflared khi tunnel rớt và crond khi có cron job bật (tuỳ chọn trong cấu hình Guardian).",
-    "Kèm bảo mật V17.0.18 và backup tự động + offsite rclone V17.0.19."
+    "Tự bổ sung server_names_hash_bucket_size 128 và server_names_hash_max_size 4096 vào nginx.conf cũ theo cách idempotent.",
+    "Update Center tự repair, chạy nginx -t và reload Nginx an toàn trước khi xác nhận cập nhật hoàn tất.",
+    "Panel tự repair cấu hình Nginx còn thiếu để các máy nâng cấp từ V17.0.20 không cần cài lại TMS OS.",
+    "Sửa pattern tên website/clone website để tương thích biểu thức chính quy Unicode v trên Chrome mới.",
+    "Làm mới cache PWA bằng Service Worker V17.0.21."
   ],
-  "checksum_sha256": "013c65a9c6985125094d10c4048ed204eeb69f16b5bc239305b422ee27f212c5",
-  "build_date": "2026-08-30",
-  "version_display": "TMS OS V17.0.20",
-  "changelog": "V17.0.20: bảo mật — khoá đăng nhập sau chuỗi sai, default-deny auth middleware, CommandRunner.",
+  "checksum_sha256": "89ff22ec97bec545e37a9fba669481dc0a6947857e40980f5071bfd283f1d8c3",
+  "build_date": "2026-09-04",
+  "version_display": "TMS OS V17.0.21",
+  "changelog": "V17.0.21: sửa server_names_hash Nginx và lỗi pattern Website Control Center.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
-  "release_date": "2026-08-30"
+  "release_date": "2026-09-04"
 }
