@@ -51,7 +51,9 @@ try {
     $archive->close();
 
     expectV17022Payload(str_contains($index, "'/files/upload-chunk'") && str_contains($index, "'/files/upload-complete'"), 'Payload thiếu chunk upload routes.');
-    expectV17022Payload(strpos($restart, 'if panel_ok; then') < strpos($restart, 'tms-php-engine.sh\" restart'), 'Update worker phải kiểm tra panel trước khi restart PHP.');
+    $healthPos = strpos($restart, 'if panel_ok; then');
+    $restartPos = strpos($restart, 'tms-php-engine.sh" restart');
+    expectV17022Payload($healthPos !== false && $restartPos !== false && $healthPos < $restartPos, 'Update worker phải kiểm tra panel trước khi restart PHP.');
     expectV17022Payload(str_contains($restart, 'ensure_tunnel'), 'Update worker thiếu Cloudflare continuity guard.');
     expectV17022Payload(str_contains($worker, "const VERSION='tms-os-v17.0.22';"), 'Service Worker chưa bump V17.0.22.');
 
