@@ -55,20 +55,22 @@ sleep 3
 write_state 'restarting' 'Đang sửa tương thích Nginx, khởi động lại PHP và xác nhận panel local.'
 
 # V17.0.21: V17.0.20 có thể để nginx.conf thiếu server_names_hash_*.
-# Sửa cấu hình trước mọi lần nginx -t/reload sau cập nhật để Website Center
-# không còn lỗi "could not build server_names_hash" khi tạo thêm hostname.
-if ! php "$SCRIPT_DIR/tms-nginx-compat.php" >/dev/null 2>&1; then
-  write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích. Hãy mở panel lại hoặc chạy tms-nginx-compat.php từ Termux.'
-  clear_queue
-  exit 1
-fi
-if command -v nginx >/dev/null 2>&1; then
-  if ! nginx -t >/dev/null 2>&1; then
-    write_state 'restart_failed' 'Đã cập nhật source nhưng nginx.conf vẫn chưa hợp lệ sau bước sửa tương thích.'
+# Payload chính thức luôn kèm helper này. Guard tồn tại để worker vẫn có thể
+# chạy trong môi trường repair/test tối giản hoặc khi một bản cũ thiếu helper.
+if [ -f "$SCRIPT_DIR/tms-nginx-compat.php" ]; then
+  if ! php "$SCRIPT_DIR/tms-nginx-compat.php" >/dev/null 2>&1; then
+    write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích. Hãy mở panel lại hoặc chạy tms-nginx-compat.php từ Termux.'
     clear_queue
     exit 1
   fi
-  nginx -s reload >/dev/null 2>&1 || true
+  if command -v nginx >/dev/null 2>&1; then
+    if ! nginx -t >/dev/null 2>&1; then
+      write_state 'restart_failed' 'Đã cập nhật source nhưng nginx.conf vẫn chưa hợp lệ sau bước sửa tương thích.'
+      clear_queue
+      exit 1
+    fi
+    nginx -s reload >/dev/null 2>&1 || true
+  fi
 fi
 
 # Payload Update Center chỉ thay app/config/public/routes/scripts. Không được gọi
