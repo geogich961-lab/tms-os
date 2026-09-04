@@ -21,7 +21,7 @@ expectV17022(str_contains($appJs, "requestJson('/files/upload-complete'"), 'Fron
 expectV17022(str_contains($appJs, "button.textContent='Thử lại'"), 'Upload lỗi không khôi phục nút Thử lại.');
 
 $healthPos = strpos($restart, 'if panel_ok; then');
-$phpRestartPos = strpos($restart, 'tms-php-engine.sh\" restart');
+$phpRestartPos = strpos($restart, 'tms-php-engine.sh" restart');
 expectV17022($healthPos !== false && $phpRestartPos !== false && $healthPos < $phpRestartPos, 'Update worker phải health-check trước khi restart PHP.');
 expectV17022(str_contains($restart, 'ensure_tunnel'), 'Update worker phải chủ động giữ Cloudflare Tunnel.');
 expectV17022(!str_contains($restart, 'bash "$SCRIPT_DIR/start-tms.sh"'), 'Update worker không được tự full-stack restart.');
