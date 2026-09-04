@@ -1,0 +1,99 @@
+name: Release TMS OS V17.0.22
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_22_payload.sh'
+      - '.github/workflows/release-v17.0.22.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.22
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+          ini-values: memory_limit=512M
+
+      - name: Verify source version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.22'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.22';" public/service-worker.js
+          php tests/v17_0_22_regression_test.php
+
+      - name: Download V17.0.21 base payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .build/v17.0.21/release
+          gh release download v17.0.21 --pattern TMS_OS_LATEST.zip --dir .build/v17.0.21/release
+
+      - name: Build and test V17.0.22 payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_22_payload.sh
+          php tests/v17_0_22_update_payload_test.php
+
+      - name: Finalize release metadata on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.22/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.22/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.22 release metadata'
+            git push origin HEAD:main
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.22 >/dev/null 2>&1; then
+            echo 'Release v17.0.22 đã tồn tại; bỏ qua tạo mới.'
+            exit 0
+          fi
+          git tag -a v17.0.22 -m 'TMS OS V17.0.22'
+          git push origin v17.0.22
+          printf '%s\n' \
+            'TMS OS V17.0.22 — File Manager + Update Center hotfix' \
+            '' \
+            '## Sửa lỗi' \
+            '- Sửa upload ZIP/tệp trong File Manager khi JavaScript bật bằng cách khôi phục hai endpoint chunk upload.' \
+            '- Không còn cần tắt JavaScript; các thao tác mở, đổi tên, giải nén, xóa, copy/move và menu ngữ cảnh tiếp tục hoạt động bình thường.' \
+            '- Update Center health-check panel trước khi restart PHP, tránh downtime không cần thiết.' \
+            '- Chủ động giữ/khôi phục Cloudflare Tunnel và không tự full-stack restart trong worker cập nhật.' \
+            '- Làm mới cache PWA lên V17.0.22.' \
+            '' \
+            '## Nâng cấp' \
+            'Vào Update Center trên V17.0.21 và cập nhật trực tiếp. Không cần chạy lại lệnh cài đặt.' \
+            > .build/v17.0.22/release/NOTES.md
+          gh release create v17.0.22 \
+            .build/v17.0.22/release/TMS_OS_LATEST.zip \
+            .build/v17.0.22/release/RELEASE.json \
+            --title 'TMS OS V17.0.22' \
+            --notes-file .build/v17.0.22/release/NOTES.md \
+            --latest
+          gh release view v17.0.22 --json tagName,isDraft,isPrerelease,assets

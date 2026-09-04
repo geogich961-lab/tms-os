@@ -27,7 +27,7 @@ foreach (['AuthController', 'DashboardController', 'FileManagerController', 'Web
 
 date_default_timezone_set((string)tms_config('timezone', 'Asia/Ho_Chi_Minh'));
 
-// V17.0.21: tự sửa nginx.conf cũ trước khi WebsiteService chạy nginx -t.
+// V17.0.21+: tự sửa nginx.conf cũ trước khi WebsiteService chạy nginx -t.
 try {
     $nginxCompat = tms_repair_nginx_server_names_hash();
     if (empty($nginxCompat['ok'])) {
@@ -72,5 +72,11 @@ session_start();
 
 $router = new Router();
 require $basePath . '/routes/web.php';
+
+// V17.0.22: frontend File Manager dùng upload theo chunk. Hai endpoint này
+// phải luôn tồn tại khi JavaScript bật; giữ /files/upload làm fallback truyền thống.
+$router->post('/files/upload-chunk', fn() => $fileController->uploadChunk());
+$router->post('/files/upload-complete', fn() => $fileController->completeUpload());
+
 // Default-deny: route không nằm trong danh sách public() đều yêu cầu đăng nhập.
 $router->dispatch($_SERVER['REQUEST_METHOD'], $_SERVER['REQUEST_URI'], static fn(): bool => $authService->check());
