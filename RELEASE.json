@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.21",
-  "build": "20260904-v17.0.21",
+  "internal_version": "17.0.22",
+  "build": "20260904-v17.0.22",
   "channel": "stable",
   "version_visible_to_user": true,
   "released_at": "2026-09-04",
-  "name": "TMS OS V17.0.21",
-  "version": "17.0.21",
-  "notes": "V17.0.21: sửa lỗi Website Control Center trên Nginx khi server_names_hash bucket mặc định quá nhỏ; tự repair nginx.conf khi nâng cấp và khi mở panel; sửa HTML pattern tên website cho Chrome mới.",
+  "name": "TMS OS V17.0.22",
+  "version": "17.0.22",
+  "notes": "V17.0.22: sửa upload chunk của File Manager và làm Update Center ưu tiên không downtime khi quản trị qua Cloudflare Tunnel.",
   "features": [
-    "Tự bổ sung server_names_hash_bucket_size 128 và server_names_hash_max_size 4096 vào nginx.conf cũ theo cách idempotent.",
-    "Update Center tự repair, chạy nginx -t và reload Nginx an toàn trước khi xác nhận cập nhật hoàn tất.",
-    "Panel tự repair cấu hình Nginx còn thiếu để các máy nâng cấp từ V17.0.20 không cần cài lại TMS OS.",
-    "Sửa pattern tên website/clone website để tương thích biểu thức chính quy Unicode v trên Chrome mới.",
-    "Làm mới cache PWA bằng Service Worker V17.0.21."
+    "Khôi phục endpoint /files/upload-chunk và /files/upload-complete để upload hoạt động khi JavaScript bật.",
+    "Giữ đầy đủ thao tác File Manager, không còn cần tắt JavaScript để tải ZIP.",
+    "Update Center health-check panel trước; chỉ restart riêng PHP khi thật sự cần.",
+    "Chủ động giữ/khôi phục Cloudflare Tunnel và không tự full-stack restart trong worker cập nhật.",
+    "Làm mới cache PWA bằng Service Worker V17.0.22."
   ],
-  "checksum_sha256": "89ff22ec97bec545e37a9fba669481dc0a6947857e40980f5071bfd283f1d8c3",
+  "checksum_sha256": "923ce3821a88ccd36cd1da9d07ef3da8970465edc37fd7064de521475dcae5cd",
   "build_date": "2026-09-04",
-  "version_display": "TMS OS V17.0.21",
-  "changelog": "V17.0.21: sửa server_names_hash Nginx và lỗi pattern Website Control Center.",
+  "version_display": "TMS OS V17.0.22",
+  "changelog": "V17.0.22: sửa File Manager upload và Update Center remote continuity.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
   "release_date": "2026-09-04"
 }

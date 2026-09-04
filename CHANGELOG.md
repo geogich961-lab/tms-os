@@ -1,4 +1,13 @@
 # Changelog
+## [17.0.22] — 2026-09-04
+
+V17.0.22: sửa upload chunk của File Manager và làm Update Center ưu tiên không downtime khi quản trị qua Cloudflare Tunnel.
+- Khôi phục endpoint /files/upload-chunk và /files/upload-complete để upload hoạt động khi JavaScript bật.
+- Giữ đầy đủ thao tác File Manager, không còn cần tắt JavaScript để tải ZIP.
+- Update Center health-check panel trước; chỉ restart riêng PHP khi thật sự cần.
+- Chủ động giữ/khôi phục Cloudflare Tunnel và không tự full-stack restart trong worker cập nhật.
+- Làm mới cache PWA bằng Service Worker V17.0.22.
+
 ## [17.0.21] — 2026-09-04
 
 V17.0.21: sửa lỗi Website Control Center trên Nginx khi server_names_hash bucket mặc định quá nhỏ; tự repair nginx.conf khi nâng cấp và khi mở panel; sửa HTML pattern tên website cho Chrome mới.
