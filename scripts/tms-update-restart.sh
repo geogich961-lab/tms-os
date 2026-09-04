@@ -52,7 +52,27 @@ clear_queue() {
 }
 
 sleep 3
-write_state 'restarting' 'Đang khởi động lại PHP của TMS OS và xác nhận panel local.'
+write_state 'restarting' 'Đang sửa tương thích Nginx, khởi động lại PHP và xác nhận panel local.'
+
+# V17.0.21: V17.0.20 có thể để nginx.conf thiếu server_names_hash_*.
+# Payload chính thức luôn kèm helper này. Guard tồn tại để worker vẫn có thể
+# chạy trong môi trường repair/test tối giản hoặc khi một bản cũ thiếu helper.
+if [ -f "$SCRIPT_DIR/tms-nginx-compat.php" ]; then
+  if ! php "$SCRIPT_DIR/tms-nginx-compat.php" >/dev/null 2>&1; then
+    write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích. Hãy mở panel lại hoặc chạy tms-nginx-compat.php từ Termux.'
+    clear_queue
+    exit 1
+  fi
+  if command -v nginx >/dev/null 2>&1; then
+    if ! nginx -t >/dev/null 2>&1; then
+      write_state 'restart_failed' 'Đã cập nhật source nhưng nginx.conf vẫn chưa hợp lệ sau bước sửa tương thích.'
+      clear_queue
+      exit 1
+    fi
+    nginx -s reload >/dev/null 2>&1 || true
+  fi
+fi
+
 # Payload Update Center chỉ thay app/config/public/routes/scripts. Không được gọi
 # start-tms.sh ở đây vì full-stack restart sẽ dừng Nginx và Cloudflare Tunnel,
 # khiến browser từ hostname ngoài nhận 502 dù source đã được áp dụng đúng.
@@ -65,7 +85,7 @@ fi
 attempt=1
 while [ "$attempt" -le "$HEALTH_ATTEMPTS" ]; do
   if curl -fsS --max-time 3 http://127.0.0.1:8888/login >/dev/null 2>&1; then
-    write_state 'completed' 'Đã áp dụng cập nhật và xác nhận panel local đang hoạt động.'
+    write_state 'completed' 'Đã áp dụng cập nhật, sửa Nginx và xác nhận panel local đang hoạt động.'
     clear_queue
     exit 0
   fi

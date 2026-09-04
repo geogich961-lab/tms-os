@@ -1,0 +1,111 @@
+name: Release TMS OS V17.0.21
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_21_payload.sh'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.21
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+          ini-values: memory_limit=512M
+
+      - name: Verify source version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.21'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.21';" public/service-worker.js
+          php tests/nginx_hash_compatibility_test.php
+
+      - name: Download V17.0.20 base payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .build/v17.0.20/release
+          gh release download v17.0.20 --pattern TMS_OS_LATEST.zip --dir .build/v17.0.20/release
+
+      - name: Build and test V17.0.21 payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_21_payload.sh
+          php tests/v17_0_21_update_payload_test.php
+
+      - name: Finalize release metadata on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.21/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.21/release/RELEASE.json
+          if ! grep -q '^## Phát hành ổn định V17.0.21$' todo.md; then
+            cat >> todo.md <<'EOF'
+
+## Phát hành ổn định V17.0.21
+
+- [x] Sửa lỗi Nginx `server_names_hash` khi Website Control Center tạo thêm hostname.
+- [x] Tự repair `nginx.conf` cho máy nâng cấp từ V17.0.20 và kiểm tra bằng `nginx -t`.
+- [x] Sửa HTML pattern tên website cho Chrome mới.
+- [x] Kiểm thử payload V17.0.20 → V17.0.21, bảo toàn storage và Cloudflare.
+- [x] Đóng gói, checksum và phát hành GitHub Release V17.0.21.
+- [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật.
+EOF
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md todo.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.21 release metadata'
+            git push origin HEAD:main
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.21 >/dev/null 2>&1; then
+            echo 'Release v17.0.21 đã tồn tại; bỏ qua tạo mới.'
+            exit 0
+          fi
+          git tag -a v17.0.21 -m 'TMS OS V17.0.21'
+          git push origin v17.0.21
+          cat > .build/v17.0.21/release/NOTES.md <<'EOF'
+TMS OS V17.0.21 — Hotfix Website Control Center / Nginx
+
+## Sửa lỗi
+- Sửa lỗi `nginx: [emerg] could not build server_names_hash` khi tạo website hoặc hostname mới.
+- Tự bổ sung `server_names_hash_bucket_size 128` và `server_names_hash_max_size 4096` cho cấu hình cũ theo cách idempotent.
+- Update Center tự repair và chạy `nginx -t` trước khi xác nhận cập nhật hoàn tất; không yêu cầu cài lại TMS OS.
+- Sửa `pattern` tên website/clone website để tương thích Chrome mới.
+- Làm mới cache PWA lên V17.0.21.
+
+## Nâng cấp
+Vào **Update Center** trên TMS OS V17.0.20 và chọn cập nhật. Website, database, storage và cấu hình Cloudflare được giữ nguyên.
+EOF
+          gh release create v17.0.21 \
+            .build/v17.0.21/release/TMS_OS_LATEST.zip \
+            .build/v17.0.21/release/RELEASE.json \
+            --title 'TMS OS V17.0.21' \
+            --notes-file .build/v17.0.21/release/NOTES.md \
+            --latest
+          gh release view v17.0.21 --json tagName,isDraft,isPrerelease,assets

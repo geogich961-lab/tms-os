@@ -15,6 +15,7 @@ $basePath = dirname(__DIR__);
 require $basePath . '/app/Core/helpers.php';
 require $basePath . '/app/Core/Router.php';
 require $basePath . '/app/Core/CommandRunner.php';
+require $basePath . '/app/Core/NginxCompatibility.php';
 
 foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'AutoBackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'CronJobService', 'OperationalAlertsService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService', 'SqlQueryService'] as $class) {
     require $basePath . '/app/Services/' . $class . '.php';
@@ -25,6 +26,16 @@ foreach (['AuthController', 'DashboardController', 'FileManagerController', 'Web
 }
 
 date_default_timezone_set((string)tms_config('timezone', 'Asia/Ho_Chi_Minh'));
+
+// V17.0.21: tự sửa nginx.conf cũ trước khi WebsiteService chạy nginx -t.
+try {
+    $nginxCompat = tms_repair_nginx_server_names_hash();
+    if (empty($nginxCompat['ok'])) {
+        error_log('TMS Nginx compatibility: ' . (string)($nginxCompat['message'] ?? 'unknown error'));
+    }
+} catch (Throwable $e) {
+    error_log('TMS Nginx compatibility: ' . $e->getMessage());
+}
 
 function tms_ini_bytes(string $value): int
 {
