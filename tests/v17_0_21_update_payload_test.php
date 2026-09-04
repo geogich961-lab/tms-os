@@ -33,10 +33,13 @@ try {
     $archive = new ZipArchive();
     expectV17021($archive->open($releaseZip) === true, 'Không mở được payload V17.0.21.');
     $entries = [];
+    $textExtensions = ['php', 'sh', 'js', 'css', 'json', 'html', 'htm', 'txt', 'md', 'conf', 'ini', 'xml', 'svg', 'yml', 'yaml'];
     for ($i = 0; $i < $archive->numFiles; $i++) $entries[] = (string)$archive->getNameIndex($i);
     foreach ($entries as $entry) {
         expectV17021((bool)preg_match('#^(app|config|public|routes|scripts)/#', $entry), 'Payload chứa root không được phép: ' . $entry);
-        expectV17021(!str_contains((string)$archive->getFromName($entry), "\r\n"), 'Payload text còn CRLF: ' . $entry);
+        if (!str_ends_with($entry, '/') && in_array(strtolower(pathinfo($entry, PATHINFO_EXTENSION)), $textExtensions, true)) {
+            expectV17021(!str_contains((string)$archive->getFromName($entry), "\r\n"), 'Payload text còn CRLF: ' . $entry);
+        }
     }
     expectV17021(!in_array('scripts/verify-uci-payload.sh', $entries, true), 'Payload không được kèm verifier nội bộ.');
     expectV17021($archive->locateName('app/Core/NginxCompatibility.php') !== false, 'Payload thiếu NginxCompatibility.php.');
