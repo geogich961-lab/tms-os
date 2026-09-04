@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# Worker restart tách riêng cho Update Center. start-tms.sh là điểm quản lý
-# duy nhất có trách nhiệm dọn PHP-CGI/Nginx rồi khởi động lại stack.
+# Worker xác nhận sau Update Center. V17.0.22 ưu tiên continuity:
+# không restart PHP/Nginx nếu panel local đã chạy source mới bình thường.
 set -u
 
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -8,6 +8,7 @@ STATE_FILE=${TMS_UPDATE_STATE_FILE:-}
 QUEUE_FILE=${TMS_UPDATE_QUEUE_FILE:-}
 EXPECTED_VERSION=${TMS_UPDATE_EXPECTED_VERSION:-}
 HEALTH_ATTEMPTS=${TMS_RESTART_HEALTH_ATTEMPTS:-12}
+PANEL_URL=${TMS_UPDATE_PANEL_URL:-http://127.0.0.1:8888/login}
 
 case "$HEALTH_ATTEMPTS" in
   ''|*[!0-9]*) HEALTH_ATTEMPTS=12 ;;
@@ -33,7 +34,7 @@ write_state() {
       $state["applying"] = false;
       $state["ok"] = $phase === "completed";
       $state["phase"] = $phase;
-      $state["message"] = getenv("TMS_RESTART_MESSAGE") ?: "Khởi động lại TMS OS không thành công.";
+      $state["message"] = getenv("TMS_RESTART_MESSAGE") ?: "Không thể xác nhận trạng thái sau cập nhật.";
       $state["finished_at"] = date("c");
       $version = getenv("TMS_RESTART_VERSION") ?: "";
       if ($version !== "") { $state["current"] = $version; }
@@ -51,41 +52,60 @@ clear_queue() {
   [ -n "$QUEUE_FILE" ] && rm -f "$QUEUE_FILE" || true
 }
 
-sleep 3
-write_state 'restarting' 'Đang sửa tương thích Nginx, khởi động lại PHP và xác nhận panel local.'
+panel_ok() {
+  curl -fsS --max-time 3 "$PANEL_URL" >/dev/null 2>&1
+}
 
-# V17.0.21: V17.0.20 có thể để nginx.conf thiếu server_names_hash_*.
-# Payload chính thức luôn kèm helper này. Guard tồn tại để worker vẫn có thể
-# chạy trong môi trường repair/test tối giản hoặc khi một bản cũ thiếu helper.
+ensure_tunnel() {
+  helper="$SCRIPT_DIR/tms-cloudflare-tunnel.sh"
+  [ -x "$helper" ] || return 0
+  sh "$helper" start >/dev/null 2>&1 || true
+}
+
+sleep 2
+write_state 'restarting' 'Đang xác nhận source mới mà không làm gián đoạn panel hoặc Cloudflare Tunnel.'
+
+# Giữ bản sửa Nginx của V17.0.21 nhưng chỉ reload khi cấu hình hợp lệ.
 if [ -f "$SCRIPT_DIR/tms-nginx-compat.php" ]; then
   if ! php "$SCRIPT_DIR/tms-nginx-compat.php" >/dev/null 2>&1; then
-    write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích. Hãy mở panel lại hoặc chạy tms-nginx-compat.php từ Termux.'
+    write_state 'restart_failed' 'Source mới đã áp dụng nhưng không thể sửa cấu hình Nginx tương thích.'
     clear_queue
     exit 1
   fi
-  if command -v nginx >/dev/null 2>&1; then
-    if ! nginx -t >/dev/null 2>&1; then
-      write_state 'restart_failed' 'Đã cập nhật source nhưng nginx.conf vẫn chưa hợp lệ sau bước sửa tương thích.'
-      clear_queue
-      exit 1
-    fi
-    nginx -s reload >/dev/null 2>&1 || true
+fi
+if command -v nginx >/dev/null 2>&1; then
+  if ! nginx -t >/dev/null 2>&1; then
+    write_state 'restart_failed' 'Source mới đã áp dụng nhưng nginx.conf chưa hợp lệ.'
+    clear_queue
+    exit 1
   fi
+  nginx -s reload >/dev/null 2>&1 || true
 fi
 
-# Payload Update Center chỉ thay app/config/public/routes/scripts. Không được gọi
-# start-tms.sh ở đây vì full-stack restart sẽ dừng Nginx và Cloudflare Tunnel,
-# khiến browser từ hostname ngoài nhận 502 dù source đã được áp dụng đúng.
-if ! bash "$SCRIPT_DIR/tms-php-engine.sh" restart; then
-  write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng PHP của TMS OS không khởi động lại được. Hãy chạy start-tms.sh một lần từ Termux.'
+# Không restart PHP nếu panel đã phản hồi. PHP của TMS OS đọc source mới ở request kế tiếp;
+# tránh khoảng trống 502/1033 đối với người đang cập nhật từ xa qua Cloudflare.
+ensure_tunnel
+if panel_ok; then
+  write_state 'completed' 'Đã cập nhật thành công và panel vẫn online; không cần restart dịch vụ.'
+  clear_queue
+  exit 0
+fi
+
+# Chỉ khi panel local thực sự không phản hồi mới restart riêng PHP engine.
+write_state 'restarting' 'Panel local chưa phản hồi; đang khôi phục riêng PHP engine và giữ Nginx/Tunnel hoạt động.'
+if ! sh "$SCRIPT_DIR/tms-php-engine.sh" restart >/dev/null 2>&1; then
+  ensure_tunnel
+  write_state 'restart_failed' 'Source mới đã áp dụng nhưng PHP engine không tự khôi phục được. Nginx và Cloudflare Tunnel không bị dừng.'
   clear_queue
   exit 1
 fi
+ensure_tunnel
 
 attempt=1
 while [ "$attempt" -le "$HEALTH_ATTEMPTS" ]; do
-  if curl -fsS --max-time 3 http://127.0.0.1:8888/login >/dev/null 2>&1; then
-    write_state 'completed' 'Đã áp dụng cập nhật, sửa Nginx và xác nhận panel local đang hoạt động.'
+  if panel_ok; then
+    ensure_tunnel
+    write_state 'completed' 'Đã áp dụng cập nhật và xác nhận panel local hoạt động; Cloudflare Tunnel được giữ online.'
     clear_queue
     exit 0
   fi
@@ -93,6 +113,9 @@ while [ "$attempt" -le "$HEALTH_ATTEMPTS" ]; do
   sleep 2
 done
 
-write_state 'restart_failed' 'Cập nhật đã áp dụng nhưng panel local chưa phản hồi sau khi khởi động lại. Hãy chạy start-tms.sh một lần từ Termux.'
+# Không tự gọi start-tms.sh ở đây vì script đó dừng Nginx và có thể làm mất đường
+# quản trị từ xa. Giữ origin/tunnel hiện có để người dùng vẫn có cơ hội truy cập panel.
+ensure_tunnel
+write_state 'restart_failed' 'Source mới đã áp dụng nhưng panel local chưa phản hồi. Update Center đã tránh restart toàn stack để không làm rớt Cloudflare Tunnel.'
 clear_queue
 exit 1
