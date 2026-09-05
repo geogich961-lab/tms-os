@@ -1,0 +1,70 @@
+name: Release TMS OS V17.0.24
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_24_payload.sh'
+      - '.github/workflows/release-v17.0.24.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.24
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+      - name: Verify source
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.24'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.24';" public/service-worker.js
+          php tests/v17_0_24_update_zero_downtime_test.php
+      - name: Build and test payload
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_24_payload.sh
+          php tests/v17_0_24_update_payload_test.php
+      - name: Finalize release metadata
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.24/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.24/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.24 release metadata'
+            git push origin HEAD:main
+          fi
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.24 >/dev/null 2>&1; then exit 0; fi
+          git tag -a v17.0.24 -m 'TMS OS V17.0.24'
+          git push origin v17.0.24
+          cat > .build/v17.0.24/release/NOTES.md <<'EOF'
+          TMS OS V17.0.24 — Zero-Downtime Update Safety
+
+          ## Sửa lỗi
+          - Hot Update không còn restart/reload Nginx, PHP Engine hoặc Cloudflare Tunnel.
+          - Sau khi swap source, hệ thống chỉ health-check panel local.
+          - Nếu source mới lỗi, tự rollback source về bản trước mà không chạm dịch vụ mạng.
+          - Mục tiêu loại bỏ tình trạng Cloudflare 502 khiến người dùng phải chạy installer repair sau cập nhật.
+          EOF
+          gh release create v17.0.24 \
+            .build/v17.0.24/release/TMS_OS_LATEST.zip \
+            .build/v17.0.24/release/RELEASE.json \
+            --title 'TMS OS V17.0.24' --notes-file .build/v17.0.24/release/NOTES.md --latest
