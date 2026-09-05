@@ -46,11 +46,13 @@ try {
     expectNginxCompat(str_contains($restart, 'tms-nginx-compat.php') && str_contains($restart, 'nginx -t'), 'Update restart phải repair và kiểm tra Nginx trước khi hoàn tất.');
 
     $configApp = require $root . '/config/app.php';
-    expectNginxCompat(($configApp['build'] ?? '') === 'Platform V17.0.22', 'Build phải là Platform V17.0.22.');
+    $build = (string)($configApp['build'] ?? '');
+    expectNginxCompat((bool)preg_match('/^Platform V(\d+\.\d+\.\d+)$/', $build, $m), 'Build phải có định dạng Platform Vx.y.z.');
+    expectNginxCompat(version_compare($m[1], '17.0.22', '>='), 'Build không được thấp hơn V17.0.22.');
     $worker = (string)file_get_contents($root . '/public/service-worker.js');
-    expectNginxCompat(str_contains($worker, "const VERSION='tms-os-v17.0.22';"), 'Service Worker phải làm mới cache V17.0.22.');
+    expectNginxCompat(str_contains($worker, "const VERSION='tms-os-v{$m[1]}';"), 'Service Worker phải khớp build hiện tại.');
 
-    echo "PASS: Nginx server_names_hash repair + Website pattern V17.0.22.\n";
+    echo "PASS: Nginx server_names_hash repair + Website pattern compatibility.\n";
 } finally {
     @unlink($config);
     @rmdir($tmp);
