@@ -7,6 +7,45 @@ TMS_REPORT="${TMS_REPORT:-${HOME:-/data/data/com.termux/files/home}/tms-os-prefl
 TMS_TXN_FILE="${TMS_TXN_FILE:-$TMS_STATE_DIR/active.env}"
 TMS_SAFETY_LOG="${TMS_SAFETY_LOG:-$TMS_STATE_DIR/installer.log}"
 
+# Bảo vệ installer trước lỗi Nginx "could not build server_names_hash".
+# Hàm idempotent: chèn directive khi thiếu, chuẩn hóa giá trị thấp/cũ và không tạo dòng trùng.
+tms_ensure_nginx_server_name_hash() {
+  local conf="${1:-${PREFIX:-/data/data/com.termux/files/usr}/etc/nginx/nginx.conf}"
+  [ -f "$conf" ] || return 0
+  grep -Eq '^[[:space:]]*http[[:space:]]*\{' "$conf" || return 0
+
+  if grep -Eq '^[[:space:]]*server_names_hash_bucket_size[[:space:]]+' "$conf"; then
+    sed -i -E 's/^[[:space:]]*server_names_hash_bucket_size[[:space:]]+[^;]+;/  server_names_hash_bucket_size 128;/' "$conf" || return 1
+  else
+    sed -i '/^[[:space:]]*http[[:space:]]*{/a\  server_names_hash_bucket_size 128;' "$conf" || return 1
+  fi
+
+  if grep -Eq '^[[:space:]]*server_names_hash_max_size[[:space:]]+' "$conf"; then
+    sed -i -E 's/^[[:space:]]*server_names_hash_max_size[[:space:]]+[^;]+;/  server_names_hash_max_size 4096;/' "$conf" || return 1
+  else
+    sed -i '/^[[:space:]]*http[[:space:]]*{/a\  server_names_hash_max_size 4096;' "$conf" || return 1
+  fi
+
+  local bucket_count max_count
+  bucket_count="$(grep -Ec '^[[:space:]]*server_names_hash_bucket_size[[:space:]]+' "$conf" || true)"
+  max_count="$(grep -Ec '^[[:space:]]*server_names_hash_max_size[[:space:]]+' "$conf" || true)"
+  [ "$bucket_count" -eq 1 ] && [ "$max_count" -eq 1 ] || return 1
+}
+
+# scripts/install.sh source thư viện này trước khi cài gói. Wrapper động dùng type -P
+# nên vẫn tìm được nginx vừa được pkg cài sau đó. Mọi nginx -t/reload/start trong installer
+# đều được bảo vệ, kể cả repair từ cấu hình V17.0.22 đã có nhiều server_name.
+nginx() {
+  local bin
+  bin="$(type -P nginx 2>/dev/null || true)"
+  [ -n "$bin" ] || { echo '[LỖI] Không tìm thấy binary nginx.' >&2; return 127; }
+  if ! tms_ensure_nginx_server_name_hash "${PREFIX:-/data/data/com.termux/files/usr}/etc/nginx/nginx.conf"; then
+    echo '[LỖI] Không thể chuẩn hóa server_names_hash trong nginx.conf.' >&2
+    return 1
+  fi
+  command "$bin" "$@"
+}
+
 tms_safety_init() {
   mkdir -p -- "$TMS_STATE_DIR" "$(dirname -- "$TMS_REPORT")" || return 1
   chmod 700 "$TMS_STATE_DIR" 2>/dev/null || true
@@ -88,9 +127,6 @@ tms_probe_php_cgi() {
 }
 
 tms_preflight() {
-  # Không khởi tạo `tmp` trong cùng câu lệnh `local` với `home`: khi `set -u`
-  # đang bật, Bash chưa bảo đảm biến local `home` sẵn sàng để được tham chiếu
-  # ở biểu thức kế tiếp. Android pilot đã tái hiện lỗi này tại Bước 5.
   local prefix home tmp api free failed=0 detail
   prefix="${PREFIX:-}"
   home="${HOME:-/data/data/com.termux/files/home}"
@@ -144,11 +180,7 @@ tms_write_txn() {
   sync 2>/dev/null || true
 }
 
-tms_set_phase() {
-  TMS_TXN_PHASE="$1"
-  tms_write_txn
-  tms_report "phase=$TMS_TXN_PHASE"
-}
+tms_set_phase() { TMS_TXN_PHASE="$1"; tms_write_txn; tms_report "phase=$TMS_TXN_PHASE"; }
 
 tms_init_txn() {
   TMS_TXN_ID="${1:-$(date +%s)-$$}"
@@ -165,12 +197,7 @@ tms_init_txn() {
 
 tms_clear_txn() { rm -f -- "$TMS_TXN_FILE"; }
 
-tms_backup_item() {
-  local src="$1" dst="$2"
-  [ -e "$src" ] || return 0
-  mkdir -p -- "$dst" || return 1
-  cp -a -- "$src" "$dst/"
-}
+tms_backup_item() { local src="$1" dst="$2"; [ -e "$src" ] || return 0; mkdir -p -- "$dst" || return 1; cp -a -- "$src" "$dst/"; }
 
 tms_create_backup() {
   local backup="$1" target="$2" nginx_conf="$3" runtime="$4"
@@ -187,10 +214,7 @@ tms_create_backup() {
 tms_restore_backup() {
   local backup="$1" target="$2" nginx_conf="$3" runtime="$4"
   [ -f "$backup/MANIFEST.sha256" ] || return 1
-  (cd "$backup" && sha256sum -c MANIFEST.sha256 >/dev/null 2>&1) || {
-    tms_report "restore_rejected=manifest-mismatch backup=$backup"
-    return 1
-  }
+  (cd "$backup" && sha256sum -c MANIFEST.sha256 >/dev/null 2>&1) || { tms_report "restore_rejected=manifest-mismatch backup=$backup"; return 1; }
   case "$target" in "$HOME"/*) ;; *) return 1 ;; esac
   case "$runtime" in "$HOME"/.tms-os) ;; *) return 1 ;; esac
   if [ -d "$backup/tms-os" ]; then rm -rf -- "$target" && cp -a -- "$backup/tms-os" "$target"; fi
@@ -201,13 +225,9 @@ tms_restore_backup() {
 
 tms_rollback_active() {
   [ -f "$TMS_TXN_FILE" ] || { echo '[INFO] Không có giao dịch installer cần rollback.'; return 0; }
-  # File active.env do chính installer tạo bằng printf %q.
-  # shellcheck disable=SC1090
   . "$TMS_TXN_FILE"
   [ "${TMS_TXN_PHASE:-}" = committed ] && { tms_clear_txn; echo '[OK] Giao dịch đã commit, không cần rollback.'; return 0; }
   [ -z "${TMS_TXN_STAGING:-}" ] || rm -rf -- "$TMS_TXN_STAGING"
-  if [ -n "${TMS_TXN_BACKUP:-}" ]; then
-    tms_restore_backup "$TMS_TXN_BACKUP" "$TMS_TXN_TARGET" "$TMS_TXN_NGINX" "$TMS_TXN_RUNTIME" || return 50
-  fi
+  if [ -n "${TMS_TXN_BACKUP:-}" ]; then tms_restore_backup "$TMS_TXN_BACKUP" "$TMS_TXN_TARGET" "$TMS_TXN_NGINX" "$TMS_TXN_RUNTIME" || return 50; fi
   tms_clear_txn
 }

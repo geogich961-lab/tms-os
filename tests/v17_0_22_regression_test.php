@@ -26,7 +26,9 @@ expectV17022($healthPos !== false && $phpRestartPos !== false && $healthPos < $p
 expectV17022(str_contains($restart, 'ensure_tunnel'), 'Update worker phải chủ động giữ Cloudflare Tunnel.');
 expectV17022(!str_contains($restart, 'bash "$SCRIPT_DIR/start-tms.sh"'), 'Update worker không được tự full-stack restart.');
 expectV17022(str_contains($restart, 'không cần restart dịch vụ'), 'Thiếu nhánh cập nhật không downtime.');
-expectV17022(str_contains($config, "'build' => 'Platform V17.0.22'"), 'config/app.php chưa bump V17.0.22.');
-expectV17022(str_contains($worker, "const VERSION='tms-os-v17.0.22';"), 'Service Worker chưa bump V17.0.22.');
 
-echo "PASS: V17.0.22 File Manager upload + Update Center remote continuity.\n";
+expectV17022((bool)preg_match("/'build' => 'Platform V(\\d+\\.\\d+\\.\\d+)'/", $config, $m), 'Không đọc được build hiện tại.');
+expectV17022(version_compare($m[1], '17.0.22', '>='), 'Build không được thấp hơn V17.0.22.');
+expectV17022(str_contains($worker, "const VERSION='tms-os-v{$m[1]}';"), 'Service Worker phải khớp build hiện tại.');
+
+echo "PASS: V17.0.22 File Manager upload + Update Center remote continuity remains intact.\n";
