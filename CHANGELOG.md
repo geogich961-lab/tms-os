@@ -1,4 +1,13 @@
 # Changelog
+## [17.0.23] — 2026-09-05
+
+V17.0.23: harden installer để tự sửa Nginx server_names_hash trước mọi kiểm tra, repair và reload.
+- Tự thêm server_names_hash_bucket_size 128 và server_names_hash_max_size 4096 khi thiếu.
+- Tự nâng cấu hình cũ 32/512 lên giá trị an toàn trước nginx -t.
+- Repair idempotent, không chèn trùng directive khi cài/sửa chữa nhiều lần.
+- Giữ nguyên cơ chế backup/rollback, website, database và cấu hình Cloudflare.
+- Làm mới cache PWA bằng Service Worker V17.0.23.
+
 ## [17.0.22] — 2026-09-04
 
 V17.0.22: sửa upload chunk của File Manager và làm Update Center ưu tiên không downtime khi quản trị qua Cloudflare Tunnel.

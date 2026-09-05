@@ -1,25 +1,25 @@
 {
   "product": "TMS OS",
   "display_name": "TMS OS",
-  "internal_version": "17.0.22",
-  "build": "20260904-v17.0.22",
+  "internal_version": "17.0.23",
+  "build": "20260905-v17.0.23",
   "channel": "stable",
   "version_visible_to_user": true,
-  "released_at": "2026-09-04",
-  "name": "TMS OS V17.0.22",
-  "version": "17.0.22",
-  "notes": "V17.0.22: sửa upload chunk của File Manager và làm Update Center ưu tiên không downtime khi quản trị qua Cloudflare Tunnel.",
+  "released_at": "2026-09-05",
+  "name": "TMS OS V17.0.23",
+  "version": "17.0.23",
+  "notes": "V17.0.23: harden installer để tự sửa Nginx server_names_hash trước mọi kiểm tra, repair và reload.",
   "features": [
-    "Khôi phục endpoint /files/upload-chunk và /files/upload-complete để upload hoạt động khi JavaScript bật.",
-    "Giữ đầy đủ thao tác File Manager, không còn cần tắt JavaScript để tải ZIP.",
-    "Update Center health-check panel trước; chỉ restart riêng PHP khi thật sự cần.",
-    "Chủ động giữ/khôi phục Cloudflare Tunnel và không tự full-stack restart trong worker cập nhật.",
-    "Làm mới cache PWA bằng Service Worker V17.0.22."
+    "Tự thêm server_names_hash_bucket_size 128 và server_names_hash_max_size 4096 khi thiếu.",
+    "Tự nâng cấu hình cũ 32/512 lên giá trị an toàn trước nginx -t.",
+    "Repair idempotent, không chèn trùng directive khi cài/sửa chữa nhiều lần.",
+    "Giữ nguyên cơ chế backup/rollback, website, database và cấu hình Cloudflare.",
+    "Làm mới cache PWA bằng Service Worker V17.0.23."
   ],
-  "checksum_sha256": "923ce3821a88ccd36cd1da9d07ef3da8970465edc37fd7064de521475dcae5cd",
-  "build_date": "2026-09-04",
-  "version_display": "TMS OS V17.0.22",
-  "changelog": "V17.0.22: sửa File Manager upload và Update Center remote continuity.",
+  "checksum_sha256": "d0a0db532e17f05e81e69d478f2cc3c7a96982abdd3cb7d5be05e7d2771303e5",
+  "build_date": "2026-09-05",
+  "version_display": "TMS OS V17.0.23",
+  "changelog": "V17.0.23: installer Nginx hash safety và regression coverage.",
   "download_url": "https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip",
-  "release_date": "2026-09-04"
+  "release_date": "2026-09-05"
 }
