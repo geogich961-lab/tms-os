@@ -1,0 +1,85 @@
+name: Release TMS OS V17.0.23
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_23_payload.sh'
+      - '.github/workflows/release-v17.0.23.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.23
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+          ini-values: memory_limit=512M
+      - name: Verify source version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.23'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.23';" public/service-worker.js
+          php tests/v17_0_23_installer_nginx_hash_test.php
+      - name: Download V17.0.22 base payload
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          mkdir -p .build/v17.0.22/release
+          gh release download v17.0.22 --pattern TMS_OS_LATEST.zip --dir .build/v17.0.22/release
+      - name: Build and test V17.0.23 payload
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_23_payload.sh
+          php tests/v17_0_23_update_payload_test.php
+      - name: Finalize release metadata on main
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.23/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.23/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.23 release metadata'
+            git push origin HEAD:main
+          fi
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.23 >/dev/null 2>&1; then exit 0; fi
+          git tag -a v17.0.23 -m 'TMS OS V17.0.23'
+          git push origin v17.0.23
+          printf '%s\n' \
+            'TMS OS V17.0.23 — Installer Nginx Safety' '' \
+            '## Sửa lỗi' \
+            '- Installer tự sửa server_names_hash_bucket_size thành 128 và server_names_hash_max_size thành 4096 trước nginx -t/reload/start.' \
+            '- Tự nâng cấu hình cũ 32/512 và không chèn trùng khi repair nhiều lần.' \
+            '- Giữ nguyên backup/rollback, website, database và cấu hình Cloudflare.' \
+            '- Bổ sung regression test cho installer trên cấu hình Nginx lỗi thực tế.' '' \
+            '## Nâng cấp' \
+            'Có thể cập nhật từ V17.0.22 qua Update Center; không cần cài mới.' \
+            > .build/v17.0.23/release/NOTES.md
+          gh release create v17.0.23 \
+            .build/v17.0.23/release/TMS_OS_LATEST.zip \
+            .build/v17.0.23/release/RELEASE.json \
+            --title 'TMS OS V17.0.23' --notes-file .build/v17.0.23/release/NOTES.md --latest
+          gh release view v17.0.23 --json tagName,isDraft,isPrerelease,assets
