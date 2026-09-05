@@ -1,4 +1,12 @@
 # Changelog
+## [17.0.24] — 2026-09-05
+
+V17.0.24: hot update zero-downtime, không restart/reload Nginx, PHP Engine hoặc Cloudflare Tunnel; tự rollback source nếu health-check thất bại.
+- Không restart/reload dịch vụ trong Update Center.
+- Không chạm Cloudflare Tunnel trong hot update.
+- Health-check local sau swap.
+- Tự rollback source cũ nếu source mới lỗi.
+
 ## [17.0.23] — 2026-09-05
 
 V17.0.23: harden installer để tự sửa Nginx server_names_hash trước mọi kiểm tra, repair và reload.
