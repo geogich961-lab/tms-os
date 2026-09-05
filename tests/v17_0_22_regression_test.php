@@ -20,15 +20,14 @@ expectV17022(str_contains($appJs, "requestJson('/files/upload-chunk'"), 'Fronten
 expectV17022(str_contains($appJs, "requestJson('/files/upload-complete'"), 'Frontend không gọi complete upload endpoint.');
 expectV17022(str_contains($appJs, "button.textContent='Thử lại'"), 'Upload lỗi không khôi phục nút Thử lại.');
 
-$healthPos = strpos($restart, 'if panel_ok; then');
-$phpRestartPos = strpos($restart, 'tms-php-engine.sh" restart');
-expectV17022($healthPos !== false && $phpRestartPos !== false && $healthPos < $phpRestartPos, 'Update worker phải health-check trước khi restart PHP.');
-expectV17022(str_contains($restart, 'ensure_tunnel'), 'Update worker phải chủ động giữ Cloudflare Tunnel.');
-expectV17022(!str_contains($restart, 'bash "$SCRIPT_DIR/start-tms.sh"'), 'Update worker không được tự full-stack restart.');
-expectV17022(str_contains($restart, 'không cần restart dịch vụ'), 'Thiếu nhánh cập nhật không downtime.');
+expectV17022(str_contains($restart, 'if panel_ok; then'), 'Update worker phải health-check panel local.');
+expectV17022(str_contains($restart, 'rollback_source'), 'Update worker phải rollback source khi health-check thất bại.');
+expectV17022(!str_contains($restart, 'tms-php-engine.sh" restart'), 'Hot update không được restart PHP.');
+expectV17022(!str_contains($restart, 'nginx -s reload'), 'Hot update không được reload Nginx.');
+expectV17022(!str_contains($restart, 'tms-cloudflare-tunnel.sh'), 'Hot update không được chạm tunnel.');
 
 expectV17022((bool)preg_match("/'build' => 'Platform V(\\d+\\.\\d+\\.\\d+)'/", $config, $m), 'Không đọc được build hiện tại.');
 expectV17022(version_compare($m[1], '17.0.22', '>='), 'Build không được thấp hơn V17.0.22.');
 expectV17022(str_contains($worker, "const VERSION='tms-os-v{$m[1]}';"), 'Service Worker phải khớp build hiện tại.');
 
-echo "PASS: V17.0.22 File Manager upload + Update Center remote continuity remains intact.\n";
+echo "PASS: V17.0.22 File Manager fixes remain intact with zero-downtime updater.\n";
