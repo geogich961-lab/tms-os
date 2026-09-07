@@ -9,6 +9,7 @@ PIDFILE="$STATE/guardian.pid"
 LOCKFILE="$STATE/guardian.lock"
 CFG="$STATE/guardian.conf"
 EVENTS="$LOGDIR/events.jsonl"
+EXTERNAL_UPDATE_LOCK="$STATE/external-update.lock"
 mkdir -p "$STATE" "$LOGDIR"
 [ -f "$CFG" ] || cat > "$CFG" <<CFG
 ENABLED=1
@@ -24,13 +25,24 @@ CFG
 # shellcheck disable=SC1090
 . "$CFG" 2>/dev/null || true
 INTERVAL="${INTERVAL:-30}"; AUTO_REPAIR="${AUTO_REPAIR:-1}"; MAX_REPAIRS_PER_HOUR="${MAX_REPAIRS_PER_HOUR:-6}"
-json_escape(){ printf '%s' "$1" | sed 's/\\/\\\\/g;s/"/\\"/g;s/	/\\t/g'; }
+json_escape(){ printf '%s' "$1" | sed 's/\\/\\\\/g;s/"/\\"/g;s/\t/\\t/g'; }
 event(){
   local level="$1" service="$2" action="$3" message="$4" ok="${5:-1}"
   printf '{"time":"%s","level":"%s","service":"%s","action":"%s","ok":%s,"message":"%s"}\n' "$(date -Iseconds)" "$level" "$service" "$action" "$ok" "$(json_escape "$message")" >> "$EVENTS"
   tail -n 1000 "$EVENTS" > "$EVENTS.tmp" 2>/dev/null && mv "$EVENTS.tmp" "$EVENTS" || true
 }
 http_code(){ curl -sS -L --max-time 8 -o /dev/null -w '%{http_code}' "$1" 2>/dev/null || printf '000'; }
+maintenance_active(){
+  [ -f "$EXTERNAL_UPDATE_LOCK" ] || return 1
+  local now mtime age
+  now="$(date +%s)"
+  mtime="$(stat -c %Y "$EXTERNAL_UPDATE_LOCK" 2>/dev/null || stat -f %m "$EXTERNAL_UPDATE_LOCK" 2>/dev/null || echo 0)"
+  case "$mtime" in ''|*[!0-9]*) mtime=0 ;; esac
+  age=$((now-mtime))
+  if [ "$age" -ge 0 ] && [ "$age" -le 300 ]; then return 0; fi
+  rm -f "$EXTERNAL_UPDATE_LOCK" 2>/dev/null || true
+  return 1
+}
 repair_allowed(){
   local count prefix
   prefix="$(date +%Y-%m-%dT%H):"
@@ -39,17 +51,17 @@ repair_allowed(){
 }
 repair_php(){
   repair_allowed || { event warn php repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
-  event warn php repair 'PHP upstream không phản hồi, bắt đầu phục hồi.' 1
+  maintenance_active && { event info php defer 'Đang có ứng dụng thực hiện hot update; Guardian không restart PHP dùng chung.' 1; return 0; }
+  event warn php repair 'PHP upstream không phản hồi sau hai lần kiểm tra, bắt đầu phục hồi riêng PHP.' 1
   bash "$ROOT/scripts/tms-php-engine.sh" restart >>"$LOGDIR/guardian.log" 2>&1 || true
-  nginx -t >>"$LOGDIR/guardian.log" 2>&1 && nginx -s reload >>"$LOGDIR/guardian.log" 2>&1 || true
   sleep 1
   local p w
   p=$(http_code 'http://127.0.0.1:8888/')
   w=$(http_code 'http://127.0.0.1:8080/')
   if [ "$p" != 000 ] && [ "$p" != 502 ] && [ "$p" != 504 ] && [ "$w" != 502 ] && [ "$w" != 504 ]; then
-    event info php recovered "Đã phục hồi PHP-FPM; panel=$p website=$w." 1; return 0
+    event info php recovered "Đã phục hồi PHP; panel=$p website=$w. Nginx/Tunnel không bị restart." 1; return 0
   fi
-  event error php repair "Phục hồi chưa thành công; panel=$p website=$w." 0; return 1
+  event error php repair "Phục hồi PHP chưa thành công; panel=$p website=$w." 0; return 1
 }
 # pgrep không chắc có trên Termux: dò trực tiếp /proc cho cloudflared.
 cloudflared_running(){
@@ -79,6 +91,22 @@ repair_crond(){
   bash "$ROOT/scripts/tms-cron-engine.sh" start >>"$LOGDIR/guardian.log" 2>&1 || true
   return 0
 }
+upstream_bad(){
+  local panel="$1" website="$2"
+  [ "$panel" = 502 ] || [ "$panel" = 504 ] || [ "$panel" = 000 ] || [ "$website" = 502 ] || [ "$website" = 504 ]
+}
+confirm_upstream_failure(){
+  local first_panel="$1" first_website="$2" panel2="$1" website2="$2"
+  sleep 2
+  [ "${CHECK_PANEL:-1}" = 1 ] && panel2=$(http_code 'http://127.0.0.1:8888/')
+  [ "${CHECK_WEBSITE:-1}" = 1 ] && website2=$(http_code 'http://127.0.0.1:8080/')
+  if upstream_bad "$panel2" "$website2"; then
+    event error php unhealthy "Upstream lỗi liên tiếp; lần1 panel=$first_panel website=$first_website; lần2 panel=$panel2 website=$website2." 0
+    return 0
+  fi
+  event info php recovered "Lỗi upstream chỉ thoáng qua; lần2 panel=$panel2 website=$website2. Không restart dịch vụ." 1
+  return 1
+}
 check_once(){
   local panel website
   if ! bash "$ROOT/scripts/tms-service-core.sh" nginx status >/dev/null 2>&1; then
@@ -88,9 +116,12 @@ check_once(){
   panel=skip; website=skip
   [ "${CHECK_PANEL:-1}" = 1 ] && panel=$(http_code 'http://127.0.0.1:8888/')
   [ "${CHECK_WEBSITE:-1}" = 1 ] && website=$(http_code 'http://127.0.0.1:8080/')
-  if [ "$panel" = 502 ] || [ "$panel" = 504 ] || [ "$panel" = 000 ] || [ "$website" = 502 ] || [ "$website" = 504 ]; then
-    event error php unhealthy "Upstream lỗi; panel=$panel website=$website." 0
-    [ "$AUTO_REPAIR" = 1 ] && repair_php || true
+  if upstream_bad "$panel" "$website"; then
+    if maintenance_active; then
+      event info php defer "Phát hiện upstream tạm lỗi trong maintenance window; panel=$panel website=$website. Bỏ qua auto-repair vòng này." 1
+    elif confirm_upstream_failure "$panel" "$website"; then
+      [ "$AUTO_REPAIR" = 1 ] && repair_php || true
+    fi
   fi
   DBMODE_G="$(cat "$HOME/.tms-os/db-mode" 2>/dev/null || echo mariadb)"
   if [ "${CHECK_DATABASE:-1}" = 1 ] && [ "$DBMODE_G" = "mariadb" ]; then

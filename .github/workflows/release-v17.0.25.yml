@@ -1,0 +1,71 @@
+name: Release TMS OS V17.0.25
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_25_payload.sh'
+      - '.github/workflows/release-v17.0.25.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.25
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+      - name: Verify source
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.25'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.25';" public/service-worker.js
+          php tests/v17_0_25_guardian_update_isolation_test.php
+          bash -n scripts/tms-guardian.sh
+      - name: Build and test payload
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_25_payload.sh
+          php tests/v17_0_25_update_payload_test.php
+      - name: Finalize release metadata
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.25/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.25/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.25 release metadata'
+            git push origin HEAD:main
+          fi
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.25 >/dev/null 2>&1; then exit 0; fi
+          git tag -a v17.0.25 -m 'TMS OS V17.0.25'
+          git push origin v17.0.25
+          cat > .build/v17.0.25/release/NOTES.md <<'EOF'
+          TMS OS V17.0.25 — Guardian Update Isolation
+
+          ## Sửa lỗi
+          - Guardian không còn restart PHP chỉ vì một lần probe 502/504/000 thoáng qua; bắt buộc xác nhận lại lần hai sau debounce.
+          - Tôn trọng `~/.tms-os/external-update.lock` tối đa 5 phút để ứng dụng ngoài như TMS AI Router có thể hot update mà không bị Guardian can thiệp.
+          - Repair PHP tự động chỉ restart PHP Engine, không reload Nginx và không chạm Cloudflare Tunnel.
+          - Giảm nguy cơ một website/app cập nhật kéo toàn bộ panel và website khác trên TMS OS vào Cloudflare 502.
+          EOF
+          gh release create v17.0.25 \
+            .build/v17.0.25/release/TMS_OS_LATEST.zip \
+            .build/v17.0.25/release/RELEASE.json \
+            --title 'TMS OS V17.0.25' --notes-file .build/v17.0.25/release/NOTES.md --latest
