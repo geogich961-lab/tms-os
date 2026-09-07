@@ -1,4 +1,12 @@
 # Changelog
+## [17.0.25] — 2026-09-07
+
+V17.0.25: cô lập Guardian khỏi hot update ứng dụng ngoài; xác nhận lỗi upstream hai lần, tôn trọng external-update.lock và không reload Nginx khi repair PHP.
+- Guardian bỏ qua auto-repair trong maintenance window của app ngoài.
+- Lỗi 502/504/000 phải lặp lại qua hai probe mới repair PHP.
+- Repair PHP không reload Nginx và không chạm Cloudflare Tunnel.
+- Giảm nguy cơ một app hot update kéo toàn bộ website trên TMS OS vào 502.
+
 ## [17.0.24] — 2026-09-05
 
 V17.0.24: hot update zero-downtime, không restart/reload Nginx, PHP Engine hoặc Cloudflare Tunnel; tự rollback source nếu health-check thất bại.

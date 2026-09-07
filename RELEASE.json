@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.0.24","build":"20260905-v17.0.24","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-09-05","name":"TMS OS V17.0.24","version":"17.0.24",
-  "notes":"V17.0.24: hot update zero-downtime, không restart/reload Nginx, PHP Engine hoặc Cloudflare Tunnel; tự rollback source nếu health-check thất bại.",
-  "features":["Không restart/reload dịch vụ trong Update Center.","Không chạm Cloudflare Tunnel trong hot update.","Health-check local sau swap.","Tự rollback source cũ nếu source mới lỗi."],
-  "checksum_sha256":"f4843c51395b3d078e154f6c888857efb4a503054492fde3e2fc24717a1ee79b","build_date":"2026-09-05","version_display":"TMS OS V17.0.24",
-  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-09-05"
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.0.25","build":"20260907-v17.0.25","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-09-07","name":"TMS OS V17.0.25","version":"17.0.25",
+  "notes":"V17.0.25: cô lập Guardian khỏi hot update ứng dụng ngoài; xác nhận lỗi upstream hai lần, tôn trọng external-update.lock và không reload Nginx khi repair PHP.",
+  "features":["Guardian bỏ qua auto-repair trong maintenance window của app ngoài.","Lỗi 502/504/000 phải lặp lại qua hai probe mới repair PHP.","Repair PHP không reload Nginx và không chạm Cloudflare Tunnel.","Giảm nguy cơ một app hot update kéo toàn bộ website trên TMS OS vào 502."],
+  "checksum_sha256":"684bc2479518be2b2ce321e158fd2b9d87a8dad305e0d1fa898eb5e642dc7b46","build_date":"2026-09-07","version_display":"TMS OS V17.0.25",
+  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-09-07"
 }
