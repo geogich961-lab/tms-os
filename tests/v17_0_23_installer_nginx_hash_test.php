@@ -29,7 +29,7 @@ expectV17023(str_contains($conf2,'server_names_hash_max_size 4096;'),'Không nâ
 
 $config=require $root.'/config/app.php';
 $build=(string)($config['build']??'');
-expectV17023((bool)preg_match('/^Platform V(\d+\.\d+\.\d+)$/',$build,$m),'Build sai định dạng.');
+expectV17023((bool)preg_match('/^Platform V([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$/',$build,$m),'Build sai định dạng.');
 expectV17023(version_compare($m[1],'17.0.23','>='),'Build không được thấp hơn V17.0.23.');
 $worker=(string)file_get_contents($root.'/public/service-worker.js');
 expectV17023(str_contains($worker,"const VERSION='tms-os-v{$m[1]}';"),'Service Worker phải khớp build hiện tại.');
