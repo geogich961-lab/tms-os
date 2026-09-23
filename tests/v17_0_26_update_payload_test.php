@@ -26,7 +26,7 @@ foreach([
     'public function releaseByTag(string $tag): array',
     'public function enqueueReleaseApply(string $tag): array',
     'private function stageResolvedRelease(array $release): array',
-    "version_compare($a, $b, '>')",
+    "version_compare(\$a, \$b, '>')",
 ] as $needle){
     okP26(str_contains($service,$needle),'Payload thiếu update-channel guard: '.$needle);
 }
