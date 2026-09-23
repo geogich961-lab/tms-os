@@ -369,8 +369,8 @@ final class UpdateService
             } catch (Throwable) {
                 continue;
             }
-            // Các bản quá cũ không có payload chuẩn của Update Center sẽ không hiện.
-            if (version_compare($normalized['version'], '14.0.4', '<')) {
+            // Chỉ hiện release có worker restart tự động tương thích với rollback qua Web Panel.
+            if (version_compare($normalized['version'], '17.0.5', '<')) {
                 continue;
             }
             $items[] = $normalized;
@@ -409,14 +409,17 @@ final class UpdateService
     private function normalizeGitHubRelease(array $data): array
     {
         $zipUrl = '';
+        $manifestUrl = '';
         foreach ((array)($data['assets'] ?? []) as $asset) {
-            if ((string)($asset['name'] ?? '') === 'TMS_OS_LATEST.zip') {
+            $name = (string)($asset['name'] ?? '');
+            if ($name === 'TMS_OS_LATEST.zip') {
                 $zipUrl = (string)($asset['browser_download_url'] ?? '');
-                break;
+            } elseif ($name === 'RELEASE.json') {
+                $manifestUrl = (string)($asset['browser_download_url'] ?? '');
             }
         }
-        if ($zipUrl === '') {
-            throw new RuntimeException('Release không có TMS_OS_LATEST.zip.');
+        if ($zipUrl === '' || $manifestUrl === '') {
+            throw new RuntimeException('Release thiếu TMS_OS_LATEST.zip hoặc RELEASE.json.');
         }
 
         $tag = (string)($data['tag_name'] ?? '');
