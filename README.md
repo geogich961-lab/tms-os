@@ -100,7 +100,7 @@ Sau khi cài đặt hoàn tất, bạn có thể truy cập vào giao diện qu�
 Dự án được phát triển liên tục bởi THCGaming. Nếu bạn gặp lỗi hoặc có ý tưởng nâng cấp, hãy tạo **Issue** hoặc **Pull Request** trên GitHub.
 
 - **GitHub**: [geogich961-lab/tms-os](https://github.com/geogich961-lab/tms-os)
-- **Phiên bản hiện tại**: V17.0.20 (Latest Stable)
+- **Phiên bản hiện tại**: V17.0.26 (Latest Stable)
 
 ---
 *Phát triển bởi THCGaming. Tận dụng đồ cũ - Bảo vệ môi trường - Sáng tạo công nghệ.*

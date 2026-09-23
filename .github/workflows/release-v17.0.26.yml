@@ -1,0 +1,83 @@
+name: Release TMS OS V17.0.26
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_0_26_payload.sh'
+      - '.github/workflows/release-v17.0.26.yml'
+      - 'app/Services/UpdateService.php'
+      - 'app/Controllers/UpdateController.php'
+      - 'app/Views/updates/index.php'
+      - 'routes/web.php'
+      - 'config/app.php'
+      - 'public/service-worker.js'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.0.26
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+
+      - name: Verify source
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.0.26'" config/app.php
+          grep -F "const VERSION='tms-os-v17.0.26';" public/service-worker.js
+          php tests/update_channels_release_test.php
+          php tests/update_center_ui_test.php
+          php tests/update_connectivity_resilience_test.php
+          php -l app/Services/UpdateService.php
+          php -l app/Controllers/UpdateController.php
+
+      - name: Build and test payload
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_0_26_payload.sh
+          php tests/v17_0_26_update_payload_test.php
+
+      - name: Finalize release metadata
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.0.26/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.0.26/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.0.26 release metadata'
+            git push origin HEAD:main
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.0.26 >/dev/null 2>&1; then exit 0; fi
+          git tag -a v17.0.26 -m 'TMS OS V17.0.26'
+          git push origin v17.0.26
+          cat > .build/v17.0.26/release/NOTES.md <<'EOF'
+          TMS OS V17.0.26 — Update Channels
+
+          ## Nâng cấp
+          - Update Center có hai kênh Stable và Beta/Test.
+          - Danh sách release tương thích được tải trực tiếp từ GitHub.
+          - Có thể chuyển sang một release cụ thể, gồm cả quay về stable cũ, mà không cần Termux.
+          - Mọi gói vẫn bắt buộc checksum SHA-256, backup source, health check và rollback nếu lỗi.
+          - Nhánh beta có workflow riêng để phát hành GitHub prerelease cho người dùng Beta/Test.
+          EOF
+          gh release create v17.0.26             .build/v17.0.26/release/TMS_OS_LATEST.zip             .build/v17.0.26/release/RELEASE.json             --title 'TMS OS V17.0.26'             --notes-file .build/v17.0.26/release/NOTES.md             --latest

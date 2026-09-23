@@ -46,6 +46,7 @@ final class UpdateController
         tms_view('updates.index', [
             'items' => $this->updates->staged(),
             'status' => $status,
+            'updateChannel' => $this->updates->updateChannel(),
             'updatePassword' => $this->updates->updatePasswordStatus(),
             'flash' => tms_pull_flash(),
             'csrf' => tms_csrf_token(),
@@ -74,6 +75,74 @@ final class UpdateController
         }
         header('Content-Type: application/json; charset=UTF-8');
         echo json_encode(['ok' => true, 'diagnostics' => $this->updates->networkDiagnostics()], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function releases(): void
+    {
+        if (!$this->apiGuard()) {
+            return;
+        }
+        try {
+            $items = $this->updates->releases(30);
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode([
+                'ok' => true,
+                'current' => $this->updates->currentVersion(),
+                'channel' => $this->updates->updateChannel(),
+                'releases' => $items,
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } catch (Throwable $e) {
+            header('Content-Type: application/json; charset=UTF-8');
+            echo json_encode(['ok'=>false,'error'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    public function channel(): void
+    {
+        $this->guard();
+        try {
+            $this->verify();
+            $r = $this->updates->setUpdateChannel((string)($_POST['channel'] ?? 'stable'));
+            tms_flash('success', (string)$r['message']);
+        } catch (Throwable $e) {
+            tms_flash('error', $e->getMessage());
+        }
+        tms_redirect('/updates');
+    }
+
+    public function releaseApply(): void
+    {
+        $isAjax = (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest');
+        if ($isAjax) {
+            if (!$this->apiGuard()) return;
+        } else {
+            $this->guard();
+        }
+        try {
+            $this->verify();
+            $r = $this->updates->enqueueReleaseApply((string)($_POST['tag'] ?? ''));
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode([
+                    'ok'=>(bool)($r['ok'] ?? true),
+                    'queued'=>!empty($r['queued']),
+                    'job'=>(string)($r['job'] ?? ''),
+                    'version'=>(string)($r['version'] ?? ''),
+                    'tag'=>(string)($r['tag'] ?? ''),
+                    'message'=>(string)($r['message'] ?? ''),
+                ], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            tms_flash('success', (string)($r['message'] ?? 'Đã xếp hàng release.'));
+        } catch (Throwable $e) {
+            if ($isAjax) {
+                header('Content-Type: application/json; charset=UTF-8');
+                echo json_encode(['ok'=>false,'error'=>$e->getMessage()], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+            tms_flash('error', $e->getMessage());
+        }
+        tms_redirect('/updates');
     }
 
     /** API polling cho job Cập nhật nhanh; không trả token hay đường dẫn nội bộ. */

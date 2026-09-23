@@ -9,8 +9,9 @@ $guardian = (string)file_get_contents($root . '/scripts/tms-guardian.sh');
 $config = require $root . '/config/app.php';
 $sw = (string)file_get_contents($root . '/public/service-worker.js');
 
-expectV17025(($config['build'] ?? '') === 'Platform V17.0.25', 'Build phải là V17.0.25.');
-expectV17025(str_contains($sw, "const VERSION='tms-os-v17.0.25';"), 'Service Worker phải là V17.0.25.');
+$build = preg_replace('/^Platform V/', '', (string)($config['build'] ?? ''));
+expectV17025($build !== '' && version_compare($build, '17.0.25', '>='), 'Build phải giữ Guardian contract từ V17.0.25 trở lên.');
+expectV17025(str_contains($sw, "const VERSION='tms-os-v{$build}';"), 'Service Worker phải khớp build hiện tại.');
 expectV17025(str_contains($guardian, 'EXTERNAL_UPDATE_LOCK="$STATE/external-update.lock"'), 'Guardian phải có maintenance lock cho app ngoài.');
 expectV17025(str_contains($guardian, 'maintenance_active'), 'Guardian phải kiểm tra maintenance window.');
 expectV17025(str_contains($guardian, 'confirm_upstream_failure'), 'Guardian phải xác nhận lỗi upstream lần hai trước khi repair.');

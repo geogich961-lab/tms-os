@@ -14,6 +14,7 @@ final class UpdateService
     private string $target;
     private string $stateFile;
     private string $tokenFile;
+    private string $channelFile;
     private string $queueFile;
     private string $workerLock;
     private string $workerScript;
@@ -37,6 +38,7 @@ final class UpdateService
         $this->target = $this->home . '/tms-os';
         $this->stateFile = $this->dir . '/apply-state.json';
         $this->tokenFile = $this->home . '/.tms-os/update-token';
+        $this->channelFile = $this->home . '/.tms-os/update-channel.json';
         $this->queueFile = $this->dir . '/github-apply.job.json';
         $this->workerLock = $this->dir . '/github-apply.worker.lock';
         $this->workerScript = $this->target . '/scripts/tms-update-worker.php';
@@ -52,23 +54,50 @@ final class UpdateService
         @mkdir($this->home . '/logs/services', 0700, true);
     }
 
-    /** Kiểm tra version hiện tại so với release mới nhất trên GitHub. */
+    /** Kiểm tra version hiện tại so với release mới nhất của kênh đã chọn. */
     public function check(): array
     {
         $current = $this->currentVersion();
+        $channel = $this->updateChannel();
         try {
-            $release = $this->releaseLookup !== null ? ($this->releaseLookup)() : $this->latestRelease();
+            $release = $this->releaseLookup !== null ? ($this->releaseLookup)() : $this->latestReleaseForChannel($channel);
             if (!is_array($release)) {
                 throw new RuntimeException('Dữ liệu release không hợp lệ.');
             }
         } catch (Throwable $e) {
-            return ['current' => $current, 'available' => null, 'error' => 'Không thể kiểm tra bản mới: ' . $e->getMessage()];
+            return ['current' => $current, 'channel' => $channel, 'available' => null, 'error' => 'Không thể kiểm tra bản mới: ' . $e->getMessage()];
         }
-        $available = $this->normalizeVersion($release['version'] ?? '');
+        $available = $this->normalizeVersion((string)($release['version'] ?? ''));
         return [
             'current' => $current,
+            'channel' => $channel,
             'available' => $available !== '' && $this->isNewer($available, $current) ? $release : null,
             'error' => null,
+        ];
+    }
+
+    public function updateChannel(): string
+    {
+        $state = $this->readJson($this->channelFile);
+        return (($state['channel'] ?? '') === 'beta') ? 'beta' : 'stable';
+    }
+
+    public function setUpdateChannel(string $channel): array
+    {
+        $channel = strtolower(trim($channel));
+        if (!in_array($channel, ['stable', 'beta'], true)) {
+            throw new RuntimeException('Kênh cập nhật không hợp lệ.');
+        }
+        $this->writeJsonAtomically($this->channelFile, [
+            'channel' => $channel,
+            'updated_at' => date('c'),
+        ]);
+        return [
+            'ok' => true,
+            'channel' => $channel,
+            'message' => $channel === 'beta'
+                ? 'Đã bật kênh Beta/Test. TMS OS sẽ hiển thị cả bản thử nghiệm mới nhất.'
+                : 'Đã chuyển về kênh Stable. Chỉ bản phát hành ổn định được đề xuất tự động.',
         ];
     }
 
@@ -314,15 +343,121 @@ final class UpdateService
         ];
     }
 
+    public function latestReleaseForChannel(?string $channel = null): array
+    {
+        $channel = $channel ?? $this->updateChannel();
+        return $channel === 'beta' ? $this->latestBetaRelease() : $this->latestRelease();
+    }
+
+    public function releases(int $limit = 20): array
+    {
+        $limit = max(1, min(50, $limit));
+        $url = 'https://api.github.com/repos/geogich961-lab/tms-os/releases?per_page=' . $limit;
+        $result = $this->httpGetDetailed($url, 20, 'TMS-OS-Updater/1.5');
+        $data = json_decode($result['body'], true);
+        if (!is_array($data)) {
+            throw new RuntimeException('Không đọc được danh sách release từ GitHub' . ($result['error'] !== '' ? ': ' . $result['error'] : '.'));
+        }
+
+        $items = [];
+        foreach ($data as $release) {
+            if (!is_array($release) || !empty($release['draft'])) {
+                continue;
+            }
+            try {
+                $normalized = $this->normalizeGitHubRelease($release);
+            } catch (Throwable) {
+                continue;
+            }
+            // Chỉ hiện release có worker restart tự động tương thích với rollback qua Web Panel.
+            if (version_compare($normalized['version'], '17.0.5', '<')) {
+                continue;
+            }
+            $items[] = $normalized;
+        }
+        return $items;
+    }
+
+    public function releaseByTag(string $tag): array
+    {
+        $tag = trim($tag);
+        if (!preg_match('/^v?[0-9]+\.[0-9]+\.[0-9]+(?:[-.][0-9A-Za-z.-]+)?$/', $tag)) {
+            throw new RuntimeException('Tag release không hợp lệ.');
+        }
+        if (!str_starts_with($tag, 'v')) {
+            $tag = 'v' . $tag;
+        }
+        $url = 'https://api.github.com/repos/geogich961-lab/tms-os/releases/tags/' . rawurlencode($tag);
+        $result = $this->httpGetDetailed($url, 20, 'TMS-OS-Updater/1.5');
+        $data = json_decode($result['body'], true);
+        if (!is_array($data) || empty($data['tag_name'])) {
+            throw new RuntimeException('Không tìm thấy release ' . $tag . ' trên GitHub.');
+        }
+        return $this->normalizeGitHubRelease($data);
+    }
+
+    private function latestBetaRelease(): array
+    {
+        foreach ($this->releases(30) as $release) {
+            if (!empty($release['prerelease'])) {
+                return $release;
+            }
+        }
+        throw new RuntimeException('Hiện chưa có bản Beta/Test nào được phát hành.');
+    }
+
+    private function normalizeGitHubRelease(array $data): array
+    {
+        $zipUrl = '';
+        $manifestUrl = '';
+        foreach ((array)($data['assets'] ?? []) as $asset) {
+            $name = (string)($asset['name'] ?? '');
+            if ($name === 'TMS_OS_LATEST.zip') {
+                $zipUrl = (string)($asset['browser_download_url'] ?? '');
+            } elseif ($name === 'RELEASE.json') {
+                $manifestUrl = (string)($asset['browser_download_url'] ?? '');
+            }
+        }
+        if ($zipUrl === '' || $manifestUrl === '') {
+            throw new RuntimeException('Release thiếu TMS_OS_LATEST.zip hoặc RELEASE.json.');
+        }
+
+        $tag = (string)($data['tag_name'] ?? '');
+        if ($tag === '') {
+            throw new RuntimeException('Release thiếu tag.');
+        }
+        $version = $this->normalizeVersion($tag);
+        return [
+            'version' => $version,
+            'tag' => $tag,
+            'zip_url' => $zipUrl,
+            'zip_name' => 'TMS_OS_LATEST.zip',
+            'notes' => (string)($data['body'] ?? ''),
+            'published_at' => (string)($data['published_at'] ?? ''),
+            'prerelease' => !empty($data['prerelease']),
+            'channel' => !empty($data['prerelease']) ? 'beta' : 'stable',
+        ];
+    }
+
     /** Tải gói cập nhật từ GitHub vào thư mục staging, validate cấu trúc + checksum nếu có RELEASE.json. */
     public function stageFromGitHub(?string $zipUrl = null): array
     {
-        $release = $this->latestRelease();
-        if ($zipUrl === null) {
-            $zipUrl = $release['zip_url'];
+        $release = $this->latestReleaseForChannel();
+        if ($zipUrl !== null) {
+            $release['zip_url'] = $zipUrl;
         }
+        return $this->stageResolvedRelease($release);
+    }
+
+    private function stageResolvedRelease(array $release): array
+    {
+        $zipUrl = (string)($release['zip_url'] ?? '');
+        if ($zipUrl === '') {
+            throw new RuntimeException('Release không có URL tải gói cập nhật.');
+        }
+
         $tmp = $this->dir . '/.download-' . bin2hex(random_bytes(8));
-        $download = $this->httpGetDetailed($zipUrl, 90, 'TMS-OS-Updater/1.4');
+        $download = $this->httpGetDetailed($zipUrl, 90, 'TMS-OS-Updater/1.5');
         $content = $download['body'];
         $bytes = $content === '' ? false : @file_put_contents($tmp, $content);
         unset($content);
@@ -333,30 +468,31 @@ final class UpdateService
         }
         $this->validateZip($tmp);
 
-        // Nếu release có đính kèm RELEASE.json → kiểm checksum
         $releaseJsonUrl = str_replace('TMS_OS_LATEST.zip', 'RELEASE.json', $zipUrl);
         $expectedHash = $this->fetchExpectedHash($releaseJsonUrl);
         $actualHash = hash_file('sha256', $tmp);
-        $hashOk = $expectedHash === '' || str_starts_with($expectedHash, $actualHash);
-        if (!$hashOk) {
+        if ($expectedHash === '' || !hash_equals(strtolower($expectedHash), strtolower($actualHash))) {
             @unlink($tmp);
-            throw new RuntimeException('Checksum gói cập nhật không khớp — gói có thể bị hỏng.');
+            throw new RuntimeException($expectedHash === ''
+                ? 'Release không có checksum SHA-256 hợp lệ; TMS OS từ chối cài để bảo vệ hệ thống.'
+                : 'Checksum gói cập nhật không khớp — gói có thể bị hỏng.');
         }
 
-        $name = 'tms-update-' . date('Ymd_His') . '.zip';
+        $name = 'tms-update-' . date('Ymd_His') . '-' . preg_replace('/[^0-9A-Za-z._-]+/', '-', (string)($release['version'] ?? 'release')) . '.zip';
         $dest = $this->dir . '/' . $name;
         if (!rename($tmp, $dest)) {
             @unlink($tmp);
             throw new RuntimeException('Không thể lưu gói cập nhật.');
         }
-        chmod($dest, 0600);
+        @chmod($dest, 0600);
         return [
             'ok' => true,
             'name' => $name,
             'size' => $bytes,
             'sha256' => $actualHash,
-            'version' => $release['version'],
-            'message' => 'Đã tải bản ' . $release['version'] . ' từ GitHub. Sẵn sàng áp dụng.',
+            'version' => (string)($release['version'] ?? ''),
+            'tag' => (string)($release['tag'] ?? ''),
+            'message' => 'Đã tải bản ' . (string)($release['version'] ?? '') . ' từ GitHub. Sẵn sàng áp dụng.',
         ];
     }
 
@@ -435,46 +571,92 @@ final class UpdateService
         return $this->doApply($zipFile, null);
     }
 
-    /** Tải bản mới nhất từ GitHub rồi áp dụng ngay (update 1 chạm qua API). */
+    /** Tải bản mới nhất của kênh đang chọn rồi áp dụng. */
     public function applyFromGitHub(bool $deferRestart = false): array
     {
-        $release = $this->latestRelease();
+        $release = $this->latestReleaseForChannel();
         $current = $this->currentVersion();
-        $available = $this->normalizeVersion($release['version'] ?? '');
+        $available = $this->normalizeVersion((string)($release['version'] ?? ''));
         if ($available === '' || !$this->isNewer($available, $current)) {
-            return ['ok' => true, 'skipped' => true, 'message' => 'Đã là phiên bản mới nhất (' . $current . '). Không cần cập nhật.', 'version' => $current];
+            return ['ok'=>true,'skipped'=>true,'message'=>'Đã là phiên bản mới nhất của kênh '.$this->updateChannel().' ('.$current.').','version'=>$current];
         }
-        $staged = $this->stageFromGitHub($release['zip_url'] ?? null);
-        return $this->doApply($this->dir . '/' . $staged['name'], (string)($staged['version'] ?? $available), $deferRestart);
+        return $this->applyResolvedRelease($release, $deferRestart);
     }
 
-    /**
-     * Request web chỉ ghi job và trả JSON. Việc tải/swap/restart chạy trong
-     * worker riêng, tránh làm PHP-CGI bị dừng trước khi response đến trình duyệt.
-     */
+    public function applyReleaseTag(string $tag, bool $deferRestart = false): array
+    {
+        $release = $this->releaseByTag($tag);
+        if ($this->normalizeVersion($this->currentVersion()) === $this->normalizeVersion((string)$release['version'])) {
+            return ['ok'=>true,'skipped'=>true,'message'=>'Thiết bị đang chạy đúng release này.','version'=>$this->currentVersion()];
+        }
+        return $this->applyResolvedRelease($release, $deferRestart);
+    }
+
+    private function applyResolvedRelease(array $release, bool $deferRestart): array
+    {
+        $version = $this->normalizeVersion((string)($release['version'] ?? ''));
+        if ($version === '') {
+            throw new RuntimeException('Release không có version hợp lệ.');
+        }
+        $staged = $this->stageResolvedRelease($release);
+        return $this->doApply($this->dir . '/' . $staged['name'], $version, $deferRestart);
+    }
+
+    /** Xếp hàng cập nhật lên bản mới nhất của kênh đang chọn. */
     public function enqueueGitHubApply(): array
+    {
+        $release = $this->latestReleaseForChannel();
+        $current = $this->currentVersion();
+        $available = $this->normalizeVersion((string)($release['version'] ?? ''));
+        if ($available === '' || !$this->isNewer($available, $current)) {
+            return ['ok'=>true,'skipped'=>true,'version'=>$current,'message'=>'Đã là phiên bản mới nhất của kênh '.$this->updateChannel().' ('.$current.').'];
+        }
+        return $this->enqueueResolvedRelease($release, 'channel');
+    }
+
+    /** Xếp hàng cài một release cụ thể; cho phép quay về bản cũ. */
+    public function enqueueReleaseApply(string $tag): array
+    {
+        $release = $this->releaseByTag($tag);
+        if ($this->normalizeVersion((string)$release['version']) === $this->normalizeVersion($this->currentVersion())) {
+            return ['ok'=>true,'skipped'=>true,'version'=>$this->currentVersion(),'message'=>'Thiết bị đang chạy đúng release này.'];
+        }
+        return $this->enqueueResolvedRelease($release, 'release');
+    }
+
+    private function enqueueResolvedRelease(array $release, string $source): array
     {
         $state = $this->status()['state'] ?? [];
         if (!empty($state['applying']) || is_file($this->queueFile)) {
             throw new RuntimeException('Đang có một cập nhật trong hàng đợi. Vui lòng chờ hệ thống hoàn tất.');
         }
-        $release = $this->latestRelease();
+
         $current = $this->currentVersion();
-        $available = $this->normalizeVersion((string)($release['version'] ?? ''));
-        if ($available === '' || !$this->isNewer($available, $current)) {
-            return ['ok'=>true,'skipped'=>true,'version'=>$current,'message'=>'Đã là phiên bản mới nhất ('.$current.'). Không cần cập nhật.'];
+        $version = $this->normalizeVersion((string)($release['version'] ?? ''));
+        $tag = (string)($release['tag'] ?? '');
+        if ($version === '' || $tag === '') {
+            throw new RuntimeException('Release đích không hợp lệ.');
         }
 
         $job = date('YmdHis').'-'.bin2hex(random_bytes(5));
-        $payload = ['job'=>$job,'source'=>'github','from'=>$current,'to'=>$available,'queued_at'=>date('c')];
+        $payload = [
+            'job'=>$job,
+            'source'=>$source,
+            'channel'=>(string)($release['channel'] ?? $this->updateChannel()),
+            'tag'=>$tag,
+            'from'=>$current,
+            'to'=>$version,
+            'direction'=>$this->isNewer($version, $current) ? 'upgrade' : 'rollback',
+            'queued_at'=>date('c'),
+        ];
         $this->writeJsonAtomically($this->queueFile, $payload);
         $this->writeJsonAtomically($this->stateFile, array_merge($payload, [
             'applying'=>true,
             'phase'=>'queued',
-            'message'=>'Đã nhận yêu cầu cập nhật. Worker đang chuẩn bị tải gói an toàn.',
+            'message'=>'Đã nhận yêu cầu chuyển sang '.$tag.'. Worker đang chuẩn bị gói an toàn.',
         ]));
         $this->launchUpdateWorker();
-        return ['ok'=>true,'queued'=>true,'job'=>$job,'version'=>$available,'message'=>'Đã nhận yêu cầu cập nhật '.$available.'. Panel sẽ tự xác minh sau khi dịch vụ khởi động lại.'];
+        return ['ok'=>true,'queued'=>true,'job'=>$job,'version'=>$version,'tag'=>$tag,'message'=>'Đã xếp hàng chuyển sang '.$tag.'. Panel sẽ tự xác minh sau khi dịch vụ khởi động lại.'];
     }
 
     /** Chỉ worker nội bộ được gọi phương thức này; không nhận input từ web. */
@@ -492,13 +674,18 @@ final class UpdateService
                 'applying'=>true,
                 'phase'=>'applying',
                 'started_at'=>date('c'),
-                'message'=>'Đang tải, kiểm tra checksum và áp dụng gói cập nhật.',
+                'message'=>'Đang tải, kiểm tra checksum và áp dụng release ' . (string)($job['tag'] ?? '') . '.',
             ]));
-            $result = $this->applyFromGitHub(true);
+            $tag = (string)($job['tag'] ?? '');
+            $result = $tag !== '' ? $this->applyReleaseTag($tag, true) : $this->applyFromGitHub(true);
             $current = $this->currentVersion();
             $expected = $this->normalizeVersion((string)($job['to'] ?? ''));
             if (empty($result['skipped']) && $expected !== '' && $this->normalizeVersion($current) !== $expected) {
                 throw new RuntimeException('Payload đã xử lý nhưng phiên bản source chưa đổi sang V' . $expected . '. Hệ thống đã giữ bản đang chạy để tránh báo thành công sai.');
+            }
+            $targetChannel = (string)($job['channel'] ?? '');
+            if (in_array($targetChannel, ['stable', 'beta'], true)) {
+                $this->setUpdateChannel($targetChannel);
             }
             $requiresRestart = empty($result['skipped']) && getenv('TMS_UPDATE_SKIP_RESTART') !== '1';
             if ($requiresRestart) {
@@ -1139,18 +1326,15 @@ final class UpdateService
         return ltrim(trim($v), 'vV');
     }
 
-    /** So sánh version dạng MAJOR.MINOR.PATCH. */
+    /** So sánh SemVer, gồm cả prerelease như 17.1.0-beta.1. */
     private function isNewer(string $a, string $b): bool
     {
-        $pa = array_map('intval', explode('.', $this->normalizeVersion($a)));
-        $pb = array_map('intval', explode('.', $this->normalizeVersion($b)));
-        while (count($pa) < 3) {
-            $pa[] = 0;
+        $a = $this->normalizeVersion($a);
+        $b = $this->normalizeVersion($b);
+        if ($a === '' || $b === '' || $b === 'unknown') {
+            return $a !== '' && $b === 'unknown';
         }
-        while (count($pb) < 3) {
-            $pb[] = 0;
-        }
-        return $pa > $pb;
+        return version_compare($a, $b, '>');
     }
 
     private function copyDir(string $src, string $dst): bool
