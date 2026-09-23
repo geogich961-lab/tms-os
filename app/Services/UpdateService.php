@@ -683,6 +683,10 @@ final class UpdateService
             if (empty($result['skipped']) && $expected !== '' && $this->normalizeVersion($current) !== $expected) {
                 throw new RuntimeException('Payload đã xử lý nhưng phiên bản source chưa đổi sang V' . $expected . '. Hệ thống đã giữ bản đang chạy để tránh báo thành công sai.');
             }
+            $targetChannel = (string)($job['channel'] ?? '');
+            if (in_array($targetChannel, ['stable', 'beta'], true)) {
+                $this->setUpdateChannel($targetChannel);
+            }
             $requiresRestart = empty($result['skipped']) && getenv('TMS_UPDATE_SKIP_RESTART') !== '1';
             if ($requiresRestart) {
                 $this->writeJsonAtomically($this->stateFile, array_merge($job, [
