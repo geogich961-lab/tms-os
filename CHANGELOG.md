@@ -1,4 +1,12 @@
 # Changelog
+## [17.0.26] — 2026-09-23
+
+V17.0.26: nâng cấp Update Center với kênh Stable/Beta, danh sách release và khả năng quay về release cũ trực tiếp trong Web Panel.
+- Chọn kênh Stable hoặc Beta/Test ngay trong Update Center.
+- Beta/Test đọc GitHub prerelease; Stable chỉ đề xuất release chính thức.
+- Hiển thị danh sách release tương thích và cho phép chuyển tới release cụ thể.
+- Mọi chuyển version vẫn bắt buộc SHA-256, backup source, health check và rollback an toàn.
+
 ## [17.0.25] — 2026-09-07
 
 V17.0.25: cô lập Guardian khỏi hot update ứng dụng ngoài; xác nhận lỗi upstream hai lần, tôn trọng external-update.lock và không reload Nginx khi repair PHP.
