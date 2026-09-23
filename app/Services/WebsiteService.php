@@ -8,6 +8,8 @@ final class WebsiteService
     private string $sitesDir;
     private string $localDomainFile;
     private string $gatewayConfig;
+    private ?WebsiteHealthService $healthService = null;
+    private ?WebsiteMetadataService $metadataService = null;
 
     public function __construct()
     {
@@ -16,6 +18,12 @@ final class WebsiteService
         $this->sitesDir = $this->prefix . '/etc/nginx/sites-enabled';
         $this->localDomainFile = $this->home . '/.tms-os/local-domains.json';
         $this->gatewayConfig = $this->sitesDir . '/_tms-local-domains.conf';
+        if (class_exists('WebsiteHealthService')) {
+            $this->healthService = new WebsiteHealthService();
+        }
+        if (class_exists('WebsiteMetadataService')) {
+            $this->metadataService = new WebsiteMetadataService();
+        }
 
         if (!is_dir($this->sitesDir) && !mkdir($this->sitesDir, 0700, true) && !is_dir($this->sitesDir)) {
             throw new RuntimeException('Không thể tạo thư mục cấu hình Nginx.');
@@ -43,14 +51,25 @@ final class WebsiteService
 
                 $base = basename($file);
                 $name = preg_replace('/\.conf(?:\.disabled)?$/', '', $base) ?: $base;
+                $root = trim($rootMatch[1] ?? '');
                 $status = !$valid ? 'error' : ($disabled ? 'stopped' : ($running ? 'running' : 'starting'));
+                $health = $disabled
+                    ? ['status'=>'stopped','http_status'=>0,'reachable'=>false,'latency_ms'=>0,'message'=>'Website đang dừng.','checked_at'=>date('c')]
+                    : ($this->healthService !== null ? $this->healthService->probe($port) : ['status'=>$running?'healthy':'offline','http_status'=>0,'reachable'=>$running,'latency_ms'=>0,'message'=>'','checked_at'=>date('c')]);
+                $metadata = $this->metadataFor($name, $port, $root);
 
                 $domains = $this->domainRecord($name, $port);
                 $sites[] = [
                     'name' => $name,
                     'port' => $port,
-                    'root' => trim($rootMatch[1] ?? ''),
+                    'root' => $root,
                     'config' => $file,
+                    'metadata' => $metadata,
+                    'type' => (string)($metadata['type'] ?? 'php'),
+                    'health_status' => (string)($health['status'] ?? 'unknown'),
+                    'health_http_status' => (int)($health['http_status'] ?? 0),
+                    'health_latency_ms' => (int)($health['latency_ms'] ?? 0),
+                    'health_message' => (string)($health['message'] ?? ''),
                     'valid' => $valid,
                     'enabled' => !$disabled,
                     'status' => $status,
@@ -80,7 +99,9 @@ final class WebsiteService
             throw new RuntimeException('Tên website chỉ được gồm chữ, số, dấu gạch dưới hoặc gạch ngang.');
         }
 
-        if ($port < 1024 || $port > 65535) {
+        if ($port === 0) {
+            $port = $this->findAvailablePort();
+        } elseif ($port < 1024 || $port > 65535) {
             throw new RuntimeException('Cổng phải nằm trong khoảng 1024–65535.');
         }
 
@@ -137,6 +158,7 @@ final class WebsiteService
             $records[$name] = ['local_domain'=>$safe.'.localhost','lan_domain'=>$safe.'.lan','port'=>$port,'updated_at'=>date('c')];
             $this->writeDomains($records);
             $this->rebuildLocalGateway($records);
+            $this->metadataFor($name, $port, $root);
         } catch (Throwable $e) {
             @unlink($configPath);
             $this->tryReloadAfterRollback();
@@ -174,6 +196,9 @@ final class WebsiteService
         @unlink($backupPath);
 
         $this->removeDomain($name);
+        if ($this->metadataService !== null) {
+            $this->metadataService->delete($name);
+        }
 
         if ($deleteFiles) {
             $this->remove($this->home . '/websites/' . $name);
@@ -283,6 +308,12 @@ final class WebsiteService
             $this->writeDomains($records);
             $this->rebuildLocalGateway($records);
         }
+        $siteRoot = '';
+        $currentConfig = (string)@file_get_contents($path);
+        if (preg_match('/root\s+([^;]+);/', $currentConfig, $rootMatch)) {
+            $siteRoot = trim((string)$rootMatch[1]);
+        }
+        $this->metadataFor($name, $port, $siteRoot);
     }
 
     public function updateDomains(string $name, string $localDomain, string $lanDomain): void
@@ -323,6 +354,45 @@ final class WebsiteService
             'access' => $this->tail($logDir . '/' . $name . '-access.log'),
             'error' => $this->tail($logDir . '/' . $name . '-error.log'),
         ];
+    }
+
+    public function findAvailablePort(int $start = 8081, int $end = 8999): int
+    {
+        if ($start < 1024 || $end > 65535 || $start > $end) {
+            throw new RuntimeException('Khoảng cổng tự động không hợp lệ.');
+        }
+
+        $used = [];
+        foreach ([$this->sitesDir . '/*.conf', $this->sitesDir . '/*.conf.disabled'] as $pattern) {
+            foreach (glob($pattern) ?: [] as $file) {
+                $config = (string)@file_get_contents($file);
+                if (preg_match('/listen\s+(?:0\.0\.0\.0:)?(\d+)\s*;/', $config, $match)) {
+                    $used[(int)$match[1]] = true;
+                }
+            }
+        }
+
+        for ($port = $start; $port <= $end; $port++) {
+            if (isset($used[$port])) {
+                continue;
+            }
+            if (!$this->portInUse($port)) {
+                return $port;
+            }
+        }
+        throw new RuntimeException('Không còn cổng website tự động trong khoảng ' . $start . '–' . $end . '.');
+    }
+
+    private function metadataFor(string $name, int $port, string $root): array
+    {
+        if ($this->metadataService === null) {
+            return ['schema'=>1,'name'=>$name,'type'=>'php','port'=>$port,'root'=>$root,'health_path'=>'/'];
+        }
+        try {
+            return $this->metadataService->ensure($name, $port, $root);
+        } catch (Throwable) {
+            return ['schema'=>1,'name'=>$name,'type'=>'php','port'=>$port,'root'=>$root,'health_path'=>'/'];
+        }
     }
 
     private function domainRecord(string $name, int $port): array

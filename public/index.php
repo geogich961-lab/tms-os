@@ -17,7 +17,7 @@ require $basePath . '/app/Core/Router.php';
 require $basePath . '/app/Core/CommandRunner.php';
 require $basePath . '/app/Core/NginxCompatibility.php';
 
-foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteService', 'DatabaseService', 'BackupService', 'AutoBackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'CronJobService', 'OperationalAlertsService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService', 'SqlQueryService'] as $class) {
+foreach (['AuthService', 'UnifiedSystemCoreService', 'SystemService', 'FileManagerService', 'WebsiteHealthService', 'WebsiteMetadataService', 'WebsiteService', 'DatabaseService', 'BackupService', 'AutoBackupService', 'LogService', 'NetworkService', 'TerminalService', 'DiagnosticsService', 'PluginService', 'CronJobService', 'OperationalAlertsService', 'MonitoringService', 'UpdateService', 'ModuleService', 'ServiceManagerService', 'GuardianService', 'CloudflareDomainService', 'TelegramCommandService', 'AccessReportService', 'SqlQueryService'] as $class) {
     require $basePath . '/app/Services/' . $class . '.php';
 }
 
