@@ -26,7 +26,7 @@ expectV17022(!str_contains($restart, 'tms-php-engine.sh" restart'), 'Hot update 
 expectV17022(!str_contains($restart, 'nginx -s reload'), 'Hot update không được reload Nginx.');
 expectV17022(!str_contains($restart, 'tms-cloudflare-tunnel.sh'), 'Hot update không được chạm tunnel.');
 
-expectV17022((bool)preg_match("/'build' => 'Platform V(\\d+\\.\\d+\\.\\d+)'/", $config, $m), 'Không đọc được build hiện tại.');
+expectV17022((bool)preg_match("/'build' => 'Platform V([0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?)'/", $config, $m), 'Không đọc được build hiện tại.');
 expectV17022(version_compare($m[1], '17.0.22', '>='), 'Build không được thấp hơn V17.0.22.');
 expectV17022(str_contains($worker, "const VERSION='tms-os-v{$m[1]}';"), 'Service Worker phải khớp build hiện tại.');
 
