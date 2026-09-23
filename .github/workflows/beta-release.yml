@@ -1,22 +1,9 @@
 name: Publish TMS OS Beta
 
 on:
+  push:
+    branches: [beta]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Beta version, ví dụ 17.1.0-beta.1'
-        required: true
-        type: string
-      source_ref:
-        description: 'Nhánh nguồn Beta'
-        required: true
-        default: 'beta'
-        type: string
-      notes:
-        description: 'Ghi chú ngắn cho bản Beta'
-        required: false
-        default: 'TMS OS Beta/Test build'
-        type: string
 
 permissions:
   contents: write
@@ -26,18 +13,19 @@ jobs:
     name: Build and publish Beta
     runs-on: ubuntu-latest
     steps:
-      - name: Validate inputs
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          [[ "${{ inputs.source_ref }}" == "beta" ]] || { echo "Chỉ cho phép phát hành từ nhánh beta."; exit 1; }
-          [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || { echo "Version phải dạng 17.1.0-beta.1"; exit 1; }
-
       - name: Checkout Beta source
         uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.source_ref }}
           fetch-depth: 0
+
+      - name: Resolve Beta version
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          VERSION="$(php -r '$c=require "config/app.php"; echo preg_replace("/^Platform V/", "", (string)($c["build"]??""));')"
+          [[ "${VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || { echo "config/app.php phải dùng version beta dạng 17.1.0-beta.1"; exit 1; }
+          echo "VERSION=${VERSION}" >> "${GITHUB_ENV}"
+          echo "NOTES=TMS OS ${VERSION} Beta/Test build" >> "${GITHUB_ENV}"
 
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
@@ -47,8 +35,6 @@ jobs:
 
       - name: Verify source version
         shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
         run: |
           set -Eeuo pipefail
           grep -F "'build' => 'Platform V${VERSION}'" config/app.php
@@ -58,9 +44,6 @@ jobs:
 
       - name: Build Beta payload
         shell: bash
-        env:
-          VERSION: ${{ inputs.version }}
-          NOTES: ${{ inputs.notes }}
         run: |
           set -Eeuo pipefail
           BUILD=".build/beta-${VERSION}"
@@ -103,8 +86,6 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ inputs.version }}
-          NOTES: ${{ inputs.notes }}
         run: |
           set -Eeuo pipefail
           BUILD=".build/beta-${VERSION}/release"
