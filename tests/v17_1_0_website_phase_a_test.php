@@ -72,10 +72,13 @@ try {
     }
     expectPhaseA($ready, 'PHP test server không sẵn sàng.');
 
-    $health = (new WebsiteHealthService())->probe($healthPort);
+    $healthService = new WebsiteHealthService();
+    $health = $healthService->probeApplication($healthPort);
     expectPhaseA(($health['status'] ?? '') === 'healthy', 'HTTP 200 phải được đánh dấu healthy.');
-    expectPhaseA((int)($health['http_status'] ?? 0) === 200, 'Health Check phải trả HTTP status 200.');
-    expectPhaseA(!empty($health['reachable']), 'Health Check phải xác nhận endpoint reachable.');
+    expectPhaseA((int)($health['http_status'] ?? 0) === 200, 'Health Check nền phải trả HTTP status 200.');
+    expectPhaseA(!empty($health['reachable']), 'Health Check nền phải xác nhận endpoint reachable.');
+    $healthService->writeCache('demo', $healthPort, $health);
+    expectPhaseA(is_file($home . '/.tms-os/site-health/demo.json'), 'App-health phải được cache ngoài request panel.');
     proc_terminate($process);
     proc_close($process);
 
@@ -86,6 +89,11 @@ try {
     $view = (string)file_get_contents($root . '/app/Views/websites/index.php');
     expectPhaseA(str_contains($view, 'Để trống để TMS OS tự chọn'), 'UI tạo website phải hướng dẫn Auto Port.');
     expectPhaseA(str_contains($view, 'health_http_status'), 'Website card phải hiển thị kết quả health check.');
+    expectPhaseA(str_contains($view, 'Đang xác minh'), 'Website card phải có trạng thái chờ health worker.');
+    $websiteService = (string)file_get_contents($root . '/app/Services/WebsiteService.php');
+    expectPhaseA(str_contains($websiteService, '->status($name, $port, $root'), 'WebsiteService phải đọc health cache an toàn thay vì gọi app HTTP đồng bộ.');
+    $worker = (string)file_get_contents($root . '/scripts/tms-site-health-worker.php');
+    expectPhaseA(str_contains($worker, 'usleep(900000)'), 'Health worker phải đợi request panel kết thúc trước khi probe app.');
 
     echo "PASS: V17.1 Website Control Center Phase A\n";
 } finally {
