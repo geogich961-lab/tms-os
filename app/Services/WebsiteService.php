@@ -53,10 +53,10 @@ final class WebsiteService
                 $name = preg_replace('/\.conf(?:\.disabled)?$/', '', $base) ?: $base;
                 $root = trim($rootMatch[1] ?? '');
                 $status = !$valid ? 'error' : ($disabled ? 'stopped' : ($running ? 'running' : 'starting'));
-                $health = $disabled
-                    ? ['status'=>'stopped','http_status'=>0,'reachable'=>false,'latency_ms'=>0,'message'=>'Website đang dừng.','checked_at'=>date('c')]
-                    : ($this->healthService !== null ? $this->healthService->probe($port) : ['status'=>$running?'healthy':'offline','http_status'=>0,'reachable'=>$running,'latency_ms'=>0,'message'=>'','checked_at'=>date('c')]);
                 $metadata = $this->metadataFor($name, $port, $root);
+                $health = $disabled
+                    ? ['status'=>'stopped','http_status'=>0,'reachable'=>false,'latency_ms'=>0,'message'=>'Website đang dừng.','checked_at'=>date('c'),'pending'=>false]
+                    : ($this->healthService !== null ? $this->healthService->status($name, $port, $root, (string)($metadata['health_path'] ?? '/')) : ['status'=>$running?'healthy':'offline','http_status'=>0,'reachable'=>$running,'latency_ms'=>0,'message'=>'','checked_at'=>date('c'),'pending'=>false]);
 
                 $domains = $this->domainRecord($name, $port);
                 $sites[] = [
@@ -70,6 +70,7 @@ final class WebsiteService
                     'health_http_status' => (int)($health['http_status'] ?? 0),
                     'health_latency_ms' => (int)($health['latency_ms'] ?? 0),
                     'health_message' => (string)($health['message'] ?? ''),
+                    'health_pending' => !empty($health['pending']),
                     'valid' => $valid,
                     'enabled' => !$disabled,
                     'status' => $status,
