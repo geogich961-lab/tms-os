@@ -26,6 +26,30 @@
 		</div>
 </section>
 
+<section class="panel-card" id="update-channel-card">
+<h2>Kênh cập nhật</h2>
+<p class="muted">Stable chỉ nhận bản chính thức. Beta/Test nhận bản thử nghiệm mới nhất và vẫn có thể quay về một release Stable trước đó.</p>
+<form method="post" action="/updates/channel" class="update-manual-form">
+<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+<label>Kênh đang dùng
+<select name="channel">
+<option value="stable" <?=($updateChannel??'stable')==='stable'?'selected':''?>>Stable — ổn định</option>
+<option value="beta" <?=($updateChannel??'stable')==='beta'?'selected':''?>>Beta / Test — thử nghiệm</option>
+</select>
+</label>
+<button class="btn btn-secondary">Lưu kênh cập nhật</button>
+</form>
+<?php if(($updateChannel??'stable')==='beta'):?><div class="alert alert-error" style="margin-top:12px">Bạn đang bật Beta/Test. Bản thử nghiệm có thể phát sinh lỗi; dữ liệu website/storage không bị xóa khi đổi release nhưng nên tạo snapshot trước khi thử.</div><?php endif;?>
+</section>
+
+<section class="panel-card" id="release-history-card">
+<div class="section-title-row"><div><h2>Release & quay về phiên bản cũ</h2><p class="muted">Chỉ hiển thị release có gói cập nhật chuẩn và checksum SHA-256.</p></div><button type="button" class="btn btn-secondary btn-small" id="load-releases-btn">Làm mới</button></div>
+<p id="release-list-status" class="muted">Đang tải danh sách release…</p>
+<div class="table-wrap" id="release-table-wrap" hidden>
+<table><thead><tr><th>Phiên bản</th><th>Kênh</th><th>Ngày phát hành</th><th style="text-align:right">Thao tác</th></tr></thead><tbody id="release-list-body"></tbody></table>
+</div>
+</section>
+
 <?php $passwordConfigured=!empty($updatePassword['configured']);?>
 <section class="panel-card" id="telegram-update-password-card">
 <h2>Mật khẩu nâng cấp Telegram</h2>
@@ -134,6 +158,59 @@ document.getElementById('diagnose-btn')?.addEventListener('click',function(){
 	    out.style.whiteSpace='pre-line';
 	  }).catch(function(error){btn.disabled=false;btn.textContent='Chẩn đoán kết nối GitHub';out.textContent=(error && error.message) ? error.message : 'Không thể chẩn đoán — hãy thử lại.';});
 });
+
+var tmsUpdateCsrf = <?=json_encode((string)$csrf, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)?>;
+var tmsCurrentVersion = <?=json_encode((string)($status['current']??''), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)?>;
+
+function renderReleaseList(data) {
+  var body=document.getElementById('release-list-body');
+  var wrap=document.getElementById('release-table-wrap');
+  var status=document.getElementById('release-list-status');
+  if(!body||!wrap||!status)return;
+  body.textContent='';
+  var releases=(data&&data.releases)||[];
+  if(!releases.length){status.textContent='Chưa có release tương thích để hiển thị.';wrap.hidden=true;return;}
+  releases.forEach(function(rel){
+    var tr=document.createElement('tr');
+    var version=document.createElement('td');
+    var strong=document.createElement('strong');strong.textContent=rel.tag||rel.version;version.appendChild(strong);
+    if(String(rel.version||'').replace(/^v/i,'')===String(tmsCurrentVersion||'').replace(/^v/i,'')){
+      var current=document.createElement('small');current.className='muted';current.textContent=' · đang chạy';version.appendChild(current);
+    }
+    var channel=document.createElement('td');channel.textContent=rel.prerelease?'Beta/Test':'Stable';
+    var date=document.createElement('td');date.textContent=(rel.published_at||'').slice(0,10)||'—';
+    var action=document.createElement('td');action.style.textAlign='right';
+    if(String(rel.version||'').replace(/^v/i,'')===String(tmsCurrentVersion||'').replace(/^v/i,'')){
+      action.textContent='Hiện tại';
+    }else{
+      var form=document.createElement('form');form.method='post';form.action='/updates/release/apply';form.style.display='inline';
+      var csrf=document.createElement('input');csrf.type='hidden';csrf.name='csrf';csrf.value=tmsUpdateCsrf;form.appendChild(csrf);
+      var tag=document.createElement('input');tag.type='hidden';tag.name='tag';tag.value=rel.tag||'';form.appendChild(tag);
+      var btn=document.createElement('button');btn.className='btn btn-secondary btn-small';btn.type='submit';
+      btn.textContent=rel.prerelease?'Cài bản Beta':'Chuyển về bản này';
+      form.appendChild(btn);
+      form.addEventListener('submit',function(e){
+        var warning=rel.prerelease
+          ? 'Cài '+rel.tag+' (Beta/Test)? TMS OS sẽ sao lưu source hiện tại trước khi chuyển.'
+          : 'Chuyển TMS OS sang '+rel.tag+'? Source hiện tại sẽ được sao lưu và storage/website được giữ nguyên.';
+        if(!confirm(warning))e.preventDefault();
+      });
+      action.appendChild(form);
+    }
+    [version,channel,date,action].forEach(function(td){tr.appendChild(td);});
+    body.appendChild(tr);
+  });
+  status.textContent='Đã tải '+releases.length+' release.';
+  wrap.hidden=false;
+}
+function loadReleaseList(){
+  var status=document.getElementById('release-list-status');if(status)status.textContent='Đang tải danh sách release…';
+  fetch('/api/updates/releases?_'+Date.now(),{credentials:'same-origin',cache:'no-store'})
+    .then(parseUpdateJson).then(function(d){if(!d.ok)throw new Error(d.error||'Không tải được release.');renderReleaseList(d);})
+    .catch(function(e){if(status)status.textContent='Không tải được danh sách release: '+(e.message||'lỗi không xác định');});
+}
+document.getElementById('load-releases-btn')?.addEventListener('click',loadReleaseList);
+loadReleaseList();
 
 document.getElementById('select-all-packages')?.addEventListener('change', function() {
   document.querySelectorAll('.package-checkbox').forEach(cb => cb.checked = this.checked);
