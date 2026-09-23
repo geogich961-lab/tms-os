@@ -30,7 +30,7 @@ foreach([
 ] as $needle){
     okP26(str_contains($service,$needle),'Payload thiếu update-channel guard: '.$needle);
 }
-okP26(str_contains($service,"hash_equals(strtolower($expectedHash), strtolower($actualHash))"),'Release cụ thể phải bắt buộc checksum chính xác.');
+okP26(str_contains($service,'hash_equals(strtolower($expectedHash), strtolower($actualHash))'),'Release cụ thể phải bắt buộc checksum chính xác.');
 
 $routes=(string)$z->getFromName('routes/web.php');
 foreach(["'/api/updates/releases'","'/updates/channel'","'/updates/release/apply'"] as $needle){
