@@ -27,10 +27,16 @@ function releasePayload(string $tag, bool $prerelease): array
         'published_at' => '2026-09-23T12:00:00Z',
         'draft' => false,
         'prerelease' => $prerelease,
-        'assets' => [[
-            'name' => 'TMS_OS_LATEST.zip',
-            'browser_download_url' => 'https://github.com/geogich961-lab/tms-os/releases/download/' . $tag . '/TMS_OS_LATEST.zip',
-        ]],
+        'assets' => [
+            [
+                'name' => 'TMS_OS_LATEST.zip',
+                'browser_download_url' => 'https://github.com/geogich961-lab/tms-os/releases/download/' . $tag . '/TMS_OS_LATEST.zip',
+            ],
+            [
+                'name' => 'RELEASE.json',
+                'browser_download_url' => 'https://github.com/geogich961-lab/tms-os/releases/download/' . $tag . '/RELEASE.json',
+            ],
+        ],
     ];
 }
 
