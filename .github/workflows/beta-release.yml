@@ -1,0 +1,123 @@
+name: Publish TMS OS Beta
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Beta version, ví dụ 17.1.0-beta.1'
+        required: true
+        type: string
+      source_ref:
+        description: 'Nhánh nguồn Beta'
+        required: true
+        default: 'beta'
+        type: string
+      notes:
+        description: 'Ghi chú ngắn cho bản Beta'
+        required: false
+        default: 'TMS OS Beta/Test build'
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  beta-release:
+    name: Build and publish Beta
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "${{ inputs.source_ref }}" == "beta" ]] || { echo "Chỉ cho phép phát hành từ nhánh beta."; exit 1; }
+          [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]] || { echo "Version phải dạng 17.1.0-beta.1"; exit 1; }
+
+      - name: Checkout Beta source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+
+      - name: Verify source version
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V${VERSION}'" config/app.php
+          grep -F "const VERSION='tms-os-v${VERSION}';" public/service-worker.js
+          php -l app/Services/UpdateService.php
+          php tests/update_channels_release_test.php
+
+      - name: Build Beta payload
+        shell: bash
+        env:
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          set -Eeuo pipefail
+          BUILD=".build/beta-${VERSION}"
+          PAYLOAD="${BUILD}/payload"
+          OUT="${BUILD}/release"
+          rm -rf "${BUILD}"
+          mkdir -p "${PAYLOAD}" "${OUT}"
+          git archive HEAD -- app config public routes scripts | tar -x -C "${PAYLOAD}"
+          rm -f "${PAYLOAD}/scripts/verify-uci-payload.sh"
+          find "${PAYLOAD}" -name '.*' -not -name '.' -type f -delete
+          chmod 700 "${PAYLOAD}/scripts/"*.sh 2>/dev/null || true
+          php tests/make_payload_zip.php "${PAYLOAD}" "${OUT}/TMS_OS_LATEST.zip"
+          SHA256="$(sha256sum "${OUT}/TMS_OS_LATEST.zip" | awk '{print $1}')"
+          DATE="$(date -u +%F)"
+          cat > "${OUT}/RELEASE.json" <<JSON
+          {
+            "product":"TMS OS",
+            "display_name":"TMS OS",
+            "internal_version":"${VERSION}",
+            "build":"${DATE}-v${VERSION}",
+            "channel":"beta",
+            "version_visible_to_user":true,
+            "released_at":"${DATE}",
+            "name":"TMS OS V${VERSION}",
+            "version":"${VERSION}",
+            "notes":"${NOTES}",
+            "features":["Beta/Test build từ nhánh beta.","Có thể quay về release Stable từ Update Center."],
+            "checksum_sha256":"${SHA256}",
+            "build_date":"${DATE}",
+            "version_display":"TMS OS V${VERSION}",
+            "download_url":"https://github.com/geogich961-lab/tms-os/releases/download/v${VERSION}/TMS_OS_LATEST.zip",
+            "release_date":"${DATE}"
+          }
+          JSON
+          php -r '$j=json_decode(file_get_contents($argv[1]),true); if(!is_array($j)||empty($j["checksum_sha256"])) exit(1);' "${OUT}/RELEASE.json"
+          unzip -l "${OUT}/TMS_OS_LATEST.zip" | grep -F 'app/Services/UpdateService.php'
+          unzip -l "${OUT}/TMS_OS_LATEST.zip" | grep -F 'public/index.php'
+
+      - name: Publish GitHub prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+          NOTES: ${{ inputs.notes }}
+        run: |
+          set -Eeuo pipefail
+          BUILD=".build/beta-${VERSION}/release"
+          TAG="v${VERSION}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} đã tồn tại."
+            exit 1
+          fi
+          cat > "${BUILD}/NOTES.md" <<EOF
+          TMS OS V${VERSION} — Beta/Test
+
+          ${NOTES}
+
+          > Đây là bản thử nghiệm. Có thể quay về release Stable trực tiếp từ Update Center.
+          EOF
+          gh release create "${TAG}"             "${BUILD}/TMS_OS_LATEST.zip"             "${BUILD}/RELEASE.json"             --target "${GITHUB_SHA}"             --title "TMS OS V${VERSION} (Beta)"             --notes-file "${BUILD}/NOTES.md"             --prerelease
