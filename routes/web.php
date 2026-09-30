@@ -40,6 +40,12 @@ $router->post('/files/copy', fn()=>$fileController->copy());
 $router->post('/files/move', fn()=>$fileController->move());
 $router->get('/files/perms', fn()=>$fileController->perms());
 $router->post('/files/perms/apply', fn()=>$fileController->applyPerms());
+$router->get('/files/preview', fn()=>$fileController->preview());
+$router->post('/files/remote-download', fn()=>$fileController->remoteDownload());
+$router->get('/files/trash', fn()=>$fileController->trashList());
+$router->post('/files/trash/restore', fn()=>$fileController->trashRestore());
+$router->post('/files/trash/delete', fn()=>$fileController->trashDelete());
+$router->post('/files/trash/empty', fn()=>$fileController->trashEmpty());
 // ===== Websites =====
 $router->get('/websites', fn()=>$websiteController->index());
 $router->get('/websites/logs', fn()=>$websiteController->logs());
@@ -169,3 +175,4 @@ $router->post('/updates/delete', fn()=>$updateController->delete());
 $router->post('/updates/password', fn()=>$updateController->configurePassword());
 $router->post('/updates/password/remove', fn()=>$updateController->clearPassword());
 $router->post('/api/updates/run', fn()=>$updateController->apiRun());
+
