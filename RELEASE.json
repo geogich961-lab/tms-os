@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.0.25","build":"20260907-v17.0.25","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-09-07","name":"TMS OS V17.0.25","version":"17.0.25",
-  "notes":"V17.0.25: cô lập Guardian khỏi hot update ứng dụng ngoài; xác nhận lỗi upstream hai lần, tôn trọng external-update.lock và không reload Nginx khi repair PHP.",
-  "features":["Guardian bỏ qua auto-repair trong maintenance window của app ngoài.","Lỗi 502/504/000 phải lặp lại qua hai probe mới repair PHP.","Repair PHP không reload Nginx và không chạm Cloudflare Tunnel.","Giảm nguy cơ một app hot update kéo toàn bộ website trên TMS OS vào 502."],
-  "checksum_sha256":"684bc2479518be2b2ce321e158fd2b9d87a8dad305e0d1fa898eb5e642dc7b46","build_date":"2026-09-07","version_display":"TMS OS V17.0.25",
-  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-09-07"
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.0.26","build":"20260923-v17.0.26","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-09-23","name":"TMS OS V17.0.26","version":"17.0.26",
+  "notes":"V17.0.26: nâng cấp Update Center với kênh Stable/Beta, danh sách release và khả năng quay về release cũ trực tiếp trong Web Panel.",
+  "features":["Chọn kênh Stable hoặc Beta/Test ngay trong Update Center.","Beta/Test đọc GitHub prerelease; Stable chỉ đề xuất release chính thức.","Hiển thị danh sách release tương thích và cho phép chuyển tới release cụ thể.","Mọi chuyển version vẫn bắt buộc SHA-256, backup source, health check và rollback an toàn."],
+  "checksum_sha256":"4556230abc8d3cd37caad29d6130435e7727796052aa54387138937a9207fcd8","build_date":"2026-09-23","version_display":"TMS OS V17.0.26",
+  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-09-23"
 }

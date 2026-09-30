@@ -26,11 +26,11 @@ foreach([
     'public function releaseByTag(string $tag): array',
     'public function enqueueReleaseApply(string $tag): array',
     'private function stageResolvedRelease(array $release): array',
-    "version_compare($a, $b, '>')",
+    "version_compare(\$a, \$b, '>')",
 ] as $needle){
     okP26(str_contains($service,$needle),'Payload thiếu update-channel guard: '.$needle);
 }
-okP26(str_contains($service,"hash_equals(strtolower($expectedHash), strtolower($actualHash))"),'Release cụ thể phải bắt buộc checksum chính xác.');
+okP26(str_contains($service,'hash_equals(strtolower($expectedHash), strtolower($actualHash))'),'Release cụ thể phải bắt buộc checksum chính xác.');
 
 $routes=(string)$z->getFromName('routes/web.php');
 foreach(["'/api/updates/releases'","'/updates/channel'","'/updates/release/apply'"] as $needle){
