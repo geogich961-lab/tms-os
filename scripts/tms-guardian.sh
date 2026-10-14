@@ -136,6 +136,19 @@ check_once(){
   local disk
   disk=$(df -P "$HOME" 2>/dev/null | awk 'NR==2{gsub(/%/,"",$5);print $5}')
   [ -n "$disk" ] && [ "$disk" -ge 90 ] && event warn storage threshold "Dung lượng đã dùng ${disk}%." 0 || true
+  # V17.1.0-beta.4: cảnh báo RAM thấp (giới hạn 1 lần/giờ) — nguyên nhân nghi
+  # ngờ của các vụ tiến trình bị OOM kill (sự cố 14/10/2026).
+  local mem_avail lowmem_last lowmem_now
+  mem_avail="$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null || echo "")"
+  if [ -n "$mem_avail" ] && [ "$mem_avail" -lt 102400 ]; then
+    lowmem_now="$(date +%s)"
+    lowmem_last="$(cat "$STATE/guardian-lowmem.warn" 2>/dev/null || echo 0)"
+    case "$lowmem_last" in ''|*[!0-9]*) lowmem_last=0 ;; esac
+    if [ $((lowmem_now - lowmem_last)) -gt 3600 ]; then
+      event warn system memory "RAM khả dụng thấp (~$((mem_avail/1024))MB). Nguy cơ tiến trình bị OOM kill." 0
+      echo "$lowmem_now" > "$STATE/guardian-lowmem.warn"
+    fi
+  fi
   if [ "${CHECK_TUNNEL:-1}" = 1 ] && [ -f "$STATE/cloudflare-hosting/config.json" ] && ! cloudflared_running; then
     [ "$AUTO_REPAIR" = 1 ] && repair_tunnel || event warn tunnel down 'Cloudflare Tunnel không chạy (auto repair tắt).' 0
   fi
@@ -154,17 +167,31 @@ daemon(){
   event info guardian start "TMS Guardian bắt đầu, chu kỳ ${INTERVAL}s." 1
   while :; do check_once; sleep "$INTERVAL"; done
 }
+# V17.1.0-beta.4: kiểm tra daemon thật qua /proc/PID/cmdline thay vì chỉ
+# kill -0, vì PID có thể đã được tái sử dụng bởi tiến trình khác sau khi
+# daemon chết (pidfile stale) — lỗi này từng khiến Guardian không khởi động
+# lại được dù không còn daemon nào chạy.
+guardian_daemon_running(){
+  local pid cmdline
+  pid="$(cat "$PIDFILE" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 1
+  [ -d "/proc/$pid" ] || return 1
+  cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+  case "$cmdline" in *"tms-guardian.sh daemon"*) return 0 ;; esac
+  return 1
+}
 case "${1:-status}" in
   daemon) daemon;;
   once) check_once;;
   start)
     [ "${ENABLED:-1}" = 1 ] || exit 0
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then exit 0; fi
+    if guardian_daemon_running; then exit 0; fi
+    rm -f "$PIDFILE"
     nohup "$0" daemon >>"$LOGDIR/guardian.log" 2>&1 & echo $! > "$PIDFILE";;
   stop)
     [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null || true
     pkill -f '/scripts/tms-guardian.sh daemon' 2>/dev/null || true; rm -f "$PIDFILE";;
   restart) "$0" stop; sleep 0.5; "$0" start;;
-  status) [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null;;
+  status) guardian_daemon_running;;
   *) exit 2;;
 esac
