@@ -183,6 +183,12 @@ final class CronJobService
             $lines[] = "{$job['schedule']} {$cmd}";
         }
 
+        // V17.1.0-beta.4: Watchdog hệ thống — luôn hiện diện trong crontab,
+        // chạy trực tiếp bằng bash (không qua PHP wrapper) để vẫn hoạt động
+        // khi PHP gặp sự cố. Không quản lý qua panel nên không thể bị xóa nhầm.
+        $lines[] = '# TMS-OS-WATCHDOG';
+        $lines[] = '* * * * * ' . $shellBinary . ' ' . $this->home . '/tms-os/scripts/tms-watchdog.sh';
+
         $tmpFile = tempnam(sys_get_temp_dir(), 'tms-cron');
         if ($tmpFile === false) {
             throw new RuntimeException('Không thể tạo tệp cron tạm thời.');

@@ -39,6 +39,10 @@ if command -v redis-server >/dev/null 2>&1; then
     printf '%s\n' '[WARN] Redis không khởi động được; các dịch vụ TMS OS còn lại vẫn tiếp tục hoạt động.' >>"$HOME/logs/services/redis.log"
 fi
 [ -f "$HOME/tms-os/scripts/tms-guardian.sh" ] && bash "$HOME/tms-os/scripts/tms-guardian.sh" start || true
+# V17.1.0-beta.4: đăng ký watchdog cron (tự phục hồi khi Guardian chết).
+# install-cron đảm bảo idempotent; CronJobService::syncCrontab() cũng luôn
+# chèn entry này nên người dùng không thể vô tình xóa khỏi panel.
+[ -f "$HOME/tms-os/scripts/tms-watchdog.sh" ] && bash "$HOME/tms-os/scripts/tms-watchdog.sh" install-cron >>"$HOME/logs/services/cron.log" 2>&1 || true
 # Cron Jobs chạy bằng crond trong user-space Termux; thiếu cronie không làm panel dừng.
 [ -f "$HOME/tms-os/scripts/tms-cron-engine.sh" ] && bash "$HOME/tms-os/scripts/tms-cron-engine.sh" start >>"$HOME/logs/services/cron.log" 2>&1 || true
 # Khôi phục File Browser đã được cài từ các phiên bản cũ; từng script tự tránh khởi động trùng.
