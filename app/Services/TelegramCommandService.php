@@ -2,8 +2,13 @@
 declare(strict_types=1);
 
 /**
- * Xử lý lệnh Telegram qua webhook HTTPS. Mọi bí mật chỉ lưu cục bộ trong
- * ~/.tms-os và tuyệt đối không xuất hiện trong trạng thái trả về panel.
+ * Xử lý lệnh Telegram. Từ V17.1.0-beta.5, lệnh được nhận qua kênh POLLING
+ * (scripts/tms-telegram-poll.php chạy bằng cron mỗi phút, dùng PHP CLI độc
+ * lập với panel web) thay cho webhook HTTPS — webhook phải đi qua chính
+ * Nginx/PHP của panel nên panel treo là bot cũng mất liên lạc, đúng lúc
+ * người dùng cần lệnh /restart nhất (sự cố 07/11/2026). Mọi bí mật chỉ lưu
+ * cục bộ trong ~/.tms-os và tuyệt đối không xuất hiện trong trạng thái
+ * trả về panel.
  */
 final class TelegramCommandService
 {
@@ -41,40 +46,39 @@ final class TelegramCommandService
             'panel_configured' => $panelUrl !== '',
             'ready' => $configured && $panelUrl !== '',
             'enabled' => $enabled,
+            'mode' => (string)($state['mode'] ?? ($enabled ? 'webhook' : '')),
             'activated_at' => $enabled ? (string)($state['activated_at'] ?? '') : '',
             'last_update_at' => (string)($state['last_update_at'] ?? ''),
         ];
     }
 
-    /** Đăng ký webhook Telegram với URL panel HTTPS đã cấu hình cục bộ. */
+    /**
+     * Bật kênh lệnh polling (beta.5): gỡ webhook (nếu có) để getUpdates
+     * hoạt động, sinh bí mật cục bộ cho poller xác thực khi gọi vào
+     * processIncomingUpdate(). Không còn phụ thuộc URL panel HTTPS.
+     */
     public function enable(): array
     {
         $config = $this->requireTelegramConfig();
-        $panelUrl = $this->cloudflare->publicPanelUrl();
-        if ($panelUrl === '') {
-            throw new RuntimeException('Chưa có tên miền HTTPS cho panel. Hãy bật Remote Access trong Cloudflare Hosting trước.');
-        }
 
         $secret = bin2hex(random_bytes(32));
-        $response = $this->telegramRequest((string)$config['token'], 'setWebhook', [
-            'url' => rtrim($panelUrl, '/') . '/telegram/webhook',
-            'secret_token' => $secret,
-            'allowed_updates' => json_encode(['message', 'callback_query'], JSON_UNESCAPED_SLASHES),
+        $response = $this->telegramRequest((string)$config['token'], 'deleteWebhook', [
             'drop_pending_updates' => 'false',
         ]);
         if (empty($response['ok'])) {
-            throw new RuntimeException('Telegram không xác nhận đăng ký webhook. Hãy kiểm tra lại kết nối HTTPS và cấu hình bot.');
+            throw new RuntimeException('Telegram không xác nhận gỡ webhook. Hãy kiểm tra lại kết nối Internet và thử lại.');
         }
 
         $this->writeState([
             'enabled' => true,
+            'mode' => 'polling',
             'secret' => $secret,
             'activated_at' => date('c'),
             'last_update_id' => 0,
             'last_update_at' => '',
         ]);
 
-        return $this->status() + ['message' => 'Đã bật lệnh /status qua Telegram.'];
+        return $this->status() + ['message' => 'Đã bật lệnh Telegram qua kênh polling. Bot vẫn nhận lệnh kể cả khi panel tạm sập; dùng /restart để khởi động lại dịch vụ từ xa.'];
     }
 
     /** Gỡ webhook trên Telegram và xoá bí mật webhook cục bộ. */
@@ -134,13 +138,14 @@ final class TelegramCommandService
         }
 
         $command = trim((string)($event['text'] ?? ''));
-        if (preg_match('/^\/(status|help|checkupdate)(?:@[A-Za-z0-9_]{5,32})?$/i', $command, $matches)) {
+        if (preg_match('/^\/(status|help|checkupdate|restart)(?:@[A-Za-z0-9_]{5,32})?$/i', $command, $matches)) {
             $this->markProcessed($state, $updateId);
             $name = strtolower((string)$matches[1]);
             $sent = match ($name) {
                 'help' => !empty($this->sendConfiguredMessage($this->helpReport())['ok']),
                 'status' => !empty($this->sendConfiguredMessage($this->statusReport())['ok']),
                 'checkupdate' => $this->handleCheckUpdate((string)$event['user_id']),
+                'restart' => $this->handleRestart(),
             };
             return ['handled' => true, 'sent' => $sent];
         }
@@ -153,6 +158,97 @@ final class TelegramCommandService
         // Đánh dấu event trước side effect để Telegram retry không thể enqueue trùng.
         $this->markProcessed($state, $updateId);
         return ['handled' => true, 'sent' => $this->handlePasswordMessage((string)$event['user_id'], $command)];
+    }
+
+    /**
+     * /restart — khởi động lại tầng dịch vụ từ xa (beta.5).
+     *
+     * Chỉ chạy khi SAPI là CLI (kênh polling): nếu chạy trong PHP-FPM qua
+     * webhook, việc restart PHP engine sẽ giết chính tiến trình đang xử lý
+     * lệnh và để hệ thống kẹt giữa chừng. Có khóa chống lặp 5 phút để tránh
+     * vòng lặp restart khi người dùng gửi lệnh nhiều lần.
+     */
+    private function handleRestart(): bool
+    {
+        if (php_sapi_name() !== 'cli') {
+            return !empty($this->sendConfiguredMessage("TMS OS · Khởi động lại\n\nLệnh /restart chỉ hoạt động qua kênh polling (V17.1.0-beta.5 trở lên). Hãy cập nhật TMS OS, bật lại mục Lệnh Telegram trong panel rồi thử lại.")['ok']);
+        }
+
+        $state = $this->readState();
+        $last = (int)($state['last_restart_at'] ?? 0);
+        $now = time();
+        if ($last > 0 && $now - $last < 300) {
+            $wait = 300 - ($now - $last);
+            return !empty($this->sendConfiguredMessage("TMS OS · Khởi động lại\n\nVừa khởi động lại gần đây. Hãy chờ thêm {$wait} giây để tránh vòng lặp restart.")['ok']);
+        }
+        $state['last_restart_at'] = $now;
+        $this->writeState($state);
+
+        $this->sendConfiguredMessage("TMS OS · Khởi động lại\n\nĐang khởi động lại PHP, Nginx, Guardian và Tunnel... (thường mất dưới 1 phút)");
+
+        $root = $this->home . '/tms-os';
+        $run = static function (string $script, array $args = []): bool {
+            if (!is_file($script)) {
+                return false;
+            }
+            $cmd = 'bash ' . escapeshellarg($script);
+            foreach ($args as $arg) {
+                $cmd .= ' ' . escapeshellarg((string)$arg);
+            }
+            $output = [];
+            $code = 1;
+            exec($cmd . ' 2>&1', $output, $code);
+            return $code === 0;
+        };
+
+        $steps = [];
+        $steps['PHP'] = $run($root . '/scripts/tms-php-engine.sh', ['restart']);
+        $steps['Nginx'] = $run($root . '/scripts/tms-service-core.sh', ['nginx', 'restart']);
+        $steps['Guardian'] = $run($root . '/scripts/tms-guardian.sh', ['restart']);
+        if (is_file($this->home . '/.tms-os/cloudflare-hosting/config.json')) {
+            $run($root . '/scripts/tms-cloudflare-tunnel.sh', ['stop']);
+            $steps['Tunnel'] = $run($root . '/scripts/tms-cloudflare-tunnel.sh', ['start']);
+        }
+
+        $panelCode = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $panelCode = $this->panelHttpCode();
+            if ($panelCode >= 100 && $panelCode !== 502 && $panelCode !== 504) {
+                break;
+            }
+            sleep(3);
+        }
+
+        $lines = ['TMS OS · Khởi động lại hoàn tất', ''];
+        foreach ($steps as $label => $okStep) {
+            $lines[] = '• ' . $label . ': ' . ($okStep ? 'đã khởi động lại' : 'lỗi khi khởi động lại');
+        }
+        if (!isset($steps['Tunnel'])) {
+            $lines[] = '• Tunnel: chưa cấu hình';
+        }
+        $lines[] = '';
+        $lines[] = $panelCode >= 100 && $panelCode !== 502 && $panelCode !== 504
+            ? 'Panel local đã phản hồi (HTTP ' . $panelCode . '). Hãy thử mở lại trang quản trị.'
+            : 'Panel local vẫn chưa phản hồi (HTTP ' . ($panelCode > 0 ? (string)$panelCode : '000') . '). Hãy chờ watchdog tự leo thang thêm vài phút, hoặc kiểm tra trực tiếp trên thiết bị.';
+
+        return !empty($this->sendConfiguredMessage(implode("\n", $lines))['ok']);
+    }
+
+    /** Mã HTTP của panel local; 0 nếu không kết nối được. */
+    private function panelHttpCode(): int
+    {
+        if (!function_exists('curl_init')) {
+            return 0;
+        }
+        $ch = curl_init('http://127.0.0.1:8888/');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        return $code;
     }
 
     /** Gửi tới đúng Chat ID đã lưu, không bao giờ dùng Chat ID từ Update nhận vào. */
@@ -377,7 +473,7 @@ final class TelegramCommandService
 
     private function helpReport(): string
     {
-        return "TMS OS Bot\n\n/status — xem trạng thái an toàn của thiết bị và TMS OS\n/checkupdate — kiểm tra bản mới và yêu cầu cập nhật có xác thực\n/help — xem hướng dẫn ngắn\n\nChỉ chat đã được cấu hình mới có thể dùng các lệnh này.";
+        return "TMS OS Bot\n\n/status — xem trạng thái an toàn của thiết bị và TMS OS\n/restart — khởi động lại các dịch vụ TMS OS (PHP, Nginx, Guardian, Tunnel) khi web bị treo\n/checkupdate — kiểm tra bản mới và yêu cầu cập nhật có xác thực\n/help — xem hướng dẫn ngắn\n\nChỉ chat đã được cấu hình mới có thể dùng các lệnh này.";
     }
 
     private function requireTelegramConfig(): array
@@ -451,3 +547,4 @@ final class TelegramCommandService
         return strlen($text) > $max ? substr($text, 0, $max) : $text;
     }
 }
+

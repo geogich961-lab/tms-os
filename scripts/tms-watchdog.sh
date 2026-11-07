@@ -1,5 +1,5 @@
 #!/data/data/com.termux/files/usr/bin/bash
-# tms-watchdog.sh — Watchdog tầng cron cho TMS OS (V17.1.0-beta.4).
+# tms-watchdog.sh — Watchdog tầng cron cho TMS OS (V17.1.0-beta.5).
 #
 # Chạy mỗi phút bằng crond — thành phần đã chứng minh là sống sót qua mọi sự
 # cố (kể cả sự cố 14/10/2026 khi Guardian, Tunnel, PHP-FPM, Nginx chết hàng
@@ -11,6 +11,15 @@
 #   3. nginx (reverse proxy; tự đảm bảo PHP chạy trước)
 #   4. guardian daemon (giám sát chuyên sâu chu kỳ 30s)
 #   5. cloudflared tunnel (chỉ khi đã cấu hình)
+#
+# V17.1.0-beta.5 (sự cố 07/11/2026: panel + website 502 nhiều giờ dù mọi tiến
+# trình còn sống và cron vẫn chạy):
+#   6. Nhịp tim Guardian: guardian-status.json phải được ghi lại mỗi chu kỳ
+#      30s. Tiến trình còn sống nhưng file quá cũ = daemon kẹt vòng lặp ->
+#      khởi động lại Guardian (bản beta.4 chỉ nhìn PID nên bỏ sót ca này).
+#   7. Leo thang panel: panel local (127.0.0.1:8888) lỗi 000/502/504 liên tục
+#      >= 5 phút mà Guardian chưa khắc phục được -> restart PHP + Nginx
+#      (nghi Nginx treo; Guardian chỉ restart PHP). Tối đa 10 phút/lần.
 #
 # An toàn:
 #   - Chống chạy chồng chéo bằng flock (cron có thể dồn job khi máy lag).
@@ -29,6 +38,7 @@ STATUS_FILE="$STATE/watchdog-status.json"
 REPAIR_STATE="$STATE/watchdog-repairs.json"
 LOCKFILE="$STATE/watchdog.lock"
 LOWMEM_FLAG="$STATE/watchdog-lowmem.warn"
+HEALTH_FILE="$STATE/watchdog-health.json"
 EXTERNAL_UPDATE_LOCK="$STATE/external-update.lock"
 TUNNEL_CFG="$STATE/cloudflare-hosting/config.json"
 MAX_REPAIRS_PER_HOUR=6
@@ -133,6 +143,33 @@ cloudflared_running(){
   done
   return 1
 }
+guardian_hb_age(){
+  # Số giây kể từ lần Guardian ghi guardian-status.json gần nhất; -1 nếu
+  # không đọc được (file chưa có hoặc mốc thời gian hỏng).
+  local f="$STATE/guardian-status.json" ts epoch
+  [ -f "$f" ] || { echo -1; return; }
+  ts="$(sed -n 's/.*"updated_at"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$f" 2>/dev/null | head -1)"
+  [ -n "$ts" ] || { echo -1; return; }
+  epoch="$(date -d "$ts" +%s 2>/dev/null || echo 0)"
+  case "$epoch" in ''|*[!0-9]*|0) echo -1 ;; *) echo $(( $(date +%s) - epoch )) ;; esac
+}
+panel_http_code(){
+  local code
+  code="$(curl -s --max-time 8 -o /dev/null -w '%{http_code}' 'http://127.0.0.1:8888/' 2>/dev/null || true)"
+  case "$code" in ''|*[!0-9]*) echo 000 ;; *) echo "$code" ;; esac
+}
+panel_bad(){ case "$1" in 000|502|504) return 0 ;; *) return 1 ;; esac }
+health_get(){ # health_get <key> -> số nguyên, mặc định 0
+  local v=""
+  [ -f "$HEALTH_FILE" ] && v="$(sed -n 's/.*"'$1'":\([0-9]*\).*/\1/p' "$HEALTH_FILE" 2>/dev/null | head -1)"
+  case "$v" in ''|*[!0-9]*) echo 0 ;; *) echo "$v" ;; esac
+}
+health_save(){ printf '{"panel_bad_since":%d,"last_esc":%d}\n' "$1" "$2" > "$HEALTH_FILE"; }
+escalate_panel_repair(){
+  # Guardian chỉ restart PHP; leo thang của watchdog restart cả Nginx.
+  bash "$ROOT/scripts/tms-php-engine.sh" restart >>"$LOGDIR/guardian.log" 2>&1 || true
+  bash "$ROOT/scripts/tms-service-core.sh" nginx restart >>"$LOGDIR/guardian.log" 2>&1
+}
 svc_running(){ # svc_running <nginx|php>
   bash "$ROOT/scripts/tms-service-core.sh" "$1" status >/dev/null 2>&1
 }
@@ -146,7 +183,11 @@ do_repair(){ # do_repair <service> <label> <command...>
     return 1
   fi
   event warn watchdog repair "Watchdog phát hiện $label không chạy; tự khởi động lại." 1
-  if "$@" >>"$LOGDIR/guardian.log" 2>&1; then
+  # beta.5: đóng fd 9 (flock của watchdog) cho tiến trình repair. Nếu không,
+  # daemon được repair sinh ra (Guardian/Tunnel...) sẽ KẾ THỪA fd khóa và
+  # giữ flock vĩnh viễn — mọi lần watchdog chạy sau đó đều thoát lặng lẽ ở
+  # flock -n, watchdog "chết" mà không ai biết (một phần sự cố 07/11/2026).
+  if "$@" >>"$LOGDIR/guardian.log" 2>&1 9>&-; then
     repair_count_bump
     return 0
   fi
@@ -156,6 +197,7 @@ do_repair(){ # do_repair <service> <label> <command...>
 }
 watch_once(){
   local actions="" ok=1
+  local hb_age=-1 panel_code="skip"
   # 1. crond — nền tảng của chính watchdog và mọi cron job.
   if ! crond_running; then
     if do_repair cron "Cron engine (crond)" bash "$ROOT/scripts/tms-cron-engine.sh" start; then
@@ -198,6 +240,45 @@ watch_once(){
       else ok=0; fi
     fi
   fi
+  # 6. Nhịp tim Guardian (beta.5): tiến trình còn nhưng status quá cũ trong
+  # khi PID đã chạy đủ lâu = daemon kẹt. Chỉ xét khi PIDFILE đủ tuổi để tránh
+  # báo nhầm lúc Guardian vừa khởi động (chưa kịp ghi chu kỳ đầu).
+  hb_age="$(guardian_hb_age)"
+  if guardian_running; then
+    local pid_mtime=0 now_s=0 pid_age=0
+    pid_mtime="$(stat -c %Y "$STATE/guardian.pid" 2>/dev/null || echo 0)"
+    case "$pid_mtime" in ''|*[!0-9]*) pid_mtime=0 ;; esac
+    now_s="$(date +%s)"
+    [ "$pid_mtime" -gt 0 ] && pid_age=$((now_s - pid_mtime))
+    if [ "$pid_age" -gt 240 ] && { [ "$hb_age" -lt 0 ] || [ "$hb_age" -gt 240 ]; }; then
+      if do_repair guardian "Guardian daemon (mất nhịp tim)" bash "$ROOT/scripts/tms-guardian.sh" restart; then
+        actions="${actions}guardian-hb,"
+      else ok=0; fi
+    fi
+  fi
+  # 7. Leo thang panel (beta.5): panel local lỗi liên tục >= 5 phút mà các
+  # tầng dưới chưa khắc phục -> restart PHP + Nginx, tối đa 10 phút/lần.
+  panel_code="$(panel_http_code)"
+  local bad_since last_esc
+  bad_since="$(health_get panel_bad_since)"
+  last_esc="$(health_get last_esc)"
+  if panel_bad "$panel_code"; then
+    [ "$bad_since" -gt 0 ] || bad_since="$(date +%s)"
+    if [ $(( $(date +%s) - bad_since )) -ge 300 ] && [ $(( $(date +%s) - last_esc )) -ge 600 ]; then
+      if maintenance_active; then
+        event info watchdog defer "Panel vẫn lỗi HTTP $panel_code nhưng đang có update; watchdog hoãn leo thang." 1
+      else
+        do_repair panel "Panel (treo HTTP $panel_code)" escalate_panel_repair || ok=0
+        actions="${actions}panel-esc,"
+        last_esc="$(date +%s)"
+        panel_code="$(panel_http_code)"
+        panel_bad "$panel_code" || bad_since=0
+      fi
+    fi
+  else
+    bad_since=0
+  fi
+  health_save "$bad_since" "$last_esc"
   # Cảnh báo RAM thấp (giới hạn 1 lần/giờ) — nguyên nhân nghi ngờ của các vụ OOM kill.
   local mem_avail last_warn now
   mem_avail="$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null || echo "")"
@@ -210,13 +291,14 @@ watch_once(){
       echo "$now" > "$LOWMEM_FLAG"
     fi
   fi
-  printf '{"updated_at":"%s","ok":%s,"actions":"%s","checks":{"crond":%s,"php":%s,"nginx":%s,"guardian":%s,"tunnel":%s}}\n' \
+  printf '{"updated_at":"%s","ok":%s,"actions":"%s","checks":{"crond":%s,"php":%s,"nginx":%s,"guardian":%s,"tunnel":%s},"panel_http":"%s","guardian_hb_age":%s}\n' \
     "$(date -Iseconds)" "$([ "$ok" = 1 ] && echo true || echo false)" "$actions" \
     "$(crond_running && echo true || echo false)" \
     "$(svc_running php && echo true || echo false)" \
     "$(svc_running nginx && echo true || echo false)" \
     "$(guardian_running && echo true || echo false)" \
     "$([ -f "$TUNNEL_CFG" ] && (cloudflared_running && echo true || echo false) || echo null)" \
+    "$panel_code" "$hb_age" \
     > "$STATUS_FILE"
 }
 case "${1:-once}" in
@@ -230,3 +312,4 @@ case "${1:-once}" in
     ;;
   *) echo "Cách dùng: tms-watchdog.sh [once|install-cron]" >&2; exit 2 ;;
 esac
+
