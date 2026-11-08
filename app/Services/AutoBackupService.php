@@ -16,15 +16,21 @@ final class AutoBackupService
     private string $home;
     private string $configFile;
     private string $stateFile;
+    private string $runLockFile;
+    private string $runMarkFile;
     private const AUTO_NOTE = '[auto] TMS OS tự động sao lưu';
     private const CRON_JOB_ID = 'tms-auto-backup';
     private const MAX_RETENTION = 90;
 
-    public function __construct(private $backups, private $cron, private string $targetRoot = '')
+    // $launcher (tuỳ chọn, cho unit test): callable(string $cmd): bool thay cho
+    // lần exec() khởi chạy tiến trình nền thật.
+    public function __construct(private $backups, private $cron, private string $targetRoot = '', private $launcher = null)
     {
         $this->home = getenv('HOME') ?: '/data/data/com.termux/files/home';
         $this->configFile = $this->home . '/.tms-os/config/auto-backup.json';
         $this->stateFile = $this->home . '/.tms-os/config/auto-backup-state.json';
+        $this->runLockFile = $this->home . '/.tms-os/config/auto-backup-run.lock';
+        $this->runMarkFile = $this->home . '/.tms-os/config/auto-backup-running.json';
         $this->targetRoot = $this->targetRoot !== '' ? $this->targetRoot : $this->home . '/tms-os';
     }
 
@@ -93,8 +99,34 @@ final class AutoBackupService
         ]);
     }
 
-    /** Chạy một vòng backup: tạo bản mới, cắt theo retention, đẩy offsite, thông báo. */
+    /**
+     * Chạy một vòng backup: tạo bản mới, cắt theo retention, đẩy offsite, thông báo.
+     *
+     * V17.1.4: toàn bộ vòng chạy được giữ bằng khóa flock (auto-backup-run.lock)
+     * nên không bao giờ có 2 vòng chạy chồng nhau (cron theo lịch + nút bấm tay
+     * + tiến trình nền). Vòng bị trùng sẽ trả về ['skipped' => true] ngay lập
+     * tức mà KHÔNG ghi state, KHÔNG gửi thông báo — kết quả của vòng đang chạy
+     * thật không bị ghi đè. Khóa tự nhả khi tiến trình kết thúc, kể cả bị kill,
+     * nên không bao giờ kẹt khóa chết.
+     */
     public function runNow(): array
+    {
+        $lock = $this->tryAcquireRunLock();
+        if ($lock === null) {
+            return ['ok' => false, 'skipped' => true, 'at' => date('c'), 'message' => 'Đã có một vòng backup đang chạy, bỏ qua lần này.'];
+        }
+        try {
+            $this->writeJson($this->runMarkFile, ['started_at' => date('c'), 'pid' => (int)(getmypid() ?: 0)]);
+            return $this->runNowLocked();
+        } finally {
+            @unlink($this->runMarkFile);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    /** Thân vòng backup — chỉ chạy khi đã giữ khóa chạy (xem runNow()). */
+    private function runNowLocked(): array
     {
         $config = $this->config();
         $result = ['ok' => false, 'at' => date('c')];
@@ -125,11 +157,49 @@ final class AutoBackupService
         return $result;
     }
 
+    /**
+     * Yêu cầu chạy backup NGAY ở chế độ nền — đường đi của nút bấm trên web
+     * (V17.1.4). Trước đây nút bấm gọi thẳng runNow() trong request web: vòng
+     * nén + đẩy offsite dài vài phút bị Cloudflare cắt ở ~100 giây (lỗi 524)
+     * và PHP-FPM giết tiến trình con rclone giữa chừng (exit -1). Nay nút bấm
+     * chỉ khởi chạy worker CLI scripts/tms-auto-backup.php tách rời hoàn toàn
+     * (nohup + setsid, cùng mẫu PluginService/UpdateService) rồi trả về ngay;
+     * worker chạy cùng runNow() như vòng cron theo lịch nên không còn giới
+     * hạn thời gian của request web. Kết quả xem ở status()['last'] và qua
+     * Telegram như bình thường.
+     */
+    public function requestRun(): array
+    {
+        if ($this->probeRunning()) {
+            $since = $this->formatStartedAt((string)($this->readRunMark()['started_at'] ?? ''));
+            return [
+                'ok' => true,
+                'started' => false,
+                'message' => 'Đang có một vòng backup đang chạy ở chế độ nền' . ($since !== '' ? ' (bắt đầu lúc ' . $since . ')' : '')
+                    . '. Kết quả sẽ hiện tại đây và qua Telegram khi chạy xong.',
+            ];
+        }
+        if (!$this->launchBackgroundWorker()) {
+            return [
+                'ok' => false,
+                'started' => false,
+                'message' => 'Không khởi chạy được tiến trình backup nền (thiếu worker scripts/tms-auto-backup.php). Hãy thử lại sau hoặc chờ vòng backup tự động theo lịch.',
+            ];
+        }
+        return [
+            'ok' => true,
+            'started' => true,
+            'message' => 'Đã bắt đầu chạy backup ở chế độ nền. Bạn không cần chờ ở trang này — kết quả sẽ hiện tại đây và được báo qua Telegram (nếu đang bật) khi chạy xong.',
+        ];
+    }
+
     public function status(): array
     {
         $state = @json_decode((string)@file_get_contents($this->stateFile), true);
         $config = $this->config();
         $issue = $this->offsiteIssue($config);
+        $running = $this->probeRunning();
+        $mark = $running ? $this->readRunMark() : [];
         return [
             'config' => $config,
             'last' => is_array($state) ? $state : null,
@@ -137,6 +207,8 @@ final class AutoBackupService
             'cron_registered' => $this->cronJobRegistered(),
             'offsite_issue' => $issue,
             'offsite_ready' => !empty($config['offsite_enabled']) && $issue === '',
+            'running' => $running,
+            'running_since' => (string)($mark['started_at'] ?? ''),
         ];
     }
 
@@ -190,6 +262,85 @@ final class AutoBackupService
     }
 
     // ===== Nội bộ =====
+
+    /**
+     * Giữ khóa chạy bằng flock không chờ: trả handle khi giữ được, null khi
+     * đang có vòng khác giữ (hoặc không mở được file khóa). Handle phải được
+     * giữ suốt vòng chạy; khóa tự nhả khi đóng handle hoặc tiến trình chết.
+     *
+     * @return resource|null
+     */
+    private function tryAcquireRunLock()
+    {
+        $dir = dirname($this->runLockFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        $fh = @fopen($this->runLockFile, 'c');
+        if ($fh === false) {
+            return null;
+        }
+        if (!flock($fh, LOCK_EX | LOCK_NB)) {
+            fclose($fh);
+            return null;
+        }
+        return $fh;
+    }
+
+    /** Có vòng backup nào đang giữ khóa chạy hay không (thăm dò, không giữ). */
+    private function probeRunning(): bool
+    {
+        $fh = @fopen($this->runLockFile, 'c');
+        if ($fh === false) {
+            return false;
+        }
+        $locked = !flock($fh, LOCK_EX | LOCK_NB);
+        if (!$locked) {
+            flock($fh, LOCK_UN);
+        }
+        fclose($fh);
+        return $locked;
+    }
+
+    /** Dấu vết vòng đang chạy (started_at, pid) do runNow() ghi — chỉ để hiển thị. */
+    private function readRunMark(): array
+    {
+        $mark = @json_decode((string)@file_get_contents($this->runMarkFile), true);
+        return is_array($mark) ? $mark : [];
+    }
+
+    private function formatStartedAt(string $iso): string
+    {
+        $ts = $iso !== '' ? strtotime($iso) : false;
+        return $ts !== false ? date('H:i d/m/Y', $ts) : '';
+    }
+
+    /**
+     * Khởi chạy worker CLI backup tách rời khỏi request web (nohup + setsid,
+     * stdio đóng kín, log vào ~/.tms-os/logs/auto-backup.log) — cùng mẫu với
+     * PluginService::launchWorker(). Trả false khi thiếu file worker.
+     */
+    private function launchBackgroundWorker(): bool
+    {
+        $script = $this->targetRoot . '/scripts/tms-auto-backup.php';
+        if (!is_file($script)) {
+            return false;
+        }
+        $logFile = $this->home . '/.tms-os/logs/auto-backup.log';
+        if (!is_dir(dirname($logFile))) {
+            @mkdir(dirname($logFile), 0700, true);
+        }
+        $prefix = getenv('PREFIX') ?: '/data/data/com.termux/files/usr';
+        $php = is_file($prefix . '/bin/php') ? $prefix . '/bin/php' : 'php';
+        $setsid = is_executable($prefix . '/bin/setsid') ? 'setsid ' : '';
+        $cmd = 'nohup ' . $setsid . escapeshellarg($php) . ' ' . escapeshellarg($script)
+            . ' >>' . escapeshellarg($logFile) . ' 2>&1 < /dev/null &';
+        if ($this->launcher !== null) {
+            return (bool)call_user_func($this->launcher, $cmd);
+        }
+        @exec($cmd);
+        return true;
+    }
 
     /** Xoá các bản backup tự động cũ nhất vượt retention; trả số bản đã xoá. */
     private function pruneRetention(int $retention): int

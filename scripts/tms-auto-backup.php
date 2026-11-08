@@ -13,6 +13,11 @@ require $root . '/app/Services/AutoBackupService.php';
 try {
     $service = new AutoBackupService(new BackupService(), new CronJobService());
     $result = $service->runNow();
+    // Vòng trùng (đang có vòng khác chạy) không phải lỗi: thoát 0, không ồn.
+    if (!empty($result['skipped'])) {
+        fwrite(STDOUT, 'SKIP: ' . ($result['message'] ?? '') . PHP_EOL);
+        exit(0);
+    }
     fwrite(STDOUT, ($result['ok'] ? 'OK: ' : 'FAIL: ') . ($result['message'] ?? '') . PHP_EOL);
     exit($result['ok'] ? 0 : 1);
 } catch (Throwable $e) {

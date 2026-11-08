@@ -672,5 +672,17 @@ Phát hiện trên máy thật 08/11/2026: backup tự động tạo được b�
 - [x] `BackupController::create()` và `WebsiteController::snapshot()` tự dựng câu thông báo như trước (không đổi chữ hiển thị cho người dùng).
 - [x] Thêm test tích hợp `tests/backup_offsite_seam_test.php` dùng BackupService thật cho seam create → runNow/pushOffsite.
 - [x] Bump `Platform V17.1.3` trong config/app.php và `tms-os-v17.1.3` trong public/service-worker.js, kênh stable giữ nguyên.
-- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.3 (qua cơ chế release-auto: đẩy release.request.json lên main).
-- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.3 → trang Backup bấm "Chạy backup tự động ngay" → bản sao lưu được đẩy lên gdrive:tms-os-backups, trạng thái báo đã đẩy offsite thành công.
+- [x] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.3 (qua cơ chế release-auto: đẩy release.request.json lên main). ĐÃ PUBLISH 08/11/2026 12:18 +07, checksum khớp khi tải về kiểm chứng — và đây là lần chạy thành công đầu tiên của release-auto.
+- [ ] Xác minh thực địa trên Xperia: ĐÃ TEST 08/11 — cập nhật V17.1.3 thành công; bấm "Chạy backup tự động ngay": tạo được bản local và gọi rclone đẩy thật (bản vá đã thông seam) NHƯNG rclone bị giết giữa chừng (exit -1) vì vòng chạy đồng bộ trong request web bị Cloudflare cắt ở ~100 giây (lỗi 524) và PHP-FPM hết thời hạn request — panel treo ~30 phút, hồi lại sau đó. Lỗi kiến trúc này chuyển sang sửa ở V17.1.4 (chạy nền); kiểm chứng đẩy offsite thành công gộp vào mục V17.1.4.
+
+## Bản vá V17.1.4 — Nút chạy backup ngay chuyển sang chạy nền
+
+Nguyên nhân (thực địa 08/11/2026, xem mục V17.1.3): vòng backup chạy đồng bộ trong request web không thể xong với bản sao lưu lớn — bị Cloudflare/FPM cắt giữa chừng. Đường cron theo lịch chạy CLI không dính lỗi này. Giải pháp: nút bấm tay dùng đúng đường CLI như cron.
+
+- [x] `AutoBackupService::requestRun()`: nút bấm chỉ khởi chạy worker CLI `scripts/tms-auto-backup.php` tách rời (nohup + setsid, cùng mẫu PluginService::launchWorker) rồi trả về ngay; `BackupController::autoRun()` gọi requestRun thay runNow.
+- [x] Khóa flock `auto-backup-run.lock` bọc mọi vòng `runNow()` (cron + nền): vòng trùng trả `skipped` — không tạo backup, không ghi state, không gửi Telegram; CLI in `SKIP:` và thoát 0. Khóa tự nhả khi tiến trình chết, không kẹt khóa.
+- [x] `status()` thêm `running` + `running_since` (dấu vết `auto-backup-running.json`); trang Backup hiện "Đang chạy backup ở chế độ nền" và tạm vô hiệu nút chạy khi đang chạy.
+- [x] Test `tests/auto_backup_background_run_test.php`: requestRun khởi chạy đúng lệnh nền; khóa giữ → requestRun không chạy thêm + runNow skip sạch; status running trong/sau vòng chạy; CLI SKIP thoát 0.
+- [x] Bump `Platform V17.1.4` trong config/app.php và `tms-os-v17.1.4` trong public/service-worker.js, kênh stable giữ nguyên.
+- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.4 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.4 → trang Backup bấm "Chạy backup tự động ngay" → trang trả về ngay (không 524), hiện trạng thái đang chạy nền; vòng nền chạy xong: bản sao lưu có trên gdrive:tms-os-backups + Telegram báo thành công cả offsite.
