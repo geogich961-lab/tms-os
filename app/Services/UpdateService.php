@@ -318,13 +318,17 @@ final class UpdateService
             throw new RuntimeException('Không thể kết nối GitHub (' . $detail . ') — kiểm tra thiết bị đã có mạng và thử lại sau vài giây.');
         }
         $zipUrl = '';
+        $zipApiUrl = '';
+        $manifestApiUrl = '';
         $zipName = '';
         foreach ((array)($data['assets'] ?? []) as $asset) {
             $name = (string)($asset['name'] ?? '');
             if ($name === 'TMS_OS_LATEST.zip') {
                 $zipUrl = (string)($asset['browser_download_url'] ?? '');
+                $zipApiUrl = (string)($asset['url'] ?? '');
                 $zipName = $name;
-                break;
+            } elseif ($name === 'RELEASE.json') {
+                $manifestApiUrl = (string)($asset['url'] ?? '');
             }
         }
         if ($zipUrl === '') {
@@ -338,6 +342,8 @@ final class UpdateService
             'tag' => $tag,
             'zip_url' => $zipUrl,
             'zip_name' => $zipName,
+            'zip_api_url' => $zipApiUrl,
+            'manifest_api_url' => $manifestApiUrl,
             'notes' => (string)($data['body'] ?? ''),
             'published_at' => (string)($data['published_at'] ?? ''),
         ];
@@ -409,13 +415,17 @@ final class UpdateService
     private function normalizeGitHubRelease(array $data): array
     {
         $zipUrl = '';
+        $zipApiUrl = '';
         $manifestUrl = '';
+        $manifestApiUrl = '';
         foreach ((array)($data['assets'] ?? []) as $asset) {
             $name = (string)($asset['name'] ?? '');
             if ($name === 'TMS_OS_LATEST.zip') {
                 $zipUrl = (string)($asset['browser_download_url'] ?? '');
+                $zipApiUrl = (string)($asset['url'] ?? '');
             } elseif ($name === 'RELEASE.json') {
                 $manifestUrl = (string)($asset['browser_download_url'] ?? '');
+                $manifestApiUrl = (string)($asset['url'] ?? '');
             }
         }
         if ($zipUrl === '' || $manifestUrl === '') {
@@ -431,6 +441,8 @@ final class UpdateService
             'version' => $version,
             'tag' => $tag,
             'zip_url' => $zipUrl,
+            'zip_api_url' => $zipApiUrl,
+            'manifest_api_url' => $manifestApiUrl,
             'zip_name' => 'TMS_OS_LATEST.zip',
             'notes' => (string)($data['body'] ?? ''),
             'published_at' => (string)($data['published_at'] ?? ''),
@@ -457,7 +469,10 @@ final class UpdateService
         }
 
         $tmp = $this->dir . '/.download-' . bin2hex(random_bytes(8));
-        $download = $this->httpGetDetailed($zipUrl, 90, 'TMS-OS-Updater/1.5');
+        // V17.1.9: đường tải chính qua github.com từng 504 diện rộng (08/11/2026)
+        // trong khi api.github.com vẫn thông — tự chuyển sang đường API asset
+        // (api.github.com/repos/.../releases/assets/<id>) khi đường chính lỗi.
+        $download = $this->httpGetWithFallback([$zipUrl, (string)($release['zip_api_url'] ?? '')], 90, 'TMS-OS-Updater/1.5');
         $content = $download['body'];
         $bytes = $content === '' ? false : @file_put_contents($tmp, $content);
         unset($content);
@@ -469,7 +484,7 @@ final class UpdateService
         $this->validateZip($tmp);
 
         $releaseJsonUrl = str_replace('TMS_OS_LATEST.zip', 'RELEASE.json', $zipUrl);
-        $expectedHash = $this->fetchExpectedHash($releaseJsonUrl);
+        $expectedHash = $this->fetchExpectedHash([$releaseJsonUrl, (string)($release['manifest_api_url'] ?? '')]);
         $actualHash = hash_file('sha256', $tmp);
         if ($expectedHash === '' || !hash_equals(strtolower($expectedHash), strtolower($actualHash))) {
             @unlink($tmp);
@@ -1197,14 +1212,51 @@ final class UpdateService
         $zip->close();
     }
 
-    private function fetchExpectedHash(string $releaseJsonUrl): string
+    private function fetchExpectedHash(array $releaseJsonUrls): string
     {
-        $json = $this->httpGet($releaseJsonUrl, 15, 'TMS-OS-Updater/1.4');
+        $json = $this->httpGetWithFallback($releaseJsonUrls, 15, 'TMS-OS-Updater/1.4')['body'];
         if ($json === '') {
             return '';
         }
         $data = json_decode($json, true);
         return (string)($data['checksum_sha256'] ?? '');
+    }
+
+    /**
+     * V17.1.9: thử lần lượt các URL ứng viên (đường tải chính qua github.com,
+     * đường dự phòng qua API asset của api.github.com) — trả kết quả đầu tiên
+     * tải được; cả hai đường cùng lỗi thì trả lỗi của lượt thử cuối.
+     */
+    private function httpGetWithFallback(array $urls, int $timeout, string $ua): array
+    {
+        $seen = [];
+        $last = ['body' => '', 'error' => 'Không có URL tải khả dụng.', 'url' => ''];
+        foreach ($urls as $url) {
+            $url = (string)$url;
+            if ($url === '' || isset($seen[$url])) {
+                continue;
+            }
+            $seen[$url] = true;
+            $result = $this->httpGetDetailed($url, $timeout, $ua);
+            if ($result['body'] !== '') {
+                return ['body' => $result['body'], 'error' => '', 'url' => $url];
+            }
+            $last = ['body' => '', 'error' => $result['error'], 'url' => $url];
+        }
+        return $last;
+    }
+
+    /**
+     * Endpoint tải asset của GitHub API bắt buộc Accept: application/octet-stream;
+     * thiếu header này API trả JSON mô tả asset thay vì nội dung file.
+     */
+    private function acceptHeaderFor(string $url): string
+    {
+        $host = (string)(parse_url($url, PHP_URL_HOST) ?? '');
+        $path = (string)(parse_url($url, PHP_URL_PATH) ?? '');
+        return $host === 'api.github.com' && str_contains($path, '/releases/assets/')
+            ? 'application/octet-stream'
+            : '*/*';
     }
 
     /** GET HTTP có retry, ưu tiên cURL và giữ fallback stream cho PHP Termux tối giản. */
@@ -1216,6 +1268,7 @@ final class UpdateService
     /** Như httpGet nhưng trả kèm nguyên nhân lỗi cuối cùng để chẩn đoán kết nối. */
     private function httpGetDetailed(string $url, int $timeout, string $ua): array
     {
+        $accept = $this->acceptHeaderFor($url);
         $lastError = '';
         for ($attempt = 1; $attempt <= 3; $attempt++) {
             if ($this->httpClient !== null) {
@@ -1242,7 +1295,7 @@ final class UpdateService
                         CURLOPT_CONNECTTIMEOUT => min(10, $timeout),
                         CURLOPT_TIMEOUT => $timeout,
                         CURLOPT_USERAGENT => $ua,
-                        CURLOPT_HTTPHEADER => ['Accept: */*'],
+                        CURLOPT_HTTPHEADER => ['Accept: ' . $accept],
                         CURLOPT_SSL_VERIFYPEER => true,
                         CURLOPT_SSL_VERIFYHOST => 2,
                         // Trên nhiều máy Android, DNS trả về IPv6 không thể định tuyến
@@ -1269,7 +1322,7 @@ final class UpdateService
                     'method' => 'GET',
                     'timeout' => $timeout,
                     'follow_location' => true,
-                    'header' => "User-Agent: {$ua}\r\nAccept: */*\r\n",
+                    'header' => "User-Agent: {$ua}\r\nAccept: {$accept}\r\n",
                     'ignore_errors' => false,
                 ],
                 'ssl' => [
