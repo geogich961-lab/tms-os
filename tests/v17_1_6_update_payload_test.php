@@ -24,6 +24,7 @@ if (!is_file($baseZip)) {
     $baseBuild = dirname(dirname($baseZip));
     $basePayload = $baseBuild . '/payload';
     @mkdir($basePayload, 0700, true);
+    @mkdir(dirname($baseZip), 0700, true);
     $archiveCommand = 'git -C ' . escapeshellarg($root)
         . ' archive v17.1.5 -- app config public routes scripts | tar -x -C ' . escapeshellarg($basePayload);
     exec($archiveCommand, $output, $code);
