@@ -1,4 +1,10 @@
 # Changelog
+## [17.1.5] — 2026-11-08
+
+V17.1.5: Chặn hiệu ứng 'tuyết lăn' dung lượng của bản sao lưu. Trước đây mỗi bản sao lưu toàn hệ thống lại đóng gói cả kho chứa các bản sao lưu trước vào trong, nên dung lượng phình không ngừng (thực tế trên máy: 246MB → 744MB → 2,18GB) và thời gian đẩy lên cloud dài theo từng vòng. Nay gói sao lưu loại trừ thư mục chứa kho backup — mỗi bản chỉ gồm dữ liệu hệ thống thật, dung lượng và thời gian đẩy ổn định trở lại. Khôi phục hệ thống không bị ảnh hưởng (metadata vẫn được giữ trong gói).
+- Backup: loại trừ kho chứa bản sao lưu cũ khỏi gói sao lưu mới — hết phình dung lượng qua từng vòng, tạo và đẩy offsite nhanh ổn định như lần đầu.
+- Giữ nguyên V17.1.4 (nút Chạy backup ngay chạy ở chế độ nền + khóa chống hai vòng chạy trùng) và V17.1.3 (vòng tự động đẩy offsite đúng bản sao lưu vừa tạo).
+
 ## [17.1.4] — 2026-11-08
 
 V17.1.4: Nút 'Chạy backup tự động ngay' chuyển sang chạy ở chế độ nền. Trước đây vòng backup chạy ngay trong trang web: nén và đẩy bản sao lưu lớn lên cloud mất nhiều phút nên bị quá thời gian chờ (lỗi 524) và bị giết giữa chừng — bản sao lưu không lên được cloud, panel còn treo theo. Nay bấm nút là vòng backup chạy nền bằng tiến trình riêng (giống hệt vòng backup theo lịch), bấm xong rời trang thoải mái; kết quả hiện ở trang Backup và qua Telegram khi chạy xong. Thêm khóa chống hai vòng backup chạy chồng nhau; trang Backup hiển thị trạng thái đang chạy nền.
