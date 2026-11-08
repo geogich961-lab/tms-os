@@ -663,3 +663,14 @@
 - [x] Bump `Platform V17.1.2` trong config/app.php và `tms-os-v17.1.2` trong public/service-worker.js, kênh stable giữ nguyên.
 - [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.2 (workflow release-v17.1.2.yml do chủ repo upload qua GitHub web như các bản trước).
 - [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.2 → Terminal chạy thử lệnh thủ công (ví dụ echo/pwd), Runtime Packages có thẻ rclone và cài được, trang Backup lưu được cấu hình khi chưa cài rclone + nút Kiểm tra kết nối rclone báo đúng, File Manager thấy nút "Thùng rác" có chữ, Resource Monitor chỉ còn 1 hàng Pin.
+
+## Bản vá V17.1.3 — Sửa lỗi đẩy backup offsite
+
+Phát hiện trên máy thật 08/11/2026: backup tự động tạo được bản local nhưng đẩy offsite luôn báo "Không tìm thấy tệp archive để đẩy." Gốc lỗi: `BackupService::create()` trả về câu thông báo thay vì ID bản backup, trong khi `AutoBackupService::runNow()` dùng giá trị trả về đó làm ID để tìm archive — test cũ dùng stub trả ID đúng nên không bắt được.
+
+- [x] `BackupService::create()` trả ID của bản backup vừa tạo (hợp đồng ghi rõ trong code).
+- [x] `BackupController::create()` và `WebsiteController::snapshot()` tự dựng câu thông báo như trước (không đổi chữ hiển thị cho người dùng).
+- [x] Thêm test tích hợp `tests/backup_offsite_seam_test.php` dùng BackupService thật cho seam create → runNow/pushOffsite.
+- [x] Bump `Platform V17.1.3` trong config/app.php và `tms-os-v17.1.3` trong public/service-worker.js, kênh stable giữ nguyên.
+- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.3 (qua cơ chế release-auto: đẩy release.request.json lên main).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.3 → trang Backup bấm "Chạy backup tự động ngay" → bản sao lưu được đẩy lên gdrive:tms-os-backups, trạng thái báo đã đẩy offsite thành công.
