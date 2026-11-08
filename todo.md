@@ -652,3 +652,14 @@
 - [x] Thêm tests/build_v17_1_1_payload.sh + tests/v17_1_1_update_payload_test.php (kiểm checksum, channel stable, 2 công tắc Telegram và nội dung landing mới trong payload).
 - [x] Thêm workflow .github/workflows/release-v17.1.1.yml (chủ repo upload qua GitHub web vì GitHub App không ghi được thư mục workflows).
 - [ ] Xác minh thực địa trên Xperia: cập nhật thẳng từ V17.1.0-beta.5 lên V17.1.1 qua kênh Stable, mở trang landing thấy nội dung mới, trang Cron Jobs có 2 thẻ công tắc Telegram độc lập.
+
+## Bản vá V17.1.2 — Terminal thủ công, gói rclone, Backup offsite
+
+- [x] Terminal: thêm mục "Lệnh thủ công" cho quản trị viên (TerminalService::runCustom — bash trong thư mục home, timeout 60 giây, output tối đa 100KB, ghi nhật ký kiểm toán ~/.tms-os/logs/terminal-audit.log; route POST /terminal/exec; test tests/terminal_custom_command_test.php).
+- [x] Runtime Packages: thêm gói rclone vào catalog (PluginService) để cài một chạm phục vụ Backup offsite.
+- [x] Backup tự động & Offsite: bỏ chặn lưu cấu hình khi chưa cài rclone/chưa nhập remote (báo qua offsiteIssue/status thay vì ném lỗi; backup nội bộ vẫn chạy); thêm chú thích cách điền rclone remote, nút "Kiểm tra kết nối rclone" (route POST /backups/auto/check, AutoBackupService::checkRemote); cập nhật tests/auto_backup_service_test.php theo hợp đồng mới; hợp đồng route 151 → 153 trong tests/security_hardening_test.php.
+- [x] File Manager: nút vào Thùng rác có thêm chữ "Thùng rác" bên cạnh icon.
+- [x] Resource Monitor: gộp 2 hàng "Pin" trùng lặp thành 1 hàng (thanh % + nhãn trạng thái), giữ nguyên hook cập nhật trực tiếp.
+- [x] Bump `Platform V17.1.2` trong config/app.php và `tms-os-v17.1.2` trong public/service-worker.js, kênh stable giữ nguyên.
+- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.2 (workflow release-v17.1.2.yml do chủ repo upload qua GitHub web như các bản trước).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.2 → Terminal chạy thử lệnh thủ công (ví dụ echo/pwd), Runtime Packages có thẻ rclone và cài được, trang Backup lưu được cấu hình khi chưa cài rclone + nút Kiểm tra kết nối rclone báo đúng, File Manager thấy nút "Thùng rác" có chữ, Resource Monitor chỉ còn 1 hàng Pin.

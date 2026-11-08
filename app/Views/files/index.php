@@ -51,7 +51,7 @@ $path = (string)$listing['relative'];
                 <?php endforeach; ?>
             </div>
 
-            <a class="explorer-trash-link" href="/files/trash" title="Thùng rác — khôi phục mục đã xóa">🗑<?php if(!empty($trashCount)):?> <b><?= (int)$trashCount ?></b><?php endif;?></a>
+            <a class="explorer-trash-link" href="/files/trash" title="Thùng rác — khôi phục mục đã xóa">🗑 Thùng rác<?php if(!empty($trashCount)):?> <b><?= (int)$trashCount ?></b><?php endif;?></a>
 
             <form method="post" action="/files/upload" enctype="multipart/form-data" class="explorer-upload" id="explorer-upload-form" data-chunked-upload>
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">

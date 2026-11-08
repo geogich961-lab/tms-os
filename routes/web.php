@@ -76,6 +76,7 @@ $router->post('/databases/adopt', fn()=>$databaseController->adopt());
 $router->get('/network', fn()=>$networkController->index());
 $router->get('/terminal', fn()=>$terminalController->index());
 $router->post('/terminal/run', fn()=>$terminalController->run());
+$router->post('/terminal/exec', fn()=>$terminalController->exec());
 $router->get('/diagnostics', fn()=>$diagnosticsController->index());
 $router->post('/diagnostics/repair', fn()=>$diagnosticsController->repair());
 // ===== Backups / Settings =====
@@ -87,6 +88,7 @@ $router->post('/backups/lock', fn()=>$backupController->lock());
 $router->post('/backups/delete', fn()=>$backupController->delete());
 $router->post('/backups/auto/config', fn()=>$backupController->autoSave());
 $router->post('/backups/auto/run', fn()=>$backupController->autoRun());
+$router->post('/backups/auto/check', fn()=>$backupController->autoCheck());
 $router->get('/logs', fn()=>$logController->index());
 $router->get('/settings', fn()=>$settingsController->index());
 $router->post('/settings/password', fn()=>$settingsController->password());
