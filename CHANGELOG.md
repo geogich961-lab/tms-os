@@ -1,4 +1,10 @@
 # Changelog
+## [17.1.8] — 2026-11-08
+
+V17.1.8: Sửa lỗi nút Áp dụng trong mục Gói đã lưu trữ của Update Center. Form xóa hàng loạt từng bọc cả bảng danh sách trong khi mỗi gói có form Áp dụng riêng — HTML cấm form lồng nhau nên trình duyệt bỏ qua form con, biến nút Áp dụng thành nút xóa: bấm Áp dụng là gói bị xóa (user gặp 08/11/2026 khi cập nhật thủ công). Nay checkbox liên kết form xóa qua thuộc tính form=, các form Áp dụng/Xóa từng gói đứng độc lập đúng nghĩa.
+- Update Center: nút Áp dụng ở mục Gói đã lưu trữ hoạt động đúng — hết lỗi form lồng nhau khiến bấm Áp dụng lại xóa gói.
+- Cập nhật thủ công bằng file ZIP tải lên nay dùng được trọn vẹn: Kiểm tra và lưu -> Áp dụng, không phụ thuộc đường tải GitHub.
+
 ## [17.1.7] — 2026-11-08
 
 V17.1.7: Sửa triệt để lỗi panel + website PHP sập sau vài phút trên máy không có php-fpm. Nguyên nhân: engine dự phòng php-cgi chạy trần — mặc định tự thoát sau 500 request và chỉ có 1 tiến trình nối tiếp; watchdog/Guardian sửa liên tục đến cạn hạn mức chung 6 lần/giờ rồi buông. Nay php-cgi chạy dạng pool tự quản (tự hồi sinh, không tự thoát), và hạn mức tự sửa tính theo từng dịch vụ.
