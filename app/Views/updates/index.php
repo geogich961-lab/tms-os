@@ -71,11 +71,14 @@
 <section class="panel-card">
 <div class="section-title-row"><h2>Gói đã lưu trữ</h2><?php if(!empty($items)):?><button type="button" class="btn btn-danger-soft btn-small" id="batch-delete-btn" style="display:none">Xóa mục đã chọn</button><?php endif;?></div>
 <?php if(empty($items)):?><p class="muted">Chưa có gói nào.</p><?php else:?>
-<form id="batch-delete-form" method="post" action="/updates/delete">
-<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
+<?php /* V17.1.8: form xóa hàng loạt KHÔNG được bọc bảng danh sách — HTML cấm
+form lồng nhau, trình duyệt bỏ qua thẻ form con bên trong khiến nút "Áp dụng"
+của từng gói biến thành nút submit của form XÓA (bấm Áp dụng là gói bị xóa,
+sự cố user gặp 08/11/2026). Checkbox liên kết với form qua thuộc tính form=. */ ?>
+<form id="batch-delete-form" method="post" action="/updates/delete"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"></form>
 <div class="table-wrap"><table><thead><tr><th style="width:40px"><input type="checkbox" id="select-all-packages"></th><th>File</th><th>Dung lượng</th><th>SHA-256</th><th style="text-align:right">Thao tác</th></tr></thead><tbody>
 <?php foreach($items as $i):?><tr>
-<td><input type="checkbox" name="names[]" value="<?=tms_h($i['name'])?>" class="package-checkbox"></td>
+<td><input type="checkbox" name="names[]" value="<?=tms_h($i['name'])?>" class="package-checkbox" form="batch-delete-form"></td>
 <td><?=tms_h($i['name'])?></td>
 <td><?=number_format($i['size']/1048576,2)?> MB</td>
 <td><code><?=tms_h(substr($i['sha256'],0,16))?>…</code></td>
@@ -84,7 +87,7 @@
 <form method="post" action="/updates/staged/apply" style="display:inline" onsubmit="return confirm('Áp dụng gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-primary-soft btn-small">Áp dụng</button></form>
 <form method="post" action="/updates/delete" style="display:inline" onsubmit="return confirm('Xóa gói này?');"><input type="hidden" name="csrf" value="<?=tms_h($csrf)?>"><input type="hidden" name="name" value="<?=tms_h($i['name'])?>"><button class="btn btn-danger-soft btn-small">Xóa</button></form>
 </div>
-</td></tr><?php endforeach;?></tbody></table></div></form><?php endif;?></section>
+</td></tr><?php endforeach;?></tbody></table></div><?php endif;?></section>
 
 <script>
 function parseUpdateJson(response) {
