@@ -705,3 +705,13 @@ Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope s
 - [x] Thêm hồi quy vhost hai chế độ và smoke test website con; test payload mô phỏng V17.1.5 → V17.1.6, bảo toàn storage/Cloudflare.
 - [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.6 (release-auto).
 - [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.6, bấm Nạp lại website Loto, thử `/api/index.php?route=auth/me` và gửi chat; panel không bị 502.
+
+## Bản vá V17.1.7 — php-cgi trần tự thoát sau 500 request làm sập toàn bộ PHP
+
+- [x] Chẩn đoán bằng chứng máy thật 08/11: máy không có binary php-fpm (`command -v php-fpm` rỗng) nên engine luôn rơi về php-cgi trần ở :9000; policy máy là `fastcgi` (bản V17.1.6 đi đường php-http nên không kích hoạt trên máy này).
+- [x] Gốc lỗi: `start_cgi()` khởi động php-cgi không đặt `PHP_FCGI_CHILDREN` (1 tiến trình nối tiếp) và giữ mặc định `PHP_FCGI_MAX_REQUESTS=500` — đủ 500 request là tự thoát, không ai hồi sinh. Website Loto (app chat/API) đốt ngân sách request nhanh nên panel sập sau ~5 phút; dừng Loto thì panel sống lâu hơn.
+- [x] Vá engine: php-cgi chạy pool tự quản `PHP_FCGI_CHILDREN=4` (manager tự hồi sinh children) + `PHP_FCGI_MAX_REQUESTS=0`; máy thiếu binary php-fpm thì đi thẳng CGI, bỏ vòng thử spawn vô ích + WARN lặp trong log.
+- [x] Vá tự phục hồi: hạn mức tự sửa 6 lần/giờ tính THEO TỪNG DỊCH VỤ ở cả watchdog (state key=value theo dịch vụ) và Guardian (đếm event theo service) — một dịch vụ lỗi lặp không còn nuốt hết hạn mức của PHP engine.
+- [x] Hồi quy: `tests/php_cgi_pool_test.sh` chạy php-cgi THẬT qua engine script (pool có children, sống qua 650 request; FAIL trên code cũ) + `tests/repair_budget_per_service_test.sh` trích xuất hàm thật của watchdog/Guardian (FAIL trên code cũ); test payload mô phỏng V17.1.6 → V17.1.7, bảo toàn storage/Cloudflare.
+- [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.7 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.7, BẬT LẠI website Loto, mở panel + dùng Loto liên tục >15 phút — panel, thc.io.vn và loto đều sống; log php-engine không còn chuỗi WARN lặp, tiến trình php-cgi có children.
