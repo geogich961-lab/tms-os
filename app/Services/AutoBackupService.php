@@ -55,12 +55,10 @@ final class AutoBackupService
             throw new RuntimeException('Số bản giữ lại phải từ 1 đến ' . self::MAX_RETENTION . '.');
         }
         $remote = trim((string)($input['offsite_remote'] ?? ''));
-        if ((bool)($input['offsite_enabled'] ?? false) && $remote === '') {
-            throw new RuntimeException('Cần nhập tên rclone remote (ví dụ gdrive) khi bật offsite.');
-        }
-        if ((bool)($input['offsite_enabled'] ?? false) && !$this->rcloneAvailable()) {
-            throw new RuntimeException('Chưa cài rclone. Chạy: pkg install rclone rồi cấu hình remote bằng lệnh rclone config.');
-        }
+        // V17.1.2: offsite chưa sẵn sàng (chưa cài rclone / chưa nhập remote)
+        // KHÔNG còn chặn lưu cấu hình — backup nội bộ vẫn bật và chạy bình
+        // thường; trạng thái chưa sẵn sàng được báo qua status()['offsite_issue']
+        // và vòng chạy sẽ ghi rõ lý do offsite thất bại.
         $config = [
             'enabled' => (bool)($input['enabled'] ?? false),
             'time' => $time,
@@ -130,12 +128,65 @@ final class AutoBackupService
     public function status(): array
     {
         $state = @json_decode((string)@file_get_contents($this->stateFile), true);
+        $config = $this->config();
+        $issue = $this->offsiteIssue($config);
         return [
-            'config' => $this->config(),
+            'config' => $config,
             'last' => is_array($state) ? $state : null,
             'rclone_available' => $this->rcloneAvailable(),
             'cron_registered' => $this->cronJobRegistered(),
+            'offsite_issue' => $issue,
+            'offsite_ready' => !empty($config['offsite_enabled']) && $issue === '',
         ];
+    }
+
+    /**
+     * Lý do offsite chưa sẵn sàng: '' (sẵn sàng hoặc đang tắt),
+     * 'missing_remote' (chưa nhập tên remote), 'missing_rclone' (chưa cài rclone).
+     */
+    public function offsiteIssue(array $config): string
+    {
+        if (empty($config['offsite_enabled'])) {
+            return '';
+        }
+        if (trim((string)($config['offsite_remote'] ?? '')) === '') {
+            return 'missing_remote';
+        }
+        if (!$this->rcloneAvailable()) {
+            return 'missing_rclone';
+        }
+        return '';
+    }
+
+    /** Kiểm tra kết nối rclone theo cấu hình đã lưu: remote tồn tại + đọc được thư mục đích. */
+    public function checkRemote(): array
+    {
+        $config = $this->config();
+        $remote = trim((string)$config['offsite_remote']);
+        if (!$this->rcloneAvailable()) {
+            return ['ok' => false, 'message' => 'Chưa cài rclone trên thiết bị. Cài gói rclone trong Runtime Packages hoặc chạy: pkg install rclone'];
+        }
+        if ($remote === '') {
+            return ['ok' => false, 'message' => 'Chưa nhập tên rclone remote trong cấu hình (ví dụ gdrive).'];
+        }
+        $list = CommandRunner::proc([self::rcloneBinary(), 'listremotes'], 30);
+        $names = [];
+        foreach (explode("\n", (string)($list['out'] ?? '')) as $line) {
+            $name = rtrim(trim($line), ':');
+            if ($name !== '') {
+                $names[] = $name;
+            }
+        }
+        if (!in_array($remote, $names, true)) {
+            return ['ok' => false, 'message' => "Remote '{$remote}' chưa được cấu hình trên thiết bị — cần tạo bằng lệnh rclone config. Remote hiện có: " . ($names !== [] ? implode(', ', $names) : '(chưa có remote nào)') . '.'];
+        }
+        $path = trim((string)$config['offsite_path'], '/ ');
+        $target = $remote . ':' . ($path !== '' ? $path : '.');
+        $lsd = CommandRunner::proc([self::rcloneBinary(), 'lsd', $target, '--max-depth', '1'], 60);
+        if ((int)($lsd['code'] ?? 1) !== 0) {
+            return ['ok' => false, 'message' => 'Không truy cập được ' . $target . ': ' . mb_substr(trim((string)($lsd['out'] ?? '')), 0, 200)];
+        }
+        return ['ok' => true, 'message' => "Kết nối OK: remote '{$remote}' truy cập được" . ($path !== '' ? ", thư mục đích '{$path}' sẵn sàng." : '.')];
     }
 
     // ===== Nội bộ =====

@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 /**
  * Hồi quy V17.0.19 — Backup tự động & offsite:
- * 1. saveConfig chuẩn hoá và từ chối input không hợp lệ (giờ, retention, remote).
+ * 1. saveConfig chuẩn hoá và từ chối input không hợp lệ (giờ, retention).
+ *    V17.1.2: offsite chưa sẵn sàng (thiếu remote/rclone) không chặn lưu —
+ *    báo qua offsiteIssue()/status() để backup nội bộ vẫn hoạt động.
  * 2. syncCron đăng ký/gỡ cron job tms-auto-backup đúng lịch.
  * 3. runNow: tạo backup qua BackupService, prune theo retention, đẩy offsite qua rclone,
  *    ghi state; lỗi offsite phải làm vòng backup báo lỗi nhưng vẫn giữ bản local.
@@ -71,10 +73,11 @@ try {
         $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'retention' => 500]);
         expectAB(false, 'Retention 500 phải bị từ chối.');
     } catch (RuntimeException $e) { /* đúng */ }
-    try {
-        $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'offsite_enabled' => '1']);
-        expectAB(false, 'Bật offsite thiếu remote phải bị từ chối.');
-    } catch (RuntimeException $e) { expectAB(str_contains($e->getMessage(), 'remote'), 'Lỗi offsite phải nêu rõ remote.'); }
+    // V17.1.2: offsite thiếu remote KHÔNG còn chặn lưu — cấu hình vẫn lưu được,
+    // offsiteIssue phải báo 'missing_remote' để view/cảnh báo hiển thị rõ.
+    $cfgNoRemote = $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'offsite_enabled' => '1']);
+    expectAB($service->offsiteIssue($cfgNoRemote) === 'missing_remote', 'Offsite thiếu remote phải báo issue missing_remote thay vì chặn lưu.');
+    $service->saveConfig(['enabled' => '1', 'time' => '03:30']);
 
     // 2. syncCron: tắt → gỡ job; bật → đăng ký đúng lịch
     $config = $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'scope' => 'system', 'retention' => 3]);
@@ -99,12 +102,17 @@ try {
     // runNow: offsite theo khả năng môi trường
     $hasRclone = AutoBackupService::rcloneBinary() !== '';
     if (!$hasRclone) {
-        try {
-            $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'retention' => 2, 'offsite_enabled' => '1', 'offsite_remote' => 'gdrive']);
-            expectAB(false, 'Máy không có rclone thì lưu cấu hình offsite phải bị chặn.');
-        } catch (RuntimeException $e) {
-            expectAB(str_contains($e->getMessage(), 'rclone'), 'Lỗi cấu hình offsite phải nêu rõ rclone.');
-        }
+        // V17.1.2: chưa cài rclone vẫn lưu được cấu hình offsite; status báo
+        // missing_rclone + offsite_ready=false; runNow vẫn tạo bản local và
+        // báo lỗi offsite rõ ràng (không mất bản backup nội bộ).
+        $cfgOff = $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'retention' => 2, 'offsite_enabled' => '1', 'offsite_remote' => 'gdrive']);
+        expectAB($service->offsiteIssue($cfgOff) === 'missing_rclone', 'Chưa cài rclone phải báo issue missing_rclone.');
+        $stOff = $service->status();
+        expectAB(($stOff['offsite_ready'] ?? true) === false && ($stOff['offsite_issue'] ?? '') === 'missing_rclone', 'status() phải báo offsite chưa sẵn sàng khi thiếu rclone.');
+        $createdBefore = count($backups->created);
+        $rOff = $service->runNow();
+        expectAB(count($backups->created) === $createdBefore + 1, 'Thiếu rclone vẫn phải tạo được backup local.');
+        expectAB($rOff['ok'] === false && str_contains((string)$rOff['message'], 'offsite'), 'runNow thiếu rclone phải báo lỗi offsite rõ ràng: ' . ($rOff['message'] ?? ''));
         $service->saveConfig(['enabled' => '1', 'time' => '03:30', 'retention' => 2]);
     } else {
         // rclone có sẵn: remote giả định chắc chắn không tồn tại → offsite phải lỗi rõ ràng
