@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.6] — 2026-11-08
+
+V17.1.6: Sửa tương thích PHP HTTP cho Website Control Center. Khi thiết bị phải chạy PHP built-in HTTP server, website tạo bởi TMS nay proxy đúng giao thức HTTP và truyền document root riêng; không còn gửi FastCGI nhầm gây 502 cho api/index.php. Nạp lại website cũ để TMS tự chuyển vhost an toàn.
+- Website: tự chọn handler theo php-engine-policy (FastCGI hoặc php-http), bảo toàn hai chế độ cài đặt.
+- PHP HTTP router: thực thi đúng PHP và trả file tĩnh từ document root của từng website thay vì chỉ root panel.
+- Website cũ: nút Nạp lại tự chuyển vhost FastCGI cũ sang php-http khi thiết bị đang dùng engine này, có rollback nếu Nginx không hợp lệ.
+
 ## [17.1.5] — 2026-11-08
 
 V17.1.5: Chặn hiệu ứng 'tuyết lăn' dung lượng của bản sao lưu. Trước đây mỗi bản sao lưu toàn hệ thống lại đóng gói cả kho chứa các bản sao lưu trước vào trong, nên dung lượng phình không ngừng (thực tế trên máy: 246MB → 744MB → 2,18GB) và thời gian đẩy lên cloud dài theo từng vòng. Nay gói sao lưu loại trừ thư mục chứa kho backup — mỗi bản chỉ gồm dữ liệu hệ thống thật, dung lượng và thời gian đẩy ổn định trở lại. Khôi phục hệ thống không bị ảnh hưởng (metadata vẫn được giữ trong gói).
