@@ -50,7 +50,17 @@ final class BackupService
         $relative=[];
         foreach($paths as $path){$relative[]=ltrim($path,'/');}
         $relative[]=ltrim($tmpManifest,'/');
-        $cmd='cd / && tar -czf '.escapeshellarg($archive).' --ignore-failed-read';
+        // V17.1.5: loại thư mục archives (kho chứa mọi bản backup trước) khỏi
+        // gói sao lưu. Phạm vi system/config gom cả ~/.tms-os nên trước đây
+        // mỗi bản mới lại nuốt mọi bản cũ vào trong (246MB → 744MB → ~1,5GB,
+        // phình không giới hạn theo retention). Khôi phục hệ thống không cần
+        // khôi phục kho archive cũ; metadata (nhỏ) vẫn được giữ trong gói.
+        // Loại cả thư mục lẫn nội dung cho chắc, và nhờ đó file archive đang
+        // được ghi cũng không bao giờ tự chui vào chính nó.
+        $excludeRel=ltrim($this->archiveDir,'/');
+        $cmd='cd / && tar -czf '.escapeshellarg($archive).' --ignore-failed-read'
+            .' --exclude='.escapeshellarg($excludeRel)
+            .' --exclude='.escapeshellarg($excludeRel.'/*');
         foreach($relative as $item)$cmd.=' '.escapeshellarg($item);
         exec($cmd.' 2>&1',$out,$code);
         @unlink($tmpManifest);
