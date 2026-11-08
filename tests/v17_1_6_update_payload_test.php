@@ -18,20 +18,21 @@ $baseZip = $root . '/.build/v17.1.5/release/TMS_OS_LATEST.zip';
 $zipFile = $root . '/.build/v17.1.6/release/TMS_OS_LATEST.zip';
 $metaFile = $root . '/.build/v17.1.6/release/RELEASE.json';
 if (!is_file($baseZip)) {
-    @mkdir(dirname($baseZip), 0700, true);
-    $curl = curl_init('https://github.com/geogich961-lab/tms-os/releases/download/v17.1.5/TMS_OS_LATEST.zip');
-    curl_setopt_array($curl, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_CONNECTTIMEOUT => 20,
-        CURLOPT_TIMEOUT => 120,
-        CURLOPT_USERAGENT => 'TMS-OS-release-test/17.1.6',
-    ]);
-    $previous = curl_exec($curl);
-    $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
-    curl_close($curl);
-    okP1716(is_string($previous) && $previous !== '' && $status === 200, 'Không tải được payload V17.1.5 để mô phỏng nâng cấp.');
-    file_put_contents($baseZip, $previous, LOCK_EX);
+    // GitHub Actions chặn tải chính asset release từ job phát hành của cùng
+    // repository. Dựng lại payload từ tag đã phát hành v17.1.5 để mô phỏng
+    // chính xác source release trước mà không phụ thuộc mạng ngoài.
+    $baseBuild = dirname(dirname($baseZip));
+    $basePayload = $baseBuild . '/payload';
+    @mkdir($basePayload, 0700, true);
+    $archiveCommand = 'git -C ' . escapeshellarg($root)
+        . ' archive v17.1.5 -- app config public routes scripts | tar -x -C ' . escapeshellarg($basePayload);
+    exec($archiveCommand, $output, $code);
+    okP1716($code === 0, 'Không dựng được source V17.1.5 từ tag phát hành.');
+    @unlink($basePayload . '/scripts/verify-uci-payload.sh');
+    $buildCommand = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tests/make_payload_zip.php')
+        . ' ' . escapeshellarg($basePayload) . ' ' . escapeshellarg($baseZip);
+    exec($buildCommand, $output, $code);
+    okP1716($code === 0 && is_file($baseZip), 'Không dựng được payload V17.1.5 để mô phỏng nâng cấp.');
 }
 okP1716(is_file($zipFile) && is_file($metaFile), 'Thiếu artifact V17.1.6.');
 $meta = json_decode((string)file_get_contents($metaFile), true);
