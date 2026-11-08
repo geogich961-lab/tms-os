@@ -636,3 +636,11 @@
 - [x] Kiểm thử payload V17.0.20 → V17.0.21, bảo toàn storage và Cloudflare.
 - [x] Đóng gói, checksum và phát hành GitHub Release V17.0.21.
 - [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật.
+
+## Phát hành ổn định V17.1.0
+
+- [x] Gộp toàn bộ dòng Beta 17.1 (beta.1–beta.5) lên `main`: watchdog/Guardian tự phục hồi ca treo HTTP, bot Telegram polling + lệnh /restart từ xa, File Explorer P0, kiểm tra sức khoẻ website bằng tiến trình nền.
+- [x] Tách hai công tắc Telegram độc lập trong trang Cron Jobs: Lệnh /status (gồm /help, /checkupdate) và Lệnh /restart; state cũ chỉ có cờ chung tự kế thừa thành cả hai đều bật.
+- [x] Bổ sung route/API bật-tắt riêng từng lệnh Telegram và cập nhật test hồi quy telegram_command_service_test.php (polling + tách công tắc + migration).
+- [x] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.0 (kênh Stable chính thức).
+- [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật: chuyển kênh Stable, cập nhật V17.1.0, thử tắt riêng /restart (bot báo đang tắt, /status vẫn chạy) và ngược lại.

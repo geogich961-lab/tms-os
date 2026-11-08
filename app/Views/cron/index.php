@@ -10,6 +10,8 @@ $telegramReady = !empty($telegram['token']) && !empty($telegram['chat_id']);
 $telegramCommandStatus = is_array($telegramCommandStatus ?? null) ? $telegramCommandStatus : [];
 $telegramCommandEnabled = !empty($telegramCommandStatus['enabled']);
 $telegramCommandReady = !empty($telegramCommandStatus['ready']);
+$telegramStatusEnabled = !empty($telegramCommandStatus['status_enabled']);
+$telegramRestartEnabled = !empty($telegramCommandStatus['restart_enabled']);
 $accessReportStatus = is_array($accessReportStatus ?? null) ? $accessReportStatus : [];
 $accessReportEnabled = !empty($accessReportStatus['enabled']);
 $accessReportReady = !empty($accessReportStatus['configured']);
@@ -77,16 +79,29 @@ require __DIR__ . '/../layouts/header.php';
         </button>
     </section>
 
-    <section class="panel-card cron-notify-panel <?= $telegramCommandEnabled ? 'is-ready' : 'needs-setup' ?>">
+    <section class="panel-card cron-notify-panel <?= $telegramStatusEnabled ? 'is-ready' : 'needs-setup' ?>">
         <div class="cron-notify-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/><path d="M4 19.5h16"/></svg>
         </div>
         <div class="cron-notify-copy">
-            <strong><?= $telegramCommandEnabled ? 'Lệnh /status Telegram đang hoạt động' : 'Lệnh /status Telegram chưa được bật' ?></strong>
-            <span><?php if ($telegramCommandEnabled): ?>Nhắn <code>/status</code> trong chat đã cấu hình để nhận báo cáo thiết bị tức thì.<?php elseif (!$telegramReady): ?>Lưu Bot Token và Chat ID trước khi bật lệnh bot.<?php elseif (!$telegramCommandReady): ?>Cần bật Remote Access HTTPS trong Cloudflare Hosting trước.<?php else: ?>Bot sẽ chỉ phản hồi trong Chat ID đã cấu hình; bí mật webhook được giữ trên thiết bị.<?php endif; ?></span>
+            <strong><?= $telegramStatusEnabled ? 'Lệnh /status Telegram đang hoạt động' : 'Lệnh /status Telegram chưa được bật' ?></strong>
+            <span><?php if ($telegramStatusEnabled): ?>Nhắn <code>/status</code> trong chat đã cấu hình để nhận báo cáo thiết bị tức thì. Lệnh <code>/help</code> và <code>/checkupdate</code> dùng chung công tắc này.<?php elseif (!$telegramReady): ?>Lưu Bot Token và Chat ID trước khi bật lệnh bot.<?php else: ?>Bot chỉ phản hồi trong Chat ID đã cấu hình và nhận lệnh qua kênh polling, kể cả khi panel tạm sập.<?php endif; ?></span>
         </div>
-        <button type="button" id="telegramCommandToggle" class="btn <?= $telegramCommandEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$telegramCommandReady && !$telegramCommandEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleTelegramCommand()">
-            <?= $telegramCommandEnabled ? 'Tắt lệnh /status' : 'Bật lệnh /status' ?>
+        <button type="button" id="telegramStatusToggle" class="btn <?= $telegramStatusEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$telegramCommandReady && !$telegramStatusEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleTelegramCommand('status')">
+            <?= $telegramStatusEnabled ? 'Tắt lệnh /status' : 'Bật lệnh /status' ?>
+        </button>
+    </section>
+
+    <section class="panel-card cron-notify-panel <?= $telegramRestartEnabled ? 'is-ready' : 'needs-setup' ?>">
+        <div class="cron-notify-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 12a8 8 0 1 1-2.34-5.66"/><path d="M20 3v4h-4"/></svg>
+        </div>
+        <div class="cron-notify-copy">
+            <strong><?= $telegramRestartEnabled ? 'Lệnh /restart Telegram đang hoạt động' : 'Lệnh /restart Telegram chưa được bật' ?></strong>
+            <span><?php if ($telegramRestartEnabled): ?>Nhắn <code>/restart</code> trong chat đã cấu hình để khởi động lại PHP, Nginx, Guardian và Tunnel khi web bị treo. Công tắc này độc lập với lệnh /status.<?php elseif (!$telegramReady): ?>Lưu Bot Token và Chat ID trước khi bật lệnh bot.<?php else: ?>Khi đang tắt, bot sẽ báo lệnh đang tắt thay vì khởi động lại dịch vụ.<?php endif; ?></span>
+        </div>
+        <button type="button" id="telegramRestartToggle" class="btn <?= $telegramRestartEnabled ? 'btn-ghost' : 'btn-primary' ?> btn-small" <?= (!$telegramCommandReady && !$telegramRestartEnabled) ? 'disabled title="Chưa đủ cấu hình"' : '' ?> onclick="toggleTelegramCommand('restart')">
+            <?= $telegramRestartEnabled ? 'Tắt lệnh /restart' : 'Bật lệnh /restart' ?>
         </button>
     </section>
 
@@ -288,13 +303,14 @@ async function handleSaveTelegram(event) {
     } catch (error) { tmsToast(error.message || 'Lỗi kết nối máy chủ', 'error'); }
 }
 
-async function toggleTelegramCommand() {
-    const button = document.getElementById('telegramCommandToggle');
+async function toggleTelegramCommand(command) {
+    const isRestart = command === 'restart';
+    const button = document.getElementById(isRestart ? 'telegramRestartToggle' : 'telegramStatusToggle');
     if (!button || button.disabled) return;
     const enabling = !button.textContent.includes('Tắt');
     button.disabled = true;
     try {
-        const response = await fetch(enabling ? '/api/telegram-commands/enable' : '/api/telegram-commands/disable', {
+        const response = await fetch('/api/telegram-commands/' + (enabling ? 'enable-' : 'disable-') + (isRestart ? 'restart' : 'status'), {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window.TMS_CSRF }, body: '{}'
         });
         const result = await response.json();

@@ -53,7 +53,7 @@ repair_php(){
   repair_allowed || { event warn php repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
   maintenance_active && { event info php defer 'Đang có ứng dụng thực hiện hot update; Guardian không restart PHP dùng chung.' 1; return 0; }
   event warn php repair 'PHP upstream không phản hồi sau hai lần kiểm tra, bắt đầu phục hồi riêng PHP.' 1
-  bash "$ROOT/scripts/tms-php-engine.sh" restart >>"$LOGDIR/guardian.log" 2>&1 || true
+  bash "$ROOT/scripts/tms-php-engine.sh" restart >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
   sleep 1
   local p w
   p=$(http_code 'http://127.0.0.1:8888/')
@@ -61,7 +61,19 @@ repair_php(){
   if [ "$p" != 000 ] && [ "$p" != 502 ] && [ "$p" != 504 ] && [ "$w" != 502 ] && [ "$w" != 504 ]; then
     event info php recovered "Đã phục hồi PHP; panel=$p website=$w. Nginx/Tunnel không bị restart." 1; return 0
   fi
-  event error php repair "Phục hồi PHP chưa thành công; panel=$p website=$w." 0; return 1
+  event error php repair "Phục hồi PHP chưa thành công; panel=$p website=$w." 0
+  # V17.1.0-beta.5: leo thang — PHP restart không đủ thì restart thêm Nginx
+  # rồi kiểm tra lại (ca treo Nginx khiến panel 502 dù PHP khỏe; trước đây
+  # Guardian chỉ lặp lại restart PHP cho tới khi cạn giới hạn tự sửa).
+  event warn nginx repair 'PHP restart chưa khắc phục được; Guardian leo thang restart Nginx.' 1
+  bash "$ROOT/scripts/tms-service-core.sh" nginx restart >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
+  sleep 1
+  p=$(http_code 'http://127.0.0.1:8888/')
+  w=$(http_code 'http://127.0.0.1:8080/')
+  if [ "$p" != 000 ] && [ "$p" != 502 ] && [ "$p" != 504 ] && [ "$w" != 502 ] && [ "$w" != 504 ]; then
+    event info nginx recovered "Đã phục hồi sau khi restart Nginx; panel=$p website=$w." 1; return 0
+  fi
+  event error nginx repair "Vẫn chưa phục hồi sau restart Nginx; panel=$p website=$w." 0; return 1
 }
 # pgrep không chắc có trên Termux: dò trực tiếp /proc cho cloudflared.
 cloudflared_running(){
@@ -80,7 +92,7 @@ cloudflared_running(){
 repair_tunnel(){
   repair_allowed || { event warn tunnel repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
   event warn tunnel repair 'Cloudflare Tunnel đã cấu hình nhưng cloudflared không chạy, tự khởi động lại.' 1
-  bash "$ROOT/scripts/tms-cloudflare-tunnel.sh" start >>"$LOGDIR/guardian.log" 2>&1 || true
+  bash "$ROOT/scripts/tms-cloudflare-tunnel.sh" start >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
   sleep 2
   if cloudflared_running; then event info tunnel recovered 'Cloudflare Tunnel đã chạy lại.' 1; return 0; fi
   event error tunnel repair 'Khởi động lại Tunnel chưa thành công (có thể do mạng/DNS).' 0; return 1
@@ -88,7 +100,7 @@ repair_tunnel(){
 repair_crond(){
   repair_allowed || return 1
   event warn cron repair 'crond không chạy dù có cron job bật, tự khởi động lại.' 1
-  bash "$ROOT/scripts/tms-cron-engine.sh" start >>"$LOGDIR/guardian.log" 2>&1 || true
+  bash "$ROOT/scripts/tms-cron-engine.sh" start >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
   return 0
 }
 upstream_bad(){
@@ -111,7 +123,7 @@ check_once(){
   local panel website
   if ! bash "$ROOT/scripts/tms-service-core.sh" nginx status >/dev/null 2>&1; then
     event error nginx down 'Không tìm thấy tiến trình Nginx.' 0
-    if [ "$AUTO_REPAIR" = 1 ] && nginx -t >/dev/null 2>&1; then nginx >>"$LOGDIR/guardian.log" 2>&1 && event info nginx recovered 'Đã khởi động lại Nginx.' 1; fi
+    if [ "$AUTO_REPAIR" = 1 ] && nginx -t >/dev/null 2>&1; then nginx >>"$LOGDIR/guardian.log" 2>&1 9>&- && event info nginx recovered 'Đã khởi động lại Nginx.' 1; fi
   fi
   panel=skip; website=skip
   [ "${CHECK_PANEL:-1}" = 1 ] && panel=$(http_code 'http://127.0.0.1:8888/')
@@ -128,7 +140,7 @@ check_once(){
     if ! bash "$ROOT/scripts/tms-service-core.sh" mariadb status >/dev/null 2>&1; then
       event warn mariadb unhealthy 'MariaDB không phản hồi mysqladmin ping.' 0
       if [ "$AUTO_REPAIR" = 1 ]; then
-        bash "$ROOT/scripts/tms-service-core.sh" mariadb start >>"$LOGDIR/guardian.log" 2>&1 || true
+        bash "$ROOT/scripts/tms-service-core.sh" mariadb start >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
         event info mariadb repair 'Đã yêu cầu Unified Core khởi động MariaDB.' 1
       fi
     fi
@@ -136,6 +148,19 @@ check_once(){
   local disk
   disk=$(df -P "$HOME" 2>/dev/null | awk 'NR==2{gsub(/%/,"",$5);print $5}')
   [ -n "$disk" ] && [ "$disk" -ge 90 ] && event warn storage threshold "Dung lượng đã dùng ${disk}%." 0 || true
+  # V17.1.0-beta.4: cảnh báo RAM thấp (giới hạn 1 lần/giờ) — nguyên nhân nghi
+  # ngờ của các vụ tiến trình bị OOM kill (sự cố 14/10/2026).
+  local mem_avail lowmem_last lowmem_now
+  mem_avail="$(awk '/MemAvailable/{print $2}' /proc/meminfo 2>/dev/null || echo "")"
+  if [ -n "$mem_avail" ] && [ "$mem_avail" -lt 102400 ]; then
+    lowmem_now="$(date +%s)"
+    lowmem_last="$(cat "$STATE/guardian-lowmem.warn" 2>/dev/null || echo 0)"
+    case "$lowmem_last" in ''|*[!0-9]*) lowmem_last=0 ;; esac
+    if [ $((lowmem_now - lowmem_last)) -gt 3600 ]; then
+      event warn system memory "RAM khả dụng thấp (~$((mem_avail/1024))MB). Nguy cơ tiến trình bị OOM kill." 0
+      echo "$lowmem_now" > "$STATE/guardian-lowmem.warn"
+    fi
+  fi
   if [ "${CHECK_TUNNEL:-1}" = 1 ] && [ -f "$STATE/cloudflare-hosting/config.json" ] && ! cloudflared_running; then
     [ "$AUTO_REPAIR" = 1 ] && repair_tunnel || event warn tunnel down 'Cloudflare Tunnel không chạy (auto repair tắt).' 0
   fi
@@ -149,22 +174,39 @@ check_once(){
     "$(if [ "$DBMODE_G" = "sqlite" ]; then echo true; else bash "$ROOT/scripts/tms-service-core.sh" mariadb status >/dev/null 2>&1 && echo true || echo false; fi)" > "$STATE/guardian-status.json"
 }
 daemon(){
+  # Mọi lệnh repair sinh daemon đều phải đóng fd 9 (9>&-) khi chạy, nếu
+  # không daemon con (php-fpm/nginx/cloudflared) kế thừa fd và giữ flock
+  # của Guardian vĩnh viễn sau khi Guardian chết -> không thể chạy lại.
   if command -v flock >/dev/null 2>&1; then exec 9>"$LOCKFILE"; flock -n 9 || exit 0; fi
   echo $$ > "$PIDFILE"; trap 'rm -f "$PIDFILE"' EXIT INT TERM
   event info guardian start "TMS Guardian bắt đầu, chu kỳ ${INTERVAL}s." 1
   while :; do check_once; sleep "$INTERVAL"; done
+}
+# V17.1.0-beta.4: kiểm tra daemon thật qua /proc/PID/cmdline thay vì chỉ
+# kill -0, vì PID có thể đã được tái sử dụng bởi tiến trình khác sau khi
+# daemon chết (pidfile stale) — lỗi này từng khiến Guardian không khởi động
+# lại được dù không còn daemon nào chạy.
+guardian_daemon_running(){
+  local pid cmdline
+  pid="$(cat "$PIDFILE" 2>/dev/null || true)"
+  [ -n "$pid" ] || return 1
+  [ -d "/proc/$pid" ] || return 1
+  cmdline="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+  case "$cmdline" in *"tms-guardian.sh daemon"*) return 0 ;; esac
+  return 1
 }
 case "${1:-status}" in
   daemon) daemon;;
   once) check_once;;
   start)
     [ "${ENABLED:-1}" = 1 ] || exit 0
-    if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null; then exit 0; fi
+    if guardian_daemon_running; then exit 0; fi
+    rm -f "$PIDFILE"
     nohup "$0" daemon >>"$LOGDIR/guardian.log" 2>&1 & echo $! > "$PIDFILE";;
   stop)
     [ -f "$PIDFILE" ] && kill "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null || true
     pkill -f '/scripts/tms-guardian.sh daemon' 2>/dev/null || true; rm -f "$PIDFILE";;
   restart) "$0" stop; sleep 0.5; "$0" start;;
-  status) [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE" 2>/dev/null)" 2>/dev/null;;
+  status) guardian_daemon_running;;
   *) exit 2;;
 esac

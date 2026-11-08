@@ -30,6 +30,8 @@ final class GuardianService
             'status'=>$this->status(),
             'events'=>$this->events(80),
             'repair_count_hour'=>$this->repairCountHour(),
+            'watchdog'=>$this->watchdog(),
+            'watchdog_repairs_24h'=>$this->watchdogRepairs24h(),
         ];
     }
 
@@ -85,7 +87,37 @@ final class GuardianService
             'status'=>$this->status(),
             'events'=>$this->events(20),
             'repair_count_hour'=>$this->repairCountHour(),
+            'watchdog'=>$this->watchdog(),
+            'watchdog_repairs_24h'=>$this->watchdogRepairs24h(),
         ];
+    }
+
+    /**
+     * V17.1.0-beta.4: trạng thái watchdog cron — lớp tự phục hồi khi
+     * Guardian daemon chết (sự cố 14/10/2026).
+     */
+    private function watchdog(): array
+    {
+        $data=@json_decode((string)@file_get_contents($this->state.'/watchdog-status.json'),true);
+        if(!is_array($data))$data=[];
+        $out=[];$code=1;
+        @exec('crontab -l 2>/dev/null | grep -q "TMS-OS-WATCHDOG"',$out,$code);
+        $data['cron_installed']=$code===0;
+        if(!isset($data['updated_at']))$data['updated_at']='';
+        if(!isset($data['checks'])||!is_array($data['checks']))$data['checks']=[];
+        return $data;
+    }
+
+    private function watchdogRepairs24h(): int
+    {
+        $cutoff=time()-86400;$count=0;
+        foreach($this->events(500) as $event){
+            $time=strtotime((string)($event['time']??''));
+            if($time!==false&&$time>=$cutoff
+                &&(string)($event['service']??'')==='watchdog'
+                &&(string)($event['action']??'')==='repair')$count++;
+        }
+        return $count;
     }
 
     private function config(): array

@@ -183,6 +183,18 @@ final class CronJobService
             $lines[] = "{$job['schedule']} {$cmd}";
         }
 
+        // V17.1.0-beta.4: Watchdog hệ thống — luôn hiện diện trong crontab,
+        // chạy trực tiếp bằng bash (không qua PHP wrapper) để vẫn hoạt động
+        // khi PHP gặp sự cố. Không quản lý qua panel nên không thể bị xóa nhầm.
+        $lines[] = '# TMS-OS-WATCHDOG';
+        $lines[] = '* * * * * ' . $shellBinary . ' ' . $this->home . '/tms-os/scripts/tms-watchdog.sh';
+
+        // V17.1.0-beta.5: Kênh lệnh Telegram polling — chạy bằng PHP CLI qua
+        // bash wrapper, độc lập với Nginx/PHP-FPM của panel để bot vẫn nhận
+        // lệnh /restart khi panel sập (sự cố 07/11/2026).
+        $lines[] = '# TMS-OS-TELEGRAM-POLL';
+        $lines[] = '* * * * * ' . $shellBinary . ' ' . $this->home . '/tms-os/scripts/tms-telegram-poll.sh';
+
         $tmpFile = tempnam(sys_get_temp_dir(), 'tms-cron');
         if ($tmpFile === false) {
             throw new RuntimeException('Không thể tạo tệp cron tạm thời.');

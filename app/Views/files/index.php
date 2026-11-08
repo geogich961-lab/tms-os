@@ -51,24 +51,33 @@ $path = (string)$listing['relative'];
                 <?php endforeach; ?>
             </div>
 
+            <a class="explorer-trash-link" href="/files/trash" title="Thùng rác — khôi phục mục đã xóa">🗑<?php if(!empty($trashCount)):?> <b><?= (int)$trashCount ?></b><?php endif;?></a>
+
             <form method="post" action="/files/upload" enctype="multipart/form-data" class="explorer-upload" id="explorer-upload-form" data-chunked-upload>
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
                 <input type="hidden" name="path" value="<?= tms_h($path) ?>">
                 <label class="explorer-file-picker">
-                    <input type="file" name="upload" required data-file-picker>
+                    <input type="file" name="upload" multiple data-file-picker data-upload-files>
                     <span class="picker-icon">＋</span>
                     <span class="picker-text" data-file-picker-text>Chọn tệp để tải lên</span>
                 </label>
+                <label class="explorer-file-picker explorer-folder-picker" title="Tải lên cả thư mục (giữ nguyên cấu trúc)">
+                    <input type="file" webkitdirectory data-upload-folder>
+                    <span class="picker-icon">📁</span>
+                </label>
+                <button type="button" class="btn btn-secondary" data-modal-open="remote-download-modal" title="Dán URL để server tự tải về">🔗 URL</button>
                 <button class="btn btn-primary" type="submit" data-upload-submit>Tải lên</button>
                 <div class="explorer-upload-status" data-upload-status hidden aria-live="polite">
                     <div class="explorer-upload-status-row"><span data-upload-message>Đang chuẩn bị upload...</span><strong data-upload-percent>0%</strong></div>
                     <progress data-upload-progress value="0" max="100"></progress>
+                    <div class="explorer-upload-queue" data-upload-queue></div>
                 </div>
             </form>
         </div>
 
-        <div class="explorer-list" id="explorer-list-container">
+        <div class="explorer-list" id="explorer-list-container" data-drop-zone>
+            <div class="explorer-drop-overlay" data-drop-overlay hidden><div class="explorer-drop-hint">📥<br>Thả tệp hoặc thư mục vào đây để tải lên</div></div>
             <?php if ($path !== ''): ?>
                 <a class="explorer-item explorer-back" href="<?= tms_url('/files', ['root' => $root, 'path' => dirname($path) === '.' ? '' : dirname($path)]) ?>">
                     <span class="explorer-item-icon">↰</span>
@@ -85,15 +94,17 @@ $path = (string)$listing['relative'];
                 $isZip = !$item['is_dir'] && strtolower(pathinfo($item['name'], PATHINFO_EXTENSION)) === 'zip';
                 $primaryUrl = $item['is_dir']
                     ? tms_url('/files', ['root' => $root, 'path' => $item['relative']])
-                    : ($item['editable']
-                        ? tms_url('/files/editor', ['root' => $root, 'file' => $item['relative']])
-                        : tms_url('/files/download', ['root' => $root, 'file' => $item['relative']]));
+                    : (($item['previewable'] ?? false)
+                        ? '#xem-truoc'
+                        : ($item['editable']
+                            ? tms_url('/files/editor', ['root' => $root, 'file' => $item['relative']])
+                            : tms_url('/files/download', ['root' => $root, 'file' => $item['relative']])));
                 ?>
                 <div class="explorer-item" data-explorer-item data-relative="<?= tms_h($item['relative']) ?>" data-name="<?= tms_h($item['name']) ?>" data-is-dir="<?= $item['is_dir'] ? '1' : '0' ?>" data-is-zip="<?= $isZip ? '1' : '0' ?>">
                     <div class="explorer-item-select">
                         <input type="checkbox" class="tms-checkbox" data-select-item value="<?= tms_h($item['relative']) ?>">
                     </div>
-                    <a class="explorer-item-open" href="<?= $primaryUrl ?>">
+                    <a class="explorer-item-open" href="<?= $primaryUrl ?>"<?php if(!empty($item['previewable'])): ?> data-preview-file data-preview-url="<?= tms_h(tms_url('/files/preview', ['root' => $root, 'file' => $item['relative']])) ?>" data-preview-name="<?= tms_h($item['name']) ?>"<?php endif; ?>>
                         <span class="explorer-item-icon <?= $item['is_dir'] ? 'folder' : 'file' ?>"><?= $item['is_dir'] ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' : ($isZip ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3"/><path d="M21 16v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-3"/><line x1="4" y1="12" x2="20" y2="12"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>') ?></span>
                         <span class="explorer-item-main">
                             <strong><?= tms_h($item['name']) ?></strong>
@@ -115,6 +126,7 @@ $path = (string)$listing['relative'];
                         data-is-dir="<?= $item['is_dir'] ? '1' : '0' ?>"
                         data-is-zip="<?= $isZip ? '1' : '0' ?>"
                         data-download="<?= !$item['is_dir'] ? tms_url('/files/download', ['root' => $root, 'file' => $item['relative']]) : '' ?>"
+                        data-preview="<?= !empty($item['previewable']) ? tms_url('/files/preview', ['root' => $root, 'file' => $item['relative']]) : '' ?>"
                     >⋮</button>
                 </div>
             <?php endforeach; ?>
@@ -169,6 +181,9 @@ $path = (string)$listing['relative'];
             <a class="sheet-action" id="sheet-download" href="#">
                 <span>⬇️</span><b>Tải xuống</b>
             </a>
+            <button type="button" class="sheet-action" id="sheet-preview" hidden>
+                <span>👁️</span><b>Xem trước</b>
+            </button>
             <form method="post" action="/files/archive" id="sheet-archive-form">
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
@@ -210,7 +225,7 @@ $path = (string)$listing['relative'];
                 <button class="sheet-action" type="button" data-chmod-open><span>🔐</span><b>Phân quyền</b></button>
             </form>
 
-            <form method="post" action="/files/delete" id="sheet-delete-form" data-confirm="Xóa mục này?">
+            <form method="post" action="/files/delete" id="sheet-delete-form" data-confirm="Chuyển mục này vào thùng rác? Bạn có thể khôi phục sau.">
                 <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
                 <input type="hidden" name="root" value="<?= tms_h($root) ?>">
                 <input type="hidden" name="path" value="<?= tms_h($path) ?>">
@@ -307,4 +322,32 @@ $path = (string)$listing['relative'];
     </div>
 </div>
 
+<div class="modal" id="preview-modal">
+    <div class="modal-card preview-modal-card">
+        <button class="modal-close" type="button" data-modal-close>×</button>
+        <h2 id="preview-title">Xem trước</h2>
+        <div class="preview-body" data-preview-body></div>
+    </div>
+</div>
+
+<div class="modal" id="remote-download-modal">
+    <div class="modal-card">
+        <button class="modal-close" type="button" data-modal-close>×</button>
+        <h2>Tải tệp từ URL</h2>
+        <p class="muted">Dán link trực tiếp — điện thoại/server sẽ tự tải về thư mục hiện tại, không tốn dữ liệu di động của bạn.</p>
+        <form class="stack" data-remote-download>
+            <input type="hidden" name="csrf" value="<?= tms_h($csrf) ?>">
+            <input type="hidden" name="root" value="<?= tms_h($root) ?>">
+            <input type="hidden" name="path" value="<?= tms_h($path) ?>">
+            <label><span>URL tệp (chỉ http/https)</span><input type="url" name="url" required placeholder="https://example.com/file.zip" inputmode="url" autocomplete="off"></label>
+            <div class="explorer-upload-status" data-remote-status hidden aria-live="polite">
+                <div class="explorer-upload-status-row"><span data-remote-message>Đang tải về server...</span></div>
+                <progress data-remote-progress></progress>
+            </div>
+            <button class="btn btn-primary" type="submit" data-remote-submit>Tải về thư mục này</button>
+        </form>
+    </div>
+</div>
+
 <?php require dirname(__DIR__) . '/layouts/footer.php'; ?>
+

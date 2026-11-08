@@ -25,7 +25,7 @@ try {
 
     $configApp = require $root . '/config/app.php';
     $build = (string)($configApp['build'] ?? '');
-    expectNginxCompat((bool)preg_match('/^Platform V(\d+\.\d+\.\d+)$/', $build, $m), 'Build sai định dạng.');
+    expectNginxCompat((bool)preg_match('/^Platform V([0-9]+\.[0-9]+\.[0-9]+(?:-[0-9A-Za-z.-]+)?)$/', $build, $m), 'Build sai định dạng.');
     $worker = (string)file_get_contents($root . '/public/service-worker.js');
     expectNginxCompat(str_contains($worker, "const VERSION='tms-os-v{$m[1]}';"), 'Service Worker phải khớp build.');
     echo "PASS: Nginx compatibility repair remains available but hot update never reloads Nginx.\n";

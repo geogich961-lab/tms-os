@@ -114,28 +114,42 @@ window.tmsToast=(msg,type,ms)=>{
   }));
   document.querySelectorAll('[data-file-picker]').forEach(input=>input.addEventListener('change',()=>{
     const text=input.closest('label')?.querySelector('[data-file-picker-text]');
-    if(text && input.files?.[0]) text.textContent=input.files[0].name;
+    if(!text||!input.files?.length) return;
+    if(input.hasAttribute('webkitdirectory')){
+      const rel=input.files[0].webkitRelativePath||'';
+      text.textContent='Thư mục: '+(rel.split('/')[0]||input.files.length+' tệp');
+    }else if(input.files.length>1){
+      text.textContent=input.files.length+' tệp đã chọn';
+    }else{
+      text.textContent=input.files[0].name;
+    }
+    const form=input.closest('form'); if(form) form._tmsDropped=null;
   }));
 
-  // Upload qua Cloudflare: mỗi request nhỏ và tuần tự để Android 7 không bị 524.
+  // Upload qua Cloudflare: nhiều tệp + kéo-thả + thư mục, mỗi request nhỏ và tuần tự để Android 7 không bị 524.
   document.querySelectorAll('[data-chunked-upload]').forEach(form=>form.addEventListener('submit',async event=>{
     event.preventDefault();
-    const input=form.querySelector('input[type="file"]');
-    const file=input?.files?.[0];
+    const filesInput=form.querySelector('[data-upload-files]');
+    const folderInput=form.querySelector('[data-upload-folder]');
     const button=form.querySelector('[data-upload-submit]');
     const status=form.querySelector('[data-upload-status]');
     const message=form.querySelector('[data-upload-message]');
     const percent=form.querySelector('[data-upload-percent]');
     const progress=form.querySelector('[data-upload-progress]');
-    if(!file){tmsToast('Hãy chọn tệp trước khi tải lên.','error');return;}
+    const queueEl=form.querySelector('[data-upload-queue]');
     const csrf=form.querySelector('input[name="csrf"]')?.value||'';
     const root=form.querySelector('input[name="root"]')?.value||'websites';
     const path=form.querySelector('input[name="path"]')?.value||'';
+    const files=[];
+    (filesInput?.files?Array.from(filesInput.files):[]).forEach(f=>{f._tmsSubdir='';files.push(f);});
+    (folderInput?.files?Array.from(folderInput.files):[]).forEach(f=>{const rp=f.webkitRelativePath||'';f._tmsSubdir=rp?rp.split('/').slice(0,-1).join('/'):'';files.push(f);});
+    (form._tmsDropped||[]).forEach(f=>files.push(f));
+    if(!files.length){tmsToast('Hãy chọn tệp (hoặc kéo-thả) trước khi tải lên.','error');return;}
     const chunkSize=4*1024*1024;
-    const totalChunks=Math.max(1,Math.ceil(file.size/chunkSize));
     const randomPart=()=>{try{const bytes=new Uint8Array(18);crypto.getRandomValues(bytes);return Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('');}catch(_){return Date.now().toString(36)+'_'+Math.random().toString(36).slice(2);}};
-    const uploadId='web_'+randomPart();
-    const setProgress=(value,text)=>{const v=Math.max(0,Math.min(100,Math.round(value)));if(status)status.hidden=false;if(progress){progress.value=v;progress.setAttribute('aria-valuenow',String(v));}if(percent)percent.textContent=v+'%';if(message)message.textContent=text;};
+    const totalBytes=files.reduce((s,f)=>s+f.size,0);
+    let doneBytes=0;
+    const setOverall=(text)=>{const v=totalBytes>0?Math.max(0,Math.min(100,Math.round(doneBytes/totalBytes*100))):100;if(status)status.hidden=false;if(progress){progress.value=v;progress.setAttribute('aria-valuenow',String(v));}if(percent)percent.textContent=v+'%';if(message)message.textContent=text;};
     const requestJson=async(url,body)=>{
       const controller=typeof AbortController==='function'?new AbortController():null; const timer=setTimeout(()=>controller?.abort(),90000);
       try{
@@ -145,28 +159,150 @@ window.tmsToast=(msg,type,ms)=>{
         return data;
       }catch(error){if(error?.name==='AbortError')throw new Error('Một phần upload mất quá lâu. Hãy kiểm tra mạng rồi thử lại.');throw error;}finally{clearTimeout(timer);}
     };
-    if(button)button.disabled=true;
-    if(input)input.disabled=true;
-    try{
+    const uploadOne=async(file,rowEl,onBytes)=>{
+      const subdir=file._tmsSubdir||'';
+      const destPath=subdir?(path?path+'/'+subdir:subdir):path;
+      const totalChunks=Math.max(1,Math.ceil(file.size/chunkSize));
+      const uploadId='web_'+randomPart();
+      const rowMsg=rowEl?.querySelector('[data-queue-msg]');
+      const rowBar=rowEl?.querySelector('[data-queue-bar]');
+      const rowPct=rowEl?.querySelector('[data-queue-pct]');
+      const setRow=(pct,text)=>{const v=Math.max(0,Math.min(100,Math.round(pct)));if(rowBar){rowBar.value=v;rowBar.setAttribute('aria-valuenow',String(v));}if(rowPct)rowPct.textContent=v+'%';if(rowMsg)rowMsg.textContent=text;if(rowEl)rowEl.dataset.state=pct>=100?'done':(text&&text.indexOf('lỗi')>=0?'error':'active');};
+      let uploaded=0;
       for(let index=0;index<totalChunks;index++){
         const start=index*chunkSize; const end=Math.min(file.size,start+chunkSize);
-        const body=new FormData(); body.append('csrf',csrf);body.append('root',root);body.append('path',path);body.append('upload_id',uploadId);body.append('chunk_index',String(index));body.append('total_chunks',String(totalChunks));body.append('name',file.name);body.append('total_size',String(file.size));body.append('chunk',file.slice(start,end),file.name+'.part');
+        const body=new FormData(); body.append('csrf',csrf);body.append('root',root);body.append('path',destPath);body.append('upload_id',uploadId);body.append('chunk_index',String(index));body.append('total_chunks',String(totalChunks));body.append('name',file.name);body.append('total_size',String(file.size));body.append('chunk',file.slice(start,end),file.name+'.part');
         const result=await requestJson('/files/upload-chunk',body);
-        setProgress(((index+1)/totalChunks)*98,`Đang tải phần ${index+1}/${totalChunks}...`);
         if(Number(result.received_bytes||0)<end) throw new Error('Máy chủ chưa nhận đủ dữ liệu của phần upload.');
+        uploaded=end; if(typeof onBytes==='function')onBytes(end); else doneBytes+=(end-start);
+        setRow(uploaded/file.size*96,`Đang tải phần ${index+1}/${totalChunks}...`); setOverall(`Đang tải ${file.name}...`);
       }
-      setProgress(99,'Đang hoàn tất và kiểm tra tệp...');
+      setRow(97,'Đang hoàn tất và kiểm tra tệp...');
       const done=new FormData();done.append('csrf',csrf);done.append('upload_id',uploadId);
       await requestJson('/files/upload-complete',done);
-      setProgress(100,'Đã tải lên thành công.');
-      tmsToast('Đã tải lên: '+file.name,'success',2200);
-      setTimeout(()=>window.location.reload(),350);
+      setRow(100,'Xong');
+    };
+    if(button)button.disabled=true;
+    if(filesInput)filesInput.disabled=true;
+    if(folderInput)folderInput.disabled=true;
+    if(queueEl){queueEl.innerHTML='';files.forEach(f=>{const row=document.createElement('div');row.className='upload-queue-row';row.innerHTML='<span class="upload-queue-name"></span><progress data-queue-bar value="0" max="100"></progress><span class="upload-queue-pct" data-queue-pct>0%</span><span class="upload-queue-msg" data-queue-msg></span>';row.querySelector('.upload-queue-name').textContent=(f._tmsSubdir?f._tmsSubdir+'/':'')+f.name;queueEl.appendChild(row);});}
+    const rows=queueEl?Array.from(queueEl.children):[];
+    let failed=0; let okCount=0;
+    try{
+      for(let i=0;i<files.length;i++){
+        setOverall(`Đang tải ${i+1}/${files.length}: ${files[i].name}...`);
+        let credited=0;
+        try{ await uploadOne(files[i],rows[i],n=>{doneBytes+=n-credited;credited=n;}); okCount++; }
+        catch(error){
+          failed++;
+          const text=error instanceof Error?error.message:'Không thể tải tệp lên.';
+          const rowMsg=rows[i]?.querySelector('[data-queue-msg]'); if(rowMsg)rowMsg.textContent='Lỗi: '+text;
+          if(rows[i])rows[i].dataset.state='error';
+          doneBytes+= Math.max(0,files[i].size-credited);
+          tmsToast(files[i].name+': '+text,'error');
+        }
+      }
+      setOverall(failed?`Hoàn tất: ${okCount} xong, ${failed} lỗi.`:`Đã tải lên ${okCount} tệp thành công.`);
+      tmsToast(failed?`Đã tải ${okCount}/${files.length} tệp (${failed} lỗi).`:`Đã tải lên ${okCount} tệp.`,'success',2200);
+      setTimeout(()=>window.location.reload(),600);
     }catch(error){
       const text=error instanceof Error?error.message:'Không thể tải tệp lên.';
-      setProgress(0,text);tmsToast(text,'error');
-      if(button){button.disabled=false;button.textContent='Thử lại';}if(input)input.disabled=false;
+      setOverall(text); tmsToast(text,'error');
+      if(button){button.disabled=false;button.textContent='Thử lại';}
+      if(filesInput)filesInput.disabled=false; if(folderInput)folderInput.disabled=false;
     }
   }));
+
+  // Kéo-thả tệp/thư mục vào Explorer để tải lên.
+  const dropZone=document.querySelector('[data-drop-zone]');
+  const dropOverlay=document.querySelector('[data-drop-overlay]');
+  const uploadForm=document.getElementById('explorer-upload-form');
+  const collectDropEntries=async items=>{
+    const files=[]; const queue=[];
+    for(const item of items){
+      const entry=item.webkitGetAsEntry&&item.webkitGetAsEntry();
+      if(entry) queue.push({entry,path:''});
+      else { const f=item.getAsFile&&item.getAsFile(); if(f){f._tmsSubdir='';files.push(f);} }
+    }
+    while(queue.length){
+      const {entry,path}=queue.shift();
+      if(entry.isFile){
+        const f=await new Promise((res,rej)=>entry.file(res,rej));
+        f._tmsSubdir=path; files.push(f);
+      }else if(entry.isDirectory){
+        const reader=entry.createReader();
+        const entries=await new Promise(res=>reader.readEntries(res));
+        for(const e of entries) queue.push({entry:e,path:path?path+'/'+entry.name:entry.name});
+      }
+    }
+    return files;
+  };
+  if(dropZone&&dropOverlay&&uploadForm){
+    let dragDepth=0;
+    dropZone.addEventListener('dragenter',e=>{e.preventDefault();dragDepth++;dropOverlay.hidden=false;});
+    dropZone.addEventListener('dragover',e=>{e.preventDefault();});
+    dropZone.addEventListener('dragleave',e=>{e.preventDefault();if(--dragDepth<=0){dragDepth=0;dropOverlay.hidden=true;}});
+    dropZone.addEventListener('drop',async e=>{
+      e.preventDefault(); dragDepth=0; dropOverlay.hidden=true;
+      const items=e.dataTransfer?Array.from(e.dataTransfer.items||[]):[];
+      let files=await collectDropEntries(items);
+      if(!files.length&&e.dataTransfer) files=Array.from(e.dataTransfer.files||[]).map(f=>{f._tmsSubdir='';return f;});
+      if(!files.length){tmsToast('Không đọc được tệp kéo-thả.','error');return;}
+      uploadForm._tmsDropped=files;
+      const label=uploadForm.querySelector('[data-file-picker-text]');
+      if(label) label.textContent=files.length+' tệp đã sẵn sàng — bấm Tải lên';
+      tmsToast('Đã nhận '+files.length+' tệp. Bấm "Tải lên" để bắt đầu.','info');
+    });
+  }
+
+  // Xem trước ảnh/media.
+  const previewModal=document.getElementById('preview-modal');
+  const previewBody=previewModal?.querySelector('[data-preview-body]');
+  const previewTitle=document.getElementById('preview-title');
+  const openPreview=(url,name)=>{
+    if(!previewModal||!previewBody) return;
+    if(previewTitle) previewTitle.textContent=name||'Xem trước';
+    previewBody.innerHTML='';
+    const lower=(name||url||'').toLowerCase();
+    let el;
+    if(/\.(mp4|webm|ogv)(\?|$)/.test(lower)){ el=document.createElement('video'); el.src=url; el.controls=true; el.preload='metadata'; }
+    else if(/\.(mp3|wav|ogg|oga|m4a|flac)(\?|$)/.test(lower)){ el=document.createElement('audio'); el.src=url; el.controls=true; el.preload='metadata'; }
+    else { el=document.createElement('img'); el.src=url; el.alt=name||''; }
+    previewBody.appendChild(el);
+    if(typeof openModal==='function') openModal('preview-modal');
+    else previewModal.classList.add('show');
+  };
+  document.querySelectorAll('[data-preview-file]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();openPreview(a.dataset.previewUrl,a.dataset.previewName);}));
+  previewModal?.querySelector('[data-modal-close]')?.addEventListener('click',()=>{if(previewBody)previewBody.innerHTML='';});
+
+  // Remote download: dán URL để server tự tải về.
+  document.querySelectorAll('[data-remote-download]').forEach(form=>form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    const urlInput=form.querySelector('input[name="url"]');
+    const button=form.querySelector('[data-remote-submit]');
+    const status=form.querySelector('[data-remote-status]');
+    const message=form.querySelector('[data-remote-message]');
+    const url=urlInput?.value.trim()||'';
+    if(!url){tmsToast('Hãy dán URL trước.','error');return;}
+    if(button)button.disabled=true;
+    if(status)status.hidden=false;
+    if(message)message.textContent='Đang tải về server... (có thể mất vài phút với tệp lớn)';
+    try{
+      const body=new FormData(form);
+      const response=await fetch('/files/remote-download',{method:'POST',body,credentials:'same-origin',cache:'no-store'});
+      let data=null; try{data=await response.json();}catch(_){throw new Error('Máy chủ trả về phản hồi không hợp lệ.');}
+      if(!response.ok||data?.ok!==true) throw new Error(data?.message||`Tải thất bại (HTTP ${response.status}).`);
+      if(message)message.textContent='Đã tải xong: '+(data.name||'');
+      tmsToast('Đã tải về: '+(data.name||''),'success',2200);
+      setTimeout(()=>window.location.reload(),600);
+    }catch(error){
+      const text=error instanceof Error?error.message:'Không tải được URL.';
+      if(message)message.textContent=text;
+      tmsToast(text,'error');
+      if(button)button.disabled=false;
+    }
+  }));
+
 
   const sheet=document.getElementById('file-action-sheet');
   const sheetTitle=document.getElementById('action-sheet-title');
@@ -236,6 +372,7 @@ window.tmsToast=(msg,type,ms)=>{
     const isDir=button.dataset.isDir==='1';
     const isZip=button.dataset.isZip==='1';
     const download=button.dataset.download||'';
+    const preview=button.dataset.preview||'';
 
     if(sheetTitle) sheetTitle.textContent=name;
     if(sheetIcon) sheetIcon.textContent=isDir?'📁':(isZip?'🗜️':'📄');
@@ -253,8 +390,13 @@ window.tmsToast=(msg,type,ms)=>{
       downloadLink.href=download||'#';
       downloadLink.classList.toggle('sheet-hidden',isDir||!download);
     }
+    const previewButton=document.getElementById('sheet-preview');
+    if(previewButton){
+      previewButton.hidden=!(preview&&!isDir);
+      previewButton.onclick=()=>{closeSheet();openPreview(preview,name);};
+    }
     extractForm?.classList.toggle('sheet-hidden',!isZip);
-    if(deleteForm) deleteForm.dataset.confirm=`Xóa ${name}?`;
+    if(deleteForm) deleteForm.dataset.confirm=`Chuyển "${name}" vào thùng rác? Bạn có thể khôi phục sau.`;
 
     document.querySelectorAll('[data-file-actions]').forEach(b=>b.classList.remove('sheet-active'));
     button.classList.add('sheet-active');
@@ -283,7 +425,7 @@ window.tmsToast=(msg,type,ms)=>{
     document.body.appendChild(form); form.submit();
   };
   document.getElementById('batch-clear')?.addEventListener('click',()=>{selectedItems.clear();updateSelectionUI();});
-  document.getElementById('batch-delete')?.addEventListener('click',()=>{if(confirm(`Xóa ${selectedItems.size} mục?`)) submitBatch('delete');});
+  document.getElementById('batch-delete')?.addEventListener('click',()=>{if(confirm(`Chuyển ${selectedItems.size} mục vào thùng rác? Bạn có thể khôi phục sau.`)) submitBatch('delete');});
   document.getElementById('batch-archive')?.addEventListener('click',()=>submitBatch('archive'));
   document.getElementById('batch-chmod')?.addEventListener('click',()=>{const m=prompt("Quyền (vd 0755):","0755");if(m)submitBatch('chmod',{mode:m,recursive:'1'});});
   const startBatchOp=(type)=>{
@@ -494,3 +636,4 @@ if(document.querySelector('[data-service-alert]')){
   const refresh=()=>fetch('/api/guardian',{cache:'no-store'}).then(r=>r.ok?r.json():Promise.reject()).then(render).catch(()=>{});
   setInterval(refresh,15000);
 })();
+

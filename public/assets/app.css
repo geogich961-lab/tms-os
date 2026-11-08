@@ -2461,3 +2461,53 @@ html[data-theme="dark"] .cfd-sync-note b { color: #f0b94a; }
 .auto-backup-row label { display: grid; gap: 6px; font-size: .82rem; color: var(--muted); }
 .auto-backup-row input, .auto-backup-row select { padding: 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
 @media (max-width: 560px) { .auto-backup-row { grid-template-columns: 1fr; } }
+
+
+/* ===== File Explorer P0: multi-upload, drag-drop, preview, trash, remote download ===== */
+.sheet-hidden { display: none !important; }
+.explorer-head-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.explorer-head-actions form { margin: 0; }
+.explorer-trash-link { display: inline-flex; align-items: center; gap: 4px; padding: 8px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); color: var(--text); text-decoration: none; font-size: .85rem; font-weight: 650; white-space: nowrap; }
+.explorer-trash-link:hover { border-color: var(--primary); color: var(--primary); }
+.explorer-trash-link b { color: var(--primary); }
+.explorer-folder-picker { max-width: none; padding: 9px 10px; }
+.explorer-upload-queue { display: grid; gap: 6px; margin-top: 10px; max-height: 220px; overflow-y: auto; }
+.upload-queue-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); font-size: .78rem; }
+.upload-queue-row .upload-queue-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 650; color: var(--text); }
+.upload-queue-row progress { grid-column: 1 / -1; width: 100%; height: 6px; accent-color: var(--primary); }
+.upload-queue-row .upload-queue-pct { color: var(--primary); font-weight: 700; }
+.upload-queue-row .upload-queue-msg { grid-column: 1 / -1; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-queue-row[data-state="done"] { border-color: var(--success, #22c55e); }
+.upload-queue-row[data-state="error"] { border-color: var(--danger, #ef4444); }
+.upload-queue-row[data-state="error"] .upload-queue-msg { color: var(--danger, #ef4444); }
+.explorer-list { position: relative; }
+.explorer-drop-overlay { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--primary) 12%, transparent); border: 2px dashed var(--primary); border-radius: var(--radius-md); pointer-events: none; }
+.explorer-drop-overlay[hidden] { display: none; }
+.explorer-drop-hint { text-align: center; font-size: 1.1rem; font-weight: 700; color: var(--primary); line-height: 1.8; padding: 20px; }
+.preview-modal-card { max-width: 860px; width: min(860px, 94vw); }
+.preview-modal-card h2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 36px; }
+.preview-body { display: flex; align-items: center; justify-content: center; min-height: 200px; max-height: 70vh; overflow: auto; background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.preview-body img { max-width: 100%; max-height: 70vh; object-fit: contain; display: block; }
+.preview-body video { max-width: 100%; max-height: 70vh; display: block; }
+.preview-body audio { width: 100%; margin: 24px; }
+.trash-list { display: grid; gap: 10px; }
+.trash-item { display: flex; gap: 12px; align-items: center; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-soft); }
+.trash-icon { font-size: 1.6rem; flex: none; }
+.trash-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.trash-info strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-info .muted { font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trash-actions { display: flex; gap: 8px; flex: none; }
+.trash-actions form { margin: 0; }
+/* CodeMirror: hòa vào theme panel */
+.CodeMirror { border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; line-height: 1.55; background: var(--surface); color: var(--text); }
+.CodeMirror-gutters { background: var(--surface-soft); border-right: 1px solid var(--border); }
+.CodeMirror-linenumber { color: var(--muted); }
+.CodeMirror-cursor { border-left-color: var(--text); }
+.CodeMirror-selected { background: color-mix(in srgb, var(--primary) 18%, transparent); }
+@media (max-width: 560px) {
+  .trash-item { flex-wrap: wrap; }
+  .trash-actions { width: 100%; }
+  .trash-actions form { flex: 1; }
+  .trash-actions .btn { width: 100%; }
+  .explorer-topbar { gap: 10px; }
+}

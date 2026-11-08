@@ -89,6 +89,11 @@ error_log = $LOG
 listen = 127.0.0.1:9000
 pm = static
 pm.max_children = 2
+; V17.1.0-beta.5: worker chạy quá 300 request thì tái chế, request treo quá
+; 120 giây thì bị cắt — tránh ca cả 2 worker kẹt vĩnh viễn làm panel 502/504
+; dù tiến trình PHP vẫn "còn sống" (sự cố 07/11/2026).
+pm.max_requests = 300
+request_terminate_timeout = 120s
 clear_env = no
 php_admin_value[upload_max_filesize] = 100M
 php_admin_value[post_max_size] = 110M

@@ -73,6 +73,40 @@ final class TelegramWebhookController
         }
     }
 
+    /** Bật/tắt riêng từng nhóm lệnh (V17.1.0): /status và /restart độc lập. */
+    public function enableStatus(): void
+    {
+        $this->toggleCommand('status', true);
+    }
+
+    public function disableStatus(): void
+    {
+        $this->toggleCommand('status', false);
+    }
+
+    public function enableRestart(): void
+    {
+        $this->toggleCommand('restart', true);
+    }
+
+    public function disableRestart(): void
+    {
+        $this->toggleCommand('restart', false);
+    }
+
+    private function toggleCommand(string $command, bool $enable): void
+    {
+        if (!$this->guardJson(true)) {
+            return;
+        }
+        try {
+            $result = $enable ? $this->commands->enableCommand($command) : $this->commands->disableCommand($command);
+            $this->json(['ok' => true, 'message' => $result['message'], 'status' => $this->commands->status()]);
+        } catch (Throwable $e) {
+            $this->json(['ok' => false, 'message' => $this->safeMessage($e)], 400);
+        }
+    }
+
     private function guardJson(bool $csrfRequired): bool
     {
         if (!$this->auth->check()) {
