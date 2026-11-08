@@ -724,3 +724,11 @@ Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope s
 - [x] Hồi quy: `tests/staged_package_forms_test.php` kiểm tra cấu trúc view (PASS trên view mới, FAIL trên view cũ); test payload mô phỏng V17.1.7 → V17.1.8, bảo toàn storage/Cloudflare.
 - [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.8 (release-auto).
 - [ ] Xác minh thực địa trên Xperia: tải gói thủ công lên, bấm Áp dụng ở "Gói đã lưu trữ" — gói được áp dụng thật, không bị xóa.
+
+## Bản vá V17.1.9 — Đường tải dự phòng qua GitHub API khi github.com lỗi 504
+
+- [x] Sự cố thực địa 08/11/2026: đường tải gói qua github.com (browser_download_url) trả HTTP 504 diện rộng nhiều giờ; chẩn đoán trên máy user cho thấy api.github.com vẫn thông → Update Center không cập nhật được V17.1.7/V17.1.8 dù release hoàn toàn bình thường. Sau đó API còn chạm giới hạn 60 lượt/giờ (HTTP 403 danh sách release) — hai đường lỗi độc lập nhau, cần có dự phòng qua lại.
+- [x] `UpdateService`: normalize release nay giữ thêm `zip_api_url` + `manifest_api_url` (trường `url` của asset trên API); `stageResolvedRelease()` tải ZIP và RELEASE.json qua `httpGetWithFallback()` — thử đường github.com trước, lỗi thì tự chuyển đường API asset. `httpGetDetailed()` chọn `Accept: application/octet-stream` riêng cho URL API asset (thiếu header này API trả JSON mô tả thay vì file); các URL khác giữ `Accept: */*`.
+- [x] Hồi quy: `tests/update_download_fallback_test.php` giả lập đúng sự cố (github.com 504 toàn bộ, chỉ API asset sống) — áp dụng V17.1.8 → V17.1.9 thành công qua đường dự phòng; ca âm tính cả hai đường cùng lỗi thì báo "Tải gói cập nhật thất bại". Test payload mô phỏng nâng cấp, bảo toàn storage/Cloudflare.
+- [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.9 (release-auto).
+- [ ] Xác minh thực địa trên Xperia (kẹt vòng bootstrap: bản vá chỉ có tác dụng từ V17.1.9 trở đi — lần cập nhật TỚI V17.1.9 vẫn phải qua một trong hai đường như hiện tại; từ các bản SAU đó trở đi mới tự chịu được một đường lỗi): cập nhật được khi một trong hai đường GitHub sống; khi github.com 504 mà API còn thông thì vẫn tải được gói.
