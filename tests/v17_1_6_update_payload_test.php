@@ -19,8 +19,18 @@ $zipFile = $root . '/.build/v17.1.6/release/TMS_OS_LATEST.zip';
 $metaFile = $root . '/.build/v17.1.6/release/RELEASE.json';
 if (!is_file($baseZip)) {
     @mkdir(dirname($baseZip), 0700, true);
-    $previous = @file_get_contents('https://github.com/geogich961-lab/tms-os/releases/download/v17.1.5/TMS_OS_LATEST.zip');
-    okP1716(is_string($previous) && $previous !== '', 'Không tải được payload V17.1.5 để mô phỏng nâng cấp.');
+    $curl = curl_init('https://github.com/geogich961-lab/tms-os/releases/download/v17.1.5/TMS_OS_LATEST.zip');
+    curl_setopt_array($curl, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_CONNECTTIMEOUT => 20,
+        CURLOPT_TIMEOUT => 120,
+        CURLOPT_USERAGENT => 'TMS-OS-release-test/17.1.6',
+    ]);
+    $previous = curl_exec($curl);
+    $status = (int)curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+    curl_close($curl);
+    okP1716(is_string($previous) && $previous !== '' && $status === 200, 'Không tải được payload V17.1.5 để mô phỏng nâng cấp.');
     file_put_contents($baseZip, $previous, LOCK_EX);
 }
 okP1716(is_file($zipFile) && is_file($metaFile), 'Thiếu artifact V17.1.6.');
