@@ -1,4 +1,12 @@
 # Changelog
+## [17.1.0] — 2026-11-07
+
+V17.1.0: phát hành chính thức dòng 17.1 — watchdog/Guardian tự phục hồi khi web treo (kiểm tra HTTP thật, leo thang restart PHP/Nginx, hết lỗi chết lặng do kế thừa flock), bot Telegram chuyển sang polling độc lập panel kèm lệnh /restart từ xa, và tách hai công tắc Telegram /status và /restart bật/tắt độc lập.
+- Watchdog có HTTP health check thật + nhịp tim Guardian, tự leo thang restart PHP/Nginx khi panel treo, FPM tự tái chế worker kẹt.
+- Bot Telegram nhận lệnh qua polling (PHP CLI + cron) nên vẫn hoạt động khi panel sập; lệnh /restart khởi động lại dịch vụ từ xa.
+- Hai công tắc Telegram độc lập trong trang Cron Jobs: Lệnh /status (gồm /help, /checkupdate) và Lệnh /restart.
+- Kèm toàn bộ tính năng dòng Beta 17.1: File Explorer P0, kiểm tra sức khoẻ website ở tiến trình nền tách biệt.
+
 ## [17.0.26] — 2026-09-23
 
 V17.0.26: nâng cấp Update Center với kênh Stable/Beta, danh sách release và khả năng quay về release cũ trực tiếp trong Web Panel.

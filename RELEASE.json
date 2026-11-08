@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.0.26","build":"20260923-v17.0.26","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-09-23","name":"TMS OS V17.0.26","version":"17.0.26",
-  "notes":"V17.0.26: nâng cấp Update Center với kênh Stable/Beta, danh sách release và khả năng quay về release cũ trực tiếp trong Web Panel.",
-  "features":["Chọn kênh Stable hoặc Beta/Test ngay trong Update Center.","Beta/Test đọc GitHub prerelease; Stable chỉ đề xuất release chính thức.","Hiển thị danh sách release tương thích và cho phép chuyển tới release cụ thể.","Mọi chuyển version vẫn bắt buộc SHA-256, backup source, health check và rollback an toàn."],
-  "checksum_sha256":"4556230abc8d3cd37caad29d6130435e7727796052aa54387138937a9207fcd8","build_date":"2026-09-23","version_display":"TMS OS V17.0.26",
-  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-09-23"
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.0","build":"20261107-v17.1.0","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-07","name":"TMS OS V17.1.0","version":"17.1.0",
+  "notes":"V17.1.0: phát hành chính thức dòng 17.1 — watchdog/Guardian tự phục hồi khi web treo (kiểm tra HTTP thật, leo thang restart PHP/Nginx, hết lỗi chết lặng do kế thừa flock), bot Telegram chuyển sang polling độc lập panel kèm lệnh /restart từ xa, và tách hai công tắc Telegram /status và /restart bật/tắt độc lập.",
+  "features":["Watchdog có HTTP health check thật + nhịp tim Guardian, tự leo thang restart PHP/Nginx khi panel treo, FPM tự tái chế worker kẹt.","Bot Telegram nhận lệnh qua polling (PHP CLI + cron) nên vẫn hoạt động khi panel sập; lệnh /restart khởi động lại dịch vụ từ xa.","Hai công tắc Telegram độc lập trong trang Cron Jobs: Lệnh /status (gồm /help, /checkupdate) và Lệnh /restart.","Kèm toàn bộ tính năng dòng Beta 17.1: File Explorer P0, kiểm tra sức khoẻ website ở tiến trình nền tách biệt."],
+  "checksum_sha256":"69d5fd3f7156ff6af32201ce659ae89b4a77a89e27b40690d901e2199c62f4cb","build_date":"2026-11-07","version_display":"TMS OS V17.1.0",
+  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-07"
 }
