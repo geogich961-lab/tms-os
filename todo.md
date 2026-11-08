@@ -684,5 +684,15 @@ Nguyên nhân (thực địa 08/11/2026, xem mục V17.1.3): vòng backup chạy
 - [x] `status()` thêm `running` + `running_since` (dấu vết `auto-backup-running.json`); trang Backup hiện "Đang chạy backup ở chế độ nền" và tạm vô hiệu nút chạy khi đang chạy.
 - [x] Test `tests/auto_backup_background_run_test.php`: requestRun khởi chạy đúng lệnh nền; khóa giữ → requestRun không chạy thêm + runNow skip sạch; status running trong/sau vòng chạy; CLI SKIP thoát 0.
 - [x] Bump `Platform V17.1.4` trong config/app.php và `tms-os-v17.1.4` trong public/service-worker.js, kênh stable giữ nguyên.
-- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.4 (release-auto).
-- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.4 → trang Backup bấm "Chạy backup tự động ngay" → trang trả về ngay (không 524), hiện trạng thái đang chạy nền; vòng nền chạy xong: bản sao lưu có trên gdrive:tms-os-backups + Telegram báo thành công cả offsite.
+- [x] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.4 (release-auto). ĐÃ PUBLISH 08/11/2026 13:09 +07, checksum khớp khi tải về kiểm chứng.
+- [ ] Xác minh thực địa trên Xperia: ĐÃ TEST MỘT PHẦN 08/11 — cập nhật V17.1.4 xong, bấm "Chạy backup tự động ngay" lúc 13:13: trang trả về ngay (không 524), hiện "Đang chạy backup ở chế độ nền", nút chạy bị vô hiệu, panel vẫn mượt suốt vòng chạy — phần kiến trúc chạy nền ĐẠT. Vòng này tạo bản `20261108_061341_82876e` tới **2,18 GB** (hiệu ứng tuyết lăn, xem V17.1.5) nên phần đẩy offsite kéo dài; kết quả đẩy cuối cùng + Telegram ✅ còn chờ vòng chạy hoàn tất.
+
+## Bản vá V17.1.5 — Chặn tuyết lăn dung lượng bản sao lưu
+
+Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope system/config gom cả `~/.tms-os`, trong đó có `.tms-os/backups/archives` chứa mọi archive trước → mỗi bản mới nuốt mọi bản cũ: 246MB (11:58) → 743,92MB (12:20) → 2,18GB (13:13). Không chặn thì dung lượng + thời gian đẩy phình vô hạn theo retention.
+
+- [x] `BackupService::create()`: lệnh tar thêm `--exclude` cho thư mục archives (cả thư mục lẫn nội dung) — áp cho mọi scope; manifest trong gói và metadata vẫn giữ nguyên; file archive đang ghi cũng không tự chui vào chính nó.
+- [x] Test `tests/backup_exclude_archives_test.php` dùng BackupService thật + archive cũ giả: bản mới còn dữ liệu cấu hình + manifest nhưng không chứa archive cũ (đã kiểm chứng FAIL trên code cũ, PASS trên code mới).
+- [x] Bump `Platform V17.1.5` trong config/app.php và `tms-os-v17.1.5` trong public/service-worker.js, kênh stable giữ nguyên.
+- [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.5 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.5 → chạy backup (tay hoặc chờ lịch 03:30) → bản mới chỉ còn cỡ dữ liệu hệ thống thật (không cộng dồn các bản cũ), đẩy offsite thành công + Telegram ✅.
