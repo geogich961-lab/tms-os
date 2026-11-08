@@ -1,4 +1,10 @@
 # Changelog
+## [17.1.3] — 2026-11-08
+
+V17.1.3: Sửa lỗi đẩy backup offsite lên cloud luôn báo 'Không tìm thấy tệp archive để đẩy' dù bản sao lưu đã tạo thành công — nguyên nhân là hàm tạo backup trả câu thông báo thay vì mã ID của bản sao lưu cho vòng backup tự động. Nay tạo backup trả đúng ID; thông báo khi tạo backup thủ công giữ nguyên như trước.
+- Backup tự động & Offsite: sửa lỗi vòng backup không tìm thấy tệp archive khi đẩy lên cloud (rclone) — bản sao lưu tạo xong nay được đẩy offsite đúng như cấu hình.
+- Giữ nguyên mọi hành vi còn lại của V17.1.2: Terminal lệnh thủ công, gói rclone, nút Kiểm tra kết nối rclone, nhãn Thùng rác, hàng Pin đã gộp.
+
 ## [17.1.2] — 2026-11-08
 
 V17.1.2: Terminal hỗ trợ lệnh thủ công cho quản trị viên (timeout 60 giây, ghi nhật ký kiểm toán); thêm gói rclone vào Runtime Packages; Backup offsite không còn chặn lưu cấu hình khi chưa cài rclone, có thêm nút Kiểm tra kết nối rclone và hướng dẫn điền remote; nút Thùng rác trong File Manager có thêm chữ; gộp hàng Pin bị trùng trong Resource Monitor.

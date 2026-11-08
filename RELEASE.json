@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.2","build":"20261108-v17.1.2","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-11-08","name":"TMS OS V17.1.2","version":"17.1.2",
-  "notes":"V17.1.2: Terminal hỗ trợ lệnh thủ công cho quản trị viên (timeout 60 giây, ghi nhật ký kiểm toán); thêm gói rclone vào Runtime Packages; Backup offsite không còn chặn lưu cấu hình khi chưa cài rclone, có thêm nút Kiểm tra kết nối rclone và hướng dẫn điền remote; nút Thùng rác trong File Manager có thêm chữ; gộp hàng Pin bị trùng trong Resource Monitor.",
-  "features":["Terminal: thêm mục Lệnh thủ công — chạy lệnh bash trong thư mục home, timeout 60 giây, output tối đa 100KB, ghi nhật ký kiểm toán; lệnh chẩn đoán preset giữ nguyên.","Runtime Packages: thêm gói rclone (cài một chạm) phục vụ Backup offsite lên Google Drive.","Backup tự động & Offsite: chưa cài rclone/chưa nhập remote không còn chặn lưu cấu hình — backup nội bộ vẫn chạy, offsite báo trạng thái chưa sẵn sàng; thêm chú thích cách điền rclone remote và nút Kiểm tra kết nối rclone.","File Manager: nút vào Thùng rác có thêm chữ 'Thùng rác' bên cạnh icon cho dễ nhận biết.","Resource Monitor: gộp hai hàng 'Pin' bị trùng (chữ trạng thái và thanh %) thành một hàng duy nhất."],
-  "checksum_sha256":"b50431ae031409974f104be332b88ecb99f69300a4b5355405ea629bfad2b206","build_date":"2026-11-08","version_display":"TMS OS V17.1.2",
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.3","build":"20261108-v17.1.3","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-08","name":"TMS OS V17.1.3","version":"17.1.3",
+  "notes":"V17.1.3: Sửa lỗi đẩy backup offsite lên cloud luôn báo 'Không tìm thấy tệp archive để đẩy' dù bản sao lưu đã tạo thành công — nguyên nhân là hàm tạo backup trả câu thông báo thay vì mã ID của bản sao lưu cho vòng backup tự động. Nay tạo backup trả đúng ID; thông báo khi tạo backup thủ công giữ nguyên như trước.",
+  "features":["Backup tự động & Offsite: sửa lỗi vòng backup không tìm thấy tệp archive khi đẩy lên cloud (rclone) — bản sao lưu tạo xong nay được đẩy offsite đúng như cấu hình.","Giữ nguyên mọi hành vi còn lại của V17.1.2: Terminal lệnh thủ công, gói rclone, nút Kiểm tra kết nối rclone, nhãn Thùng rác, hàng Pin đã gộp."],
+  "checksum_sha256":"e78e7717a68a8fd25557b94733e99d1bbfe91a67e3e4eff01ecdd99e21a1bb8a","build_date":"2026-11-08","version_display":"TMS OS V17.1.3",
   "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-08"
 }
