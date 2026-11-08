@@ -1,0 +1,106 @@
+name: Release TMS OS (auto)
+
+# Workflow phát hành TỔNG QUÁT — dùng cho mọi phiên bản từ V17.1.2 trở đi.
+# Kích hoạt khi file release.request.json ở gốc repo thay đổi trên main.
+# Số version được đọc từ release.request.json; script đóng gói và test payload
+# tương ứng (tests/build_v<X_Y_Z>_payload.sh, tests/v<X_Y_Z>_update_payload_test.php)
+# phải đã có trên main trước khi cập nhật file tín hiệu.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'release.request.json'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+
+      - name: Read requested version
+        id: req
+        run: |
+          set -Eeuo pipefail
+          V="$(python3 -c "import json; print(json.load(open('release.request.json'))['version'])")"
+          if ! echo "$V" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "Version không hợp lệ trong release.request.json: '$V'" >&2
+            exit 1
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "version_u=${V//./_}" >> "$GITHUB_OUTPUT"
+          echo "Sẽ phát hành TMS OS V$V"
+
+      - name: Verify source matches requested version
+        run: |
+          set -Eeuo pipefail
+          V="${{ steps.req.outputs.version }}"
+          grep -F "'build' => 'Platform V$V'" config/app.php
+          grep -F "'channel' => 'stable'" config/app.php
+          grep -F "const VERSION='tms-os-v$V';" public/service-worker.js
+          test -f "tests/build_v${{ steps.req.outputs.version_u }}_payload.sh"
+          test -f "tests/v${{ steps.req.outputs.version_u }}_update_payload_test.php"
+          php tests/update_channels_release_test.php
+          php tests/update_center_ui_test.php
+
+      - name: Build and test payload
+        run: |
+          set -Eeuo pipefail
+          V="${{ steps.req.outputs.version }}"
+          U="${{ steps.req.outputs.version_u }}"
+          bash "tests/build_v${U}_payload.sh"
+          php "tests/v${U}_update_payload_test.php"
+
+      - name: Finalize release metadata
+        run: |
+          set -Eeuo pipefail
+          V="${{ steps.req.outputs.version }}"
+          cp ".build/v$V/release/RELEASE.json" RELEASE.json
+          php scripts/generate-changelog.php ".build/v$V/release/RELEASE.json"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: finalize V$V release metadata"
+            git push origin HEAD:main
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          V="${{ steps.req.outputs.version }}"
+          if gh release view "v$V" >/dev/null 2>&1; then
+            echo "Release v$V đã tồn tại — bỏ qua."
+            exit 0
+          fi
+          git tag -a "v$V" -m "TMS OS V$V"
+          git push origin "v$V"
+          python3 - "$V" <<'PYEOF'
+          import json, sys
+          v = sys.argv[1]
+          meta = json.load(open(f".build/v{v}/release/RELEASE.json"))
+          notes = meta.get("notes", "")
+          with open(f".build/v{v}/release/NOTES.md", "w", encoding="utf-8") as f:
+              f.write(f"TMS OS V{v}\n\n{notes}\n")
+          PYEOF
+          gh release create "v$V" \
+            ".build/v$V/release/TMS_OS_LATEST.zip" \
+            ".build/v$V/release/RELEASE.json" \
+            --title "TMS OS V$V" \
+            --notes-file ".build/v$V/release/NOTES.md" \
+            --latest
