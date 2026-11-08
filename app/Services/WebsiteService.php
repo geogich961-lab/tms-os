@@ -239,6 +239,21 @@ final class WebsiteService
 
         if ($action === 'restart') {
             if (!is_file($enabled)) throw new RuntimeException('Website chưa được bật.');
+            $old = (string)file_get_contents($enabled);
+            // Các website tạo trước khi có php-http compatibility dùng FastCGI
+            // nhầm với PHP built-in HTTP server và gây 502. Chỉ tự chuyển vhost
+            // có đúng dấu hiệu FastCGI cũ của TMS khi engine đang là php-http.
+            if ($this->usesPhpHttpEngine() && str_contains($old, 'fastcgi_pass 127.0.0.1:9000;')
+                && preg_match('/listen\s+(?:0\.0\.0\.0:)?(\d+)\s*;/', $old, $port)
+                && preg_match('/root\s+([^;]+);/', $old, $root)) {
+                $new = $this->buildConfig($name, (int)$port[1], trim($root[1]));
+                if (file_put_contents($enabled, $new, LOCK_EX) === false) {
+                    throw new RuntimeException('Không thể cập nhật tương thích PHP cho website.');
+                }
+                try { $this->validateAndReload(); }
+                catch (Throwable $e) { file_put_contents($enabled, $old, LOCK_EX); $this->tryReloadAfterRollback(); throw $e; }
+                return;
+            }
             $this->validateAndReload();
             return;
         }
@@ -529,6 +544,39 @@ final class WebsiteService
         return $this->portResponding($port);
     }
 
+    private function usesPhpHttpEngine(): bool
+    {
+        return trim((string)@file_get_contents($this->home . '/.tms-os/php-engine-policy')) === 'php-http';
+    }
+
+    private function requestHandler(string $root): string
+    {
+        if ($this->usesPhpHttpEngine()) {
+            return "location / {\n"
+                . "        proxy_pass http://127.0.0.1:9000;\n"
+                . "        proxy_http_version 1.1;\n"
+                . "        proxy_request_buffering off;\n"
+                . "        proxy_read_timeout 300s;\n"
+                . "        proxy_send_timeout 300s;\n"
+                . "        proxy_set_header Host \$host;\n"
+                . "        proxy_set_header X-TMS-Root " . $root . ";\n"
+                . "        proxy_set_header X-Real-IP \$remote_addr;\n"
+                . "        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;\n"
+                . "    }";
+        }
+        return "location / {\n"
+            . "        try_files \$uri \$uri/ /index.php?\$query_string;\n"
+            . "    }\n\n"
+            . "    location ~ \\.php\$ {\n"
+            . "        try_files \$uri =404;\n"
+            . "        include fastcgi_params;\n"
+            . "        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;\n"
+            . "        fastcgi_read_timeout 300s;\n"
+            . "        fastcgi_send_timeout 300s;\n"
+            . "        fastcgi_pass 127.0.0.1:9000;\n"
+            . "    }";
+    }
+
     private function buildConfig(string $name, int $port, string $root): string
     {
         $template = <<<'NGINX'
@@ -545,18 +593,7 @@ server {
     access_log {{HOME}}/logs/nginx/{{NAME}}-access.log tms_access;
     error_log  {{HOME}}/logs/nginx/{{NAME}}-error.log;
 
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        try_files $uri =404;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_read_timeout 300s;
-        fastcgi_send_timeout 300s;
-        fastcgi_pass 127.0.0.1:9000;
-    }
+    {{HANDLER}}
 
     # V15.0.6: cache browser 1 năm cho file tĩnh
     location ~* \.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot|mp3|mp4|webm)$ {
@@ -576,6 +613,7 @@ NGINX;
             '{{ROOT}}' => $root,
             '{{HOME}}' => $this->home,
             '{{NAME}}' => $name,
+            '{{HANDLER}}' => $this->requestHandler($root),
         ]) . "\n";
     }
 

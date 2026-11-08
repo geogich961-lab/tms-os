@@ -54,7 +54,31 @@ $uri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $relative = ltrim(rawurldecode($uri), '/');
 $file = realpath($root . DIRECTORY_SEPARATOR . $relative);
 $inside = $file !== false && ($file === $root || strncmp($file, $root . DIRECTORY_SEPARATOR, strlen($root) + 1) === 0);
-if ($relative !== '' && $inside && is_file($file)) { return false; }
+if ($relative !== '' && $inside && is_file($file)) {
+    // PHP built-in server chỉ có một document root (của panel). Vì website
+    // TMS truyền root riêng qua header, không thể `return false`: PHP sẽ tìm
+    // file trong root panel. Thực thi/đọc chính xác file đã canonicalize.
+    if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) === 'php') {
+        $_SERVER['DOCUMENT_ROOT'] = $root;
+        $_SERVER['SCRIPT_FILENAME'] = $file;
+        $_SERVER['SCRIPT_NAME'] = '/' . $relative;
+        $_SERVER['PHP_SELF'] = '/' . $relative;
+        chdir(dirname($file));
+        require $file;
+        exit;
+    }
+    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $types = [
+        'html' => 'text/html; charset=utf-8',
+        'json' => 'application/json; charset=utf-8',
+        'txt' => 'text/plain; charset=utf-8',
+        'xml' => 'application/xml; charset=utf-8',
+        'pdf' => 'application/pdf',
+    ];
+    if (isset($types[$extension])) header('Content-Type: ' . $types[$extension]);
+    readfile($file);
+    exit;
+}
 $index = $root . DIRECTORY_SEPARATOR . 'index.php';
 if (!is_file($index)) { http_response_code(404); echo 'TMS index unavailable'; exit; }
 require $index;

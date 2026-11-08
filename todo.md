@@ -696,3 +696,12 @@ Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope s
 - [x] Bump `Platform V17.1.5` trong config/app.php và `tms-os-v17.1.5` trong public/service-worker.js, kênh stable giữ nguyên.
 - [ ] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.5 (release-auto).
 - [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.5 → chạy backup (tay hoặc chờ lịch 03:30) → bản mới chỉ còn cỡ dữ liệu hệ thống thật (không cộng dồn các bản cũ), đẩy offsite thành công + Telegram ✅.
+
+## Bản vá V17.1.6 — Website PHP HTTP không còn trả 502
+
+- [x] Website Control Center chọn handler theo `php-engine-policy`: `fastcgi` giữ FastCGI, `php-http` proxy HTTP loopback và truyền `X-TMS-Root` theo document root của từng website.
+- [x] Sửa PHP HTTP router: thực thi PHP/đọc file đúng từ root website được canonicalize; không còn `return false` khiến PHP built-in server tìm nhầm trong root panel.
+- [x] Nút Nạp lại website tự chuyển vhost FastCGI cũ sang handler php-http khi thiết bị dùng engine này, có validate/reload và rollback nếu lỗi.
+- [x] Thêm hồi quy vhost hai chế độ và smoke test website con; test payload mô phỏng V17.1.5 → V17.1.6, bảo toàn storage/Cloudflare.
+- [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.6 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.6, bấm Nạp lại website Loto, thử `/api/index.php?route=auth/me` và gửi chat; panel không bị 502.

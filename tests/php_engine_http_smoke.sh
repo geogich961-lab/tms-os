@@ -3,9 +3,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WORK="$(mktemp -d)"
 trap 'bash "$ROOT/scripts/tms-php-engine.sh" stop >/dev/null 2>&1 || true; rm -rf "$WORK"' EXIT
-mkdir -p "$WORK/home/tms-os/public" "$WORK/prefix/var/tmp"
+mkdir -p "$WORK/home/tms-os/public" "$WORK/home/websites/loto/public/api" "$WORK/prefix/var/tmp"
 printf '%s\n' '<?php echo "TMS-HTTP-OK";' > "$WORK/home/tms-os/public/index.php"
 printf '%s\n' 'static' > "$WORK/home/tms-os/public/health.txt"
+printf '%s\n' '<?php echo "LOTO-API-OK";' > "$WORK/home/websites/loto/public/api/index.php"
+printf '%s\n' 'loto-static' > "$WORK/home/websites/loto/public/health.txt"
 HOME="$WORK/home" PREFIX="$WORK/prefix" TMS_WEB_ROOT="$WORK/home/tms-os/public" TMS_COMPAT_ENGINE=php-http \
   bash "$ROOT/scripts/tms-php-engine.sh" start
 HEADER="X-TMS-Root: $WORK/home/tms-os/public"
@@ -15,6 +17,13 @@ RESPONSE=$(cat "$WORK/response")
 curl -fsS -H "$HEADER" http://127.0.0.1:9000/health.txt > "$WORK/response"
 RESPONSE=$(cat "$WORK/response")
 [ "$RESPONSE" = 'static' ]
+SITE_HEADER="X-TMS-Root: $WORK/home/websites/loto/public"
+curl -fsS -H "$SITE_HEADER" http://127.0.0.1:9000/api/index.php > "$WORK/response"
+RESPONSE=$(cat "$WORK/response")
+[ "$RESPONSE" = 'LOTO-API-OK' ]
+curl -fsS -H "$SITE_HEADER" http://127.0.0.1:9000/health.txt > "$WORK/response"
+RESPONSE=$(cat "$WORK/response")
+[ "$RESPONSE" = 'loto-static' ]
 ! curl -fsS http://127.0.0.1:9000/ >/dev/null 2>&1
 HOME="$WORK/home" PREFIX="$WORK/prefix" TMS_WEB_ROOT="$WORK/home/tms-os/public" TMS_COMPAT_ENGINE=php-http \
   bash "$ROOT/scripts/tms-php-engine.sh" stop
