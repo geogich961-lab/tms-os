@@ -64,37 +64,44 @@ maintenance_active(){
   return 1
 }
 # Đếm số lần repair trong giờ hiện tại, chống restart loop.
-repair_allowed(){
-  local hour count now
+# V17.1.7: hạn mức tự sửa tính THEO TỪNG DỊCH VỤ. Trước đây mọi dịch vụ
+# dùng chung một bộ đếm 6 lần/giờ: một dịch vụ lỗi lặp (vd Guardian chết
+# liên tục) nuốt hết hạn mức, khiến watchdog phải đứng nhìn PHP engine
+# chết mà không được sửa — log máy thật 08/11/2026 toàn dòng "Đạt giới
+# hạn tự sửa; bỏ qua phục hồi PHP engine". File state chuyển sang dạng
+# dòng key=value (mỗi dịch vụ một dòng) cho dễ đọc/ghi riêng; file JSON
+# cũ không khớp định dạng sẽ được coi là state trống, đếm lại từ đầu.
+repair_count_get(){ # repair_count_get <service>
+  local service="$1" hour count=0 saved_hour saved_at now
   hour="$(date +%Y-%m-%dT%H)"
   now="$(date +%s)"
-  count=0
   if [ -f "$REPAIR_STATE" ]; then
-    local saved_hour saved_count saved_at
-    saved_hour="$(sed -n 's/.*"hour":"\([^"]*\)".*/\1/p' "$REPAIR_STATE" 2>/dev/null || true)"
-    saved_count="$(sed -n 's/.*"count":\([0-9]*\).*/\1/p' "$REPAIR_STATE" 2>/dev/null || true)"
-    saved_at="$(sed -n 's/.*"at":\([0-9]*\).*/\1/p' "$REPAIR_STATE" 2>/dev/null || true)"
-    case "$saved_count" in ''|*[!0-9]*) saved_count=0 ;; esac
+    saved_hour="$(sed -n 's/^hour=//p' "$REPAIR_STATE" 2>/dev/null | head -1)"
+    saved_at="$(sed -n 's/^at=\([0-9]*\)$/\1/p' "$REPAIR_STATE" 2>/dev/null | head -1)"
     case "$saved_at" in ''|*[!0-9]*) saved_at=0 ;; esac
-    if [ "$saved_hour" = "$hour" ]; then count="$saved_count"; fi
-    # File state quá cũ (>2h) thì reset để không kẹt vì state hỏng.
-    if [ $((now - saved_at)) -gt 7200 ]; then count=0; fi
+    if [ "$saved_hour" = "$hour" ] && [ $((now - saved_at)) -le 7200 ]; then
+      count="$(sed -n 's/^'"$service"'=\([0-9]*\)$/\1/p' "$REPAIR_STATE" 2>/dev/null | head -1)"
+      case "$count" in ''|*[!0-9]*) count=0 ;; esac
+    fi
   fi
-  [ "$count" -lt "$MAX_REPAIRS_PER_HOUR" ]
+  echo "$count"
 }
-repair_count_bump(){
-  local hour count now
+repair_allowed(){ # repair_allowed <service>
+  [ "$(repair_count_get "${1:-global}")" -lt "$MAX_REPAIRS_PER_HOUR" ]
+}
+repair_count_bump(){ # repair_count_bump <service>
+  local service="${1:-global}" hour now tmp
   hour="$(date +%Y-%m-%dT%H)"
   now="$(date +%s)"
-  count=0
-  if [ -f "$REPAIR_STATE" ]; then
-    local saved_hour saved_count
-    saved_hour="$(sed -n 's/.*"hour":"\([^"]*\)".*/\1/p' "$REPAIR_STATE" 2>/dev/null || true)"
-    saved_count="$(sed -n 's/.*"count":\([0-9]*\).*/\1/p' "$REPAIR_STATE" 2>/dev/null || true)"
-    case "$saved_count" in ''|*[!0-9]*) saved_count=0 ;; esac
-    if [ "$saved_hour" = "$hour" ]; then count="$saved_count"; fi
-  fi
-  printf '{"hour":"%s","count":%d,"at":%d}\n' "$hour" $((count+1)) "$now" > "$REPAIR_STATE"
+  tmp="$REPAIR_STATE.tmp"
+  {
+    printf 'hour=%s\n' "$hour"
+    printf 'at=%s\n' "$now"
+    if [ -f "$REPAIR_STATE" ] && [ "$(sed -n 's/^hour=//p' "$REPAIR_STATE" 2>/dev/null | head -1)" = "$hour" ]; then
+      grep -E '^[a-z_-]+=[0-9]+$' "$REPAIR_STATE" 2>/dev/null | grep -v -E '^(hour|at)=' | grep -v -E "^${service}=" || true
+    fi
+    printf '%s=%d\n' "$service" $(( $(repair_count_get "$service") + 1 ))
+  } > "$tmp" && mv "$tmp" "$REPAIR_STATE"
 }
 # Đảm bảo crontab có entry watchdog (dùng cho lần cài đầu tiên sau update;
 # CronJobService::syncCrontab() cũng luôn chèn entry này nên không thể mất).
@@ -178,7 +185,7 @@ crond_running(){
 }
 do_repair(){ # do_repair <service> <label> <command...>
   local service="$1" label="$2"; shift 2
-  if ! repair_allowed; then
+  if ! repair_allowed "$service"; then
     event warn watchdog limit "Đạt giới hạn tự sửa ($MAX_REPAIRS_PER_HOUR/giờ); bỏ qua phục hồi $label." 0
     return 1
   fi
@@ -188,10 +195,10 @@ do_repair(){ # do_repair <service> <label> <command...>
   # giữ flock vĩnh viễn — mọi lần watchdog chạy sau đó đều thoát lặng lẽ ở
   # flock -n, watchdog "chết" mà không ai biết (một phần sự cố 07/11/2026).
   if "$@" >>"$LOGDIR/guardian.log" 2>&1 9>&-; then
-    repair_count_bump
+    repair_count_bump "$service"
     return 0
   fi
-  repair_count_bump
+  repair_count_bump "$service"
   event error watchdog repair "Khởi động lại $label thất bại." 0
   return 1
 }

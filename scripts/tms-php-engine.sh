@@ -88,11 +88,23 @@ PHP_ROUTER
 start_cgi(){
   pkill -9 -f 'php-cgi (-n )?-b 127.0.0.1:9000' 2>/dev/null || true
   fuser -k 9000/tcp 2>/dev/null || true
+  # V17.1.7 (sự cố 08/11/2026): php-cgi trần có 2 mặc định nguy hiểm trên máy
+  # không có php-fpm — ở đó nó là engine DUY NHẤT chứ không phải dự phòng tạm:
+  # (1) PHP_FCGI_MAX_REQUESTS mặc định 500: đủ 500 request là php-cgi tự
+  # thoát, và bare php-cgi không có tiến trình quản lý nào sinh lại nó ->
+  # toàn bộ PHP (panel + mọi website) 502 cho tới lần tự sửa tiếp theo.
+  # (2) Không có PHP_FCGI_CHILDREN: chỉ 1 tiến trình xử lý NỐI TIẾP mọi
+  # request; một website tự làm mới liên tục (vd trang lô tô) đốt hết ngân
+  # sách 500 request trong vài phút và một request chậm chặn tất cả.
+  # Vá: pool nhỏ tự quản (manager tự hồi sinh children khi children chết)
+  # + tắt hẳn giới hạn tự thoát.
+  local cgi_children="${TMS_PHP_CGI_CHILDREN:-4}"
+  case "$cgi_children" in ''|*[!0-9]*|0) cgi_children=4 ;; esac
   # Đồng nhất với compatibility probe: một số Android/Termux để LD_PRELOAD
   # trong môi trường phiên shell khiến PHP-CGI thoát ngay dù probe đã đạt.
   # upload/post size phải vượt kích thước TMS_OS_LATEST.zip (mặc định 2M/8M
   # khiến bước "Kiểm tra và lưu" từ chối gói cập nhật chính thức).
-  nohup env -u LD_PRELOAD TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -d "upload_max_filesize=100M" -d "post_max_size=110M" -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
+  nohup env -u LD_PRELOAD TMPDIR="$ENGINE_TMPDIR" TMP="$ENGINE_TMPDIR" TEMP="$ENGINE_TMPDIR" PHP_INI_SCAN_DIR=/dev/null PHP_FCGI_CHILDREN="$cgi_children" PHP_FCGI_MAX_REQUESTS=0 php-cgi -n -d "sys_temp_dir=$ENGINE_TMPDIR" -d "upload_max_filesize=100M" -d "post_max_size=110M" -b 127.0.0.1:9000 >>"$LOG" 2>&1 &
   echo $! > "$PID"; cp "$PID" "$LEGACY_PID"; sleep 0.7; kill -0 "$(cat "$PID")" 2>/dev/null
 }
 start_http(){
@@ -131,8 +143,13 @@ CFG
 }
 start_inner(){
   if [ "$(policy)" = 'php-http' ]; then start_http; return; fi
-  if command -v php-fpm >/dev/null 2>&1 && start_fpm; then return 0; fi
-  printf '%s\n' '[WARN] PHP-FPM không khởi động được; thử PHP-CGI.' >>"$LOG"
+  # V17.1.7: máy không có binary php-fpm thì đi thẳng PHP-CGI — trước đây
+  # MỌI lần start/restart đều cố spawn một binary không tồn tại rồi mới
+  # chịu rơi về CGI, tốn một vòng thử vô ích và rải WARN khắp log.
+  if command -v php-fpm >/dev/null 2>&1; then
+    if start_fpm; then return 0; fi
+    printf '%s\n' '[WARN] PHP-FPM không khởi động được; thử PHP-CGI.' >>"$LOG"
+  fi
   start_cgi
 }
 stop_inner(){

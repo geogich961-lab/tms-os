@@ -43,14 +43,17 @@ maintenance_active(){
   rm -f "$EXTERNAL_UPDATE_LOCK" 2>/dev/null || true
   return 1
 }
-repair_allowed(){
-  local count prefix
+repair_allowed(){ # repair_allowed <service>
+  # V17.1.7: đếm theo TỪNG dịch vụ. Bản cũ đếm MỌI event repair trong giờ
+  # (kể cả event của watchdog ghi chung file events) nên một dịch vụ lỗi
+  # lặp nuốt hết hạn mức của các dịch vụ còn lại (sự cố 08/11/2026).
+  local service="${1:-global}" count prefix
   prefix="$(date +%Y-%m-%dT%H):"
-  count=$(grep -F '"action":"repair"' "$EVENTS" 2>/dev/null | grep -F '"time":"'"$prefix" 2>/dev/null | wc -l | tr -d ' ')
+  count=$(grep -F '"action":"repair"' "$EVENTS" 2>/dev/null | grep -F '"service":"'"$service"'"' | grep -F '"time":"'"$prefix" 2>/dev/null | wc -l | tr -d ' ')
   [ "${count:-0}" -lt "$MAX_REPAIRS_PER_HOUR" ]
 }
 repair_php(){
-  repair_allowed || { event warn php repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
+  repair_allowed php || { event warn php repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
   maintenance_active && { event info php defer 'Đang có ứng dụng thực hiện hot update; Guardian không restart PHP dùng chung.' 1; return 0; }
   event warn php repair 'PHP upstream không phản hồi sau hai lần kiểm tra, bắt đầu phục hồi riêng PHP.' 1
   bash "$ROOT/scripts/tms-php-engine.sh" restart >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
@@ -90,7 +93,7 @@ cloudflared_running(){
   return 1
 }
 repair_tunnel(){
-  repair_allowed || { event warn tunnel repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
+  repair_allowed tunnel || { event warn tunnel repair 'Đã đạt giới hạn tự sửa trong một giờ.' 0; return 1; }
   event warn tunnel repair 'Cloudflare Tunnel đã cấu hình nhưng cloudflared không chạy, tự khởi động lại.' 1
   bash "$ROOT/scripts/tms-cloudflare-tunnel.sh" start >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
   sleep 2
@@ -98,7 +101,7 @@ repair_tunnel(){
   event error tunnel repair 'Khởi động lại Tunnel chưa thành công (có thể do mạng/DNS).' 0; return 1
 }
 repair_crond(){
-  repair_allowed || return 1
+  repair_allowed cron || return 1
   event warn cron repair 'crond không chạy dù có cron job bật, tự khởi động lại.' 1
   bash "$ROOT/scripts/tms-cron-engine.sh" start >>"$LOGDIR/guardian.log" 2>&1 9>&- || true
   return 0
