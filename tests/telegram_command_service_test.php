@@ -116,6 +116,35 @@ $updates->beginResult = ['ok' => false, 'code' => 'expired'];
 $expired = $commands->processIncomingUpdate(telegram_callback(12, 'callback-expired', 'u:' . $nonce), $secret);
 $skip = $commands->processIncomingUpdate(telegram_callback(13, 'callback-skip', 's:' . $nonce), $secret);
 
+// --- V17.1.0: tách hai công tắc /status và /restart ---
+$commands->disableCommand('restart');
+$splitStatusAfterRestartOff = $commands->status();
+$restartWhileOff = $commands->processIncomingUpdate(telegram_update(20, '/restart'), $secret);
+$restartOffNotice = (string)(end($calls)['data']['text'] ?? '');
+$statusWhileRestartOff = $commands->processIncomingUpdate(telegram_update(21, '/status'), $secret);
+
+$commands->disableCommand('status');
+$splitStatusAfterBothOff = $commands->status();
+$statusWhileBothOff = $commands->processIncomingUpdate(telegram_update(22, '/status'), $secret);
+
+$commands->enableCommand('restart');
+$splitStatusRestartOnly = $commands->status();
+$secretRestartOnly = (string)(json_decode((string)file_get_contents($home . '/.tms-os/telegram-webhook.json'), true)['secret'] ?? '');
+$helpWhileStatusOff = $commands->processIncomingUpdate(telegram_update(23, '/help'), $secretRestartOnly);
+$helpOffNotice = (string)(end($calls)['data']['text'] ?? '');
+
+// Migration: state bản beta.5 chỉ có cờ chung 'enabled', không có cờ riêng.
+file_put_contents($home . '/.tms-os/telegram-webhook.json', json_encode([
+    'enabled' => true,
+    'mode' => 'polling',
+    'secret' => str_repeat('a', 64),
+    'activated_at' => '2026-11-07T00:00:00+07:00',
+    'last_update_id' => 30,
+    'last_update_at' => '',
+]));
+$legacyStatus = $commands->status();
+$legacyStatusCall = $commands->processIncomingUpdate(telegram_update(31, '/status'), str_repeat('a', 64));
+
 $allText = implode("\n", array_map(static fn(array $call): string => (string)($call['data']['text'] ?? ''), $calls));
 $methods = array_column($calls, 'method');
 $offerRecorded = array_values(array_filter($updates->calls, static fn(array $call): bool => $call[0] === 'offer'));
@@ -125,8 +154,7 @@ $skipCalls = array_values(array_filter($updates->calls, static fn(array $call): 
 exec('rm -rf ' . escapeshellarg($base));
 
 telegram_test_assert(!str_contains((string)$statusJson, 'test-token-must-not-leak') && !str_contains((string)$statusJson, 'secret'), 'Trạng thái không được rò token hoặc secret.');
-telegram_test_assert(($enableCall['method'] ?? '') === 'setWebhook' && ($enableCall['data']['url'] ?? '') === 'https://panel.example.test/telegram/webhook', 'Webhook phải dùng hostname panel đã cấu hình.');
-telegram_test_assert(($enableCall['data']['allowed_updates'] ?? '') === '["message","callback_query"]', 'Webhook phải nhận message và callback_query.');
+telegram_test_assert(($enableCall['method'] ?? '') === 'deleteWebhook', 'Bật lệnh từ beta.5 phải gỡ webhook để kênh polling nhận lệnh.');
 telegram_test_assert(empty($missingSecret['handled']) && empty($wrongSecret['handled']) && empty($wrongChat['handled']), 'Secret hoặc chat sai phải bị từ chối im lặng.');
 telegram_test_assert(!empty($status['sent']) && !empty($help['sent']) && empty($duplicateStatus['handled']), '/status, /help và chống lặp phải tương thích.');
 telegram_test_assert(!empty($upToDate['sent']) && !empty($unconfigured['sent']) && !empty($offer['sent']), '/checkupdate phải phản hồi ở mọi trạng thái.');
@@ -137,5 +165,12 @@ telegram_test_assert(!empty($expired['handled']) && !empty($skip['handled']) && 
 telegram_test_assert(count($authorizeCalls) === 2 && ($authorizeCalls[0][1] ?? '') === '123456789' && ($authorizeCalls[0][2] ?? '') === '42', 'Mật khẩu chỉ được chuyển cho luồng xác thực gắn chat/người gọi.');
 telegram_test_assert(count($skipCalls) === 1 && !str_contains($allText, 'mat-khau-khong-dung') && !str_contains($allText, 'mat-khau-dung'), 'Bot tuyệt đối không được lặp lại mật khẩu trong phản hồi.');
 telegram_test_assert(!str_contains($allText, 'test-token-must-not-leak'), 'Bot tuyệt đối không được rò token Telegram.');
+telegram_test_assert(!empty($splitStatusAfterRestartOff['status_enabled']) && empty($splitStatusAfterRestartOff['restart_enabled']) && !empty($splitStatusAfterRestartOff['enabled']), 'Tắt riêng /restart phải giữ /status và kênh polling hoạt động.');
+telegram_test_assert(!empty($restartWhileOff['handled']) && !empty($restartWhileOff['sent']) && str_contains($restartOffNotice, 'đang tắt'), '/restart đang tắt phải được báo rõ thay vì thực thi.');
+telegram_test_assert(!empty($statusWhileRestartOff['sent']), '/status vẫn phải chạy khi /restart đang tắt.');
+telegram_test_assert(empty($splitStatusAfterBothOff['enabled']) && empty($statusWhileBothOff['handled']), 'Tắt cả hai lệnh phải dừng toàn bộ kênh lệnh.');
+telegram_test_assert(!empty($splitStatusRestartOnly['enabled']) && !empty($splitStatusRestartOnly['restart_enabled']) && empty($splitStatusRestartOnly['status_enabled']), 'Bật riêng /restart không được bật lại /status.');
+telegram_test_assert(!empty($helpWhileStatusOff['handled']) && str_contains($helpOffNotice, 'đang tắt'), '/help thuộc nhóm /status nên cũng phải báo đang tắt.');
+telegram_test_assert(!empty($legacyStatus['status_enabled']) && !empty($legacyStatus['restart_enabled']) && !empty($legacyStatusCall['sent']), 'State beta.5 (chỉ có cờ chung) phải tự kế thừa thành cả hai lệnh đều bật.');
 
 echo "OK: Telegram /checkupdate, callback and password flow are guarded.\n";

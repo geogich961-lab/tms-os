@@ -152,6 +152,10 @@ $router->post('/api/access-reports/test', fn()=>$cronController->testAccessRepor
 $router->get('/api/telegram-commands/status', fn()=>$telegramWebhookController->status());
 $router->post('/api/telegram-commands/enable', fn()=>$telegramWebhookController->enable());
 $router->post('/api/telegram-commands/disable', fn()=>$telegramWebhookController->disable());
+$router->post('/api/telegram-commands/enable-status', fn()=>$telegramWebhookController->enableStatus());
+$router->post('/api/telegram-commands/disable-status', fn()=>$telegramWebhookController->disableStatus());
+$router->post('/api/telegram-commands/enable-restart', fn()=>$telegramWebhookController->enableRestart());
+$router->post('/api/telegram-commands/disable-restart', fn()=>$telegramWebhookController->disableRestart());
 // ===== Monitoring / Notifications / Updates =====
 $router->get('/monitoring', fn()=>$monitoringController->index());
 $router->get('/api/monitoring', fn()=>$monitoringController->api());

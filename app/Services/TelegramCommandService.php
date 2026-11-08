@@ -31,6 +31,22 @@ final class TelegramCommandService
         $this->updates = $updates;
     }
 
+    /**
+     * Cờ bật/tắt tách riêng cho từng nhóm lệnh (V17.1.0): /status là nhóm
+     * "xem" (kèm /help và /checkupdate), /restart là nhóm "tác động".
+     * State cũ (trước V17.1.0) chỉ có cờ chung 'enabled' — chưa có cờ riêng
+     * thì cả hai nhóm kế thừa cờ chung, nên máy đang bật không đổi hành vi
+     * sau khi cập nhật.
+     */
+    private function commandFlags(array $state): array
+    {
+        $legacy = !empty($state['enabled']);
+        return [
+            'status' => array_key_exists('status_enabled', $state) ? !empty($state['status_enabled']) : $legacy,
+            'restart' => array_key_exists('restart_enabled', $state) ? !empty($state['restart_enabled']) : $legacy,
+        ];
+    }
+
     /** Trạng thái đã làm sạch, an toàn để hiển thị trong panel. */
     public function status(): array
     {
@@ -39,13 +55,19 @@ final class TelegramCommandService
         $configured = trim((string)($config['token'] ?? '')) !== ''
             && trim((string)($config['chat_id'] ?? '')) !== '';
         $panelUrl = $this->cloudflare->publicPanelUrl();
-        $enabled = !empty($state['enabled']) && $this->secretFromState($state) !== '';
+        $flags = $this->commandFlags($state);
+        $active = $this->secretFromState($state) !== '';
+        $enabled = $active && ($flags['status'] || $flags['restart']);
 
         return [
             'configured' => $configured,
             'panel_configured' => $panelUrl !== '',
-            'ready' => $configured && $panelUrl !== '',
+            // Kênh polling (từ beta.5) không còn cần URL panel HTTPS:
+            // chỉ cần Bot Token + Chat ID là bật được lệnh.
+            'ready' => $configured,
             'enabled' => $enabled,
+            'status_enabled' => $enabled && $flags['status'],
+            'restart_enabled' => $enabled && $flags['restart'],
             'mode' => (string)($state['mode'] ?? ($enabled ? 'webhook' : '')),
             'activated_at' => $enabled ? (string)($state['activated_at'] ?? '') : '',
             'last_update_at' => (string)($state['last_update_at'] ?? ''),
@@ -56,12 +78,98 @@ final class TelegramCommandService
      * Bật kênh lệnh polling (beta.5): gỡ webhook (nếu có) để getUpdates
      * hoạt động, sinh bí mật cục bộ cho poller xác thực khi gọi vào
      * processIncomingUpdate(). Không còn phụ thuộc URL panel HTTPS.
+     * Bật/tắt CẢ HAI nhóm lệnh — giữ tương thích cho nơi gọi cũ.
      */
     public function enable(): array
     {
-        $config = $this->requireTelegramConfig();
+        $this->requireTelegramConfig();
+        $this->setupPollingChannel();
+        $state = $this->readState();
+        $state['enabled'] = true;
+        $state['status_enabled'] = true;
+        $state['restart_enabled'] = true;
+        $this->writeState($state);
 
-        $secret = bin2hex(random_bytes(32));
+        return $this->status() + ['message' => 'Đã bật lệnh Telegram qua kênh polling. Bot vẫn nhận lệnh kể cả khi panel tạm sập; dùng /restart để khởi động lại dịch vụ từ xa.'];
+    }
+
+    /** Tắt CẢ HAI nhóm lệnh và gỡ kênh polling — giữ tương thích cho nơi gọi cũ. */
+    public function disable(): array
+    {
+        $this->requireTelegramConfig();
+        $this->teardownPollingChannel();
+
+        return $this->status() + ['message' => 'Đã tắt lệnh Telegram.'];
+    }
+
+    /**
+     * Bật riêng một nhóm lệnh (V17.1.0): 'status' (gồm /status, /help,
+     * /checkupdate) hoặc 'restart' (/restart). Nếu chưa có nhóm nào đang
+     * bật thì thiết lập luôn kênh polling; nếu kênh đã chạy thì chỉ lật
+     * cờ của nhóm, giữ nguyên bí mật và nhóm còn lại.
+     */
+    public function enableCommand(string $command): array
+    {
+        $command = $this->normalizeCommand($command);
+        $this->requireTelegramConfig();
+
+        $state = $this->readState();
+        $flags = $this->commandFlags($state);
+        $channelActive = ($state['mode'] ?? '') === 'polling' && $this->secretFromState($state) !== '';
+        if (!$channelActive) {
+            $this->setupPollingChannel();
+            $state = $this->readState();
+        }
+        $flags[$command] = true;
+        $state['enabled'] = true;
+        $state['status_enabled'] = $flags['status'];
+        $state['restart_enabled'] = $flags['restart'];
+        $this->writeState($state);
+
+        $message = $command === 'restart'
+            ? 'Đã bật lệnh /restart qua Telegram. Bot nhận lệnh qua kênh polling kể cả khi panel tạm sập.'
+            : 'Đã bật lệnh /status qua Telegram (gồm /help và /checkupdate).';
+        return $this->status() + ['message' => $message];
+    }
+
+    /**
+     * Tắt riêng một nhóm lệnh (V17.1.0). Nếu đây là nhóm cuối cùng đang
+     * bật thì gỡ luôn kênh polling; nhóm còn lại đang bật thì chỉ lật cờ.
+     */
+    public function disableCommand(string $command): array
+    {
+        $command = $this->normalizeCommand($command);
+        $this->requireTelegramConfig();
+
+        $state = $this->readState();
+        $flags = $this->commandFlags($state);
+        $flags[$command] = false;
+        if (!$flags['status'] && !$flags['restart']) {
+            $this->teardownPollingChannel();
+        } else {
+            $state['enabled'] = true;
+            $state['status_enabled'] = $flags['status'];
+            $state['restart_enabled'] = $flags['restart'];
+            $this->writeState($state);
+        }
+
+        $message = $command === 'restart' ? 'Đã tắt lệnh /restart qua Telegram.' : 'Đã tắt lệnh /status qua Telegram.';
+        return $this->status() + ['message' => $message];
+    }
+
+    private function normalizeCommand(string $command): string
+    {
+        $command = strtolower(trim($command));
+        if (!in_array($command, ['status', 'restart'], true)) {
+            throw new InvalidArgumentException('Lệnh Telegram không hợp lệ.');
+        }
+        return $command;
+    }
+
+    /** Gỡ webhook trên Telegram và sinh bí mật polling mới. */
+    private function setupPollingChannel(): void
+    {
+        $config = $this->requireTelegramConfig();
         $response = $this->telegramRequest((string)$config['token'], 'deleteWebhook', [
             'drop_pending_updates' => 'false',
         ]);
@@ -69,20 +177,22 @@ final class TelegramCommandService
             throw new RuntimeException('Telegram không xác nhận gỡ webhook. Hãy kiểm tra lại kết nối Internet và thử lại.');
         }
 
+        $state = $this->readState();
+        $flags = $this->commandFlags($state);
         $this->writeState([
-            'enabled' => true,
+            'enabled' => !empty($state['enabled']),
+            'status_enabled' => $flags['status'],
+            'restart_enabled' => $flags['restart'],
             'mode' => 'polling',
-            'secret' => $secret,
+            'secret' => bin2hex(random_bytes(32)),
             'activated_at' => date('c'),
             'last_update_id' => 0,
             'last_update_at' => '',
         ]);
-
-        return $this->status() + ['message' => 'Đã bật lệnh Telegram qua kênh polling. Bot vẫn nhận lệnh kể cả khi panel tạm sập; dùng /restart để khởi động lại dịch vụ từ xa.'];
     }
 
-    /** Gỡ webhook trên Telegram và xoá bí mật webhook cục bộ. */
-    public function disable(): array
+    /** Gỡ kênh lệnh: xoá bí mật cục bộ và đánh dấu cả hai nhóm đã tắt. */
+    private function teardownPollingChannel(): void
     {
         $config = $this->requireTelegramConfig();
         $response = $this->telegramRequest((string)$config['token'], 'deleteWebhook', [
@@ -94,12 +204,12 @@ final class TelegramCommandService
 
         $this->writeState([
             'enabled' => false,
+            'status_enabled' => false,
+            'restart_enabled' => false,
             'activated_at' => '',
             'last_update_id' => 0,
             'last_update_at' => '',
         ]);
-
-        return $this->status() + ['message' => 'Đã tắt lệnh /status qua Telegram.'];
     }
 
     /**
@@ -110,7 +220,8 @@ final class TelegramCommandService
     {
         $state = $this->readState();
         $secret = $this->secretFromState($state);
-        if (empty($state['enabled']) || $secret === '' || !hash_equals($secret, $providedSecret)) {
+        $flags = $this->commandFlags($state);
+        if ((!$flags['status'] && !$flags['restart']) || $secret === '' || !hash_equals($secret, $providedSecret)) {
             return ['handled' => false, 'sent' => false];
         }
 
@@ -133,6 +244,11 @@ final class TelegramCommandService
 
         if ($event['type'] === 'callback') {
             $this->markProcessed($state, $updateId);
+            if (!$flags['status']) {
+                // Callback thuộc luồng /checkupdate — nhóm "xem" đang tắt.
+                $sent = $this->answerCallback((string)($event['callback_id'] ?? ''), 'Lệnh /checkupdate đang tắt trong panel.');
+                return ['handled' => true, 'sent' => $sent];
+            }
             $sent = $this->handleUpdateCallback($event);
             return ['handled' => true, 'sent' => $sent];
         }
@@ -141,6 +257,11 @@ final class TelegramCommandService
         if (preg_match('/^\/(status|help|checkupdate|restart)(?:@[A-Za-z0-9_]{5,32})?$/i', $command, $matches)) {
             $this->markProcessed($state, $updateId);
             $name = strtolower((string)$matches[1]);
+            $group = $name === 'restart' ? 'restart' : 'status';
+            if (!$flags[$group]) {
+                $sent = !empty($this->sendConfiguredMessage($this->commandDisabledNotice($name))['ok']);
+                return ['handled' => true, 'sent' => $sent];
+            }
             $sent = match ($name) {
                 'help' => !empty($this->sendConfiguredMessage($this->helpReport())['ok']),
                 'status' => !empty($this->sendConfiguredMessage($this->statusReport())['ok']),
@@ -150,7 +271,7 @@ final class TelegramCommandService
             return ['handled' => true, 'sent' => $sent];
         }
 
-        if ($command === '' || str_starts_with($command, '/') || (string)$event['user_id'] === ''
+        if ($command === '' || str_starts_with($command, '/') || (string)$event['user_id'] === '' || !$flags['status']
             || !$this->updateService()->hasPendingTelegramUpdateChallenge($expectedChatId, (string)$event['user_id'])) {
             return ['handled' => false, 'sent' => false];
         }
@@ -168,10 +289,20 @@ final class TelegramCommandService
      * lệnh và để hệ thống kẹt giữa chừng. Có khóa chống lặp 5 phút để tránh
      * vòng lặp restart khi người dùng gửi lệnh nhiều lần.
      */
+    /** Thông báo khi người dùng gọi đúng một lệnh đang bị tắt riêng. */
+    private function commandDisabledNotice(string $name): string
+    {
+        return match ($name) {
+            'restart' => "TMS OS · Khởi động lại\n\nLệnh /restart đang tắt. Hãy bật thẻ Lệnh /restart Telegram trong panel (trang Cron Jobs) rồi thử lại.",
+            'checkupdate' => "TMS OS · Kiểm tra cập nhật\n\nLệnh /checkupdate đang tắt (dùng chung công tắc với /status). Hãy bật thẻ Lệnh /status Telegram trong panel (trang Cron Jobs) rồi thử lại.",
+            default => "TMS OS · Lệnh đang tắt\n\nLệnh /{$name} đang tắt. Hãy bật thẻ Lệnh /status Telegram trong panel (trang Cron Jobs) rồi thử lại.",
+        };
+    }
+
     private function handleRestart(): bool
     {
         if (php_sapi_name() !== 'cli') {
-            return !empty($this->sendConfiguredMessage("TMS OS · Khởi động lại\n\nLệnh /restart chỉ hoạt động qua kênh polling (V17.1.0-beta.5 trở lên). Hãy cập nhật TMS OS, bật lại mục Lệnh Telegram trong panel rồi thử lại.")['ok']);
+            return !empty($this->sendConfiguredMessage("TMS OS · Khởi động lại\n\nLệnh /restart chỉ hoạt động qua kênh polling. Hãy bật lại thẻ Lệnh /restart Telegram trong panel rồi thử lại.")['ok']);
         }
 
         $state = $this->readState();
@@ -473,7 +604,24 @@ final class TelegramCommandService
 
     private function helpReport(): string
     {
-        return "TMS OS Bot\n\n/status — xem trạng thái an toàn của thiết bị và TMS OS\n/restart — khởi động lại các dịch vụ TMS OS (PHP, Nginx, Guardian, Tunnel) khi web bị treo\n/checkupdate — kiểm tra bản mới và yêu cầu cập nhật có xác thực\n/help — xem hướng dẫn ngắn\n\nChỉ chat đã được cấu hình mới có thể dùng các lệnh này.";
+        $flags = $this->commandFlags($this->readState());
+        $lines = ['TMS OS Bot', ''];
+        if ($flags['status']) {
+            $lines[] = '/status — xem trạng thái an toàn của thiết bị và TMS OS';
+        }
+        if ($flags['restart']) {
+            $lines[] = '/restart — khởi động lại các dịch vụ TMS OS (PHP, Nginx, Guardian, Tunnel) khi web bị treo';
+        }
+        if ($flags['status']) {
+            $lines[] = '/checkupdate — kiểm tra bản mới và yêu cầu cập nhật có xác thực';
+        }
+        $lines[] = '/help — xem hướng dẫn ngắn';
+        $lines[] = '';
+        $lines[] = 'Chỉ chat đã được cấu hình mới có thể dùng các lệnh này.';
+        if (!$flags['status'] || !$flags['restart']) {
+            $lines[] = 'Một số lệnh đang tắt riêng trong panel (trang Cron Jobs).';
+        }
+        return implode("\n", $lines);
     }
 
     private function requireTelegramConfig(): array
