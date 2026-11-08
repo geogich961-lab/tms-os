@@ -1,4 +1,10 @@
 # Changelog
+## [17.1.9] — 2026-11-08
+
+V17.1.9: Thêm đường tải dự phòng cho Update Center. Khi đường tải gói qua github.com lỗi (sự cố 504 diện rộng 08/11/2026 khiến không cập nhật được dù api.github.com vẫn thông), UpdateService tự chuyển sang tải qua API asset của GitHub (kèm header Accept: application/octet-stream bắt buộc) cho cả file ZIP và RELEASE.json kiểm checksum. Cả hai đường cùng lỗi mới báo thất bại như trước.
+- Update Center: tự chuyển đường tải dự phòng qua GitHub API khi đường tải chính github.com lỗi (504/timeout) — áp dụng cho cả nút Cập nhật ngay, quay về bản cũ và cập nhật qua Telegram.
+- Tải checksum RELEASE.json cũng có đường dự phòng tương ứng; vẫn bắt buộc khớp SHA-256 mới cho cài.
+
 ## [17.1.8] — 2026-11-08
 
 V17.1.8: Sửa lỗi nút Áp dụng trong mục Gói đã lưu trữ của Update Center. Form xóa hàng loạt từng bọc cả bảng danh sách trong khi mỗi gói có form Áp dụng riêng — HTML cấm form lồng nhau nên trình duyệt bỏ qua form con, biến nút Áp dụng thành nút xóa: bấm Áp dụng là gói bị xóa (user gặp 08/11/2026 khi cập nhật thủ công). Nay checkbox liên kết form xóa qua thuộc tính form=, các form Áp dụng/Xóa từng gói đứng độc lập đúng nghĩa.

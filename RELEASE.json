@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.8","build":"20261108-v17.1.8","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-11-08","name":"TMS OS V17.1.8","version":"17.1.8",
-  "notes":"V17.1.8: Sửa lỗi nút Áp dụng trong mục Gói đã lưu trữ của Update Center. Form xóa hàng loạt từng bọc cả bảng danh sách trong khi mỗi gói có form Áp dụng riêng — HTML cấm form lồng nhau nên trình duyệt bỏ qua form con, biến nút Áp dụng thành nút xóa: bấm Áp dụng là gói bị xóa (user gặp 08/11/2026 khi cập nhật thủ công). Nay checkbox liên kết form xóa qua thuộc tính form=, các form Áp dụng/Xóa từng gói đứng độc lập đúng nghĩa.",
-  "features":["Update Center: nút Áp dụng ở mục Gói đã lưu trữ hoạt động đúng — hết lỗi form lồng nhau khiến bấm Áp dụng lại xóa gói.","Cập nhật thủ công bằng file ZIP tải lên nay dùng được trọn vẹn: Kiểm tra và lưu -> Áp dụng, không phụ thuộc đường tải GitHub."],
-  "checksum_sha256":"41cadcaa962ddeefb1cb09e5c47826e64b1855968439ecc68236348d91786280","build_date":"2026-11-08","version_display":"TMS OS V17.1.8",
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.9","build":"20261108-v17.1.9","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-08","name":"TMS OS V17.1.9","version":"17.1.9",
+  "notes":"V17.1.9: Thêm đường tải dự phòng cho Update Center. Khi đường tải gói qua github.com lỗi (sự cố 504 diện rộng 08/11/2026 khiến không cập nhật được dù api.github.com vẫn thông), UpdateService tự chuyển sang tải qua API asset của GitHub (kèm header Accept: application/octet-stream bắt buộc) cho cả file ZIP và RELEASE.json kiểm checksum. Cả hai đường cùng lỗi mới báo thất bại như trước.",
+  "features":["Update Center: tự chuyển đường tải dự phòng qua GitHub API khi đường tải chính github.com lỗi (504/timeout) — áp dụng cho cả nút Cập nhật ngay, quay về bản cũ và cập nhật qua Telegram.","Tải checksum RELEASE.json cũng có đường dự phòng tương ứng; vẫn bắt buộc khớp SHA-256 mới cho cài."],
+  "checksum_sha256":"ade304b1902b056baa5f8e41a5d4c2f1c4c438bafc2b3479f971f8f56d7c2805","build_date":"2026-11-08","version_display":"TMS OS V17.1.9",
   "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-08"
 }
