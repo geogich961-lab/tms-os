@@ -644,3 +644,11 @@
 - [x] Bổ sung route/API bật-tắt riêng từng lệnh Telegram và cập nhật test hồi quy telegram_command_service_test.php (polling + tách công tắc + migration).
 - [x] Đóng gói, kiểm thử payload và phát hành GitHub Release V17.1.0 (kênh Stable chính thức).
 - [ ] Xác minh thực tế trên thiết bị Android đang chạy TMS OS sau cập nhật: chuyển kênh Stable, cập nhật V17.1.0, thử tắt riêng /restart (bot báo đang tắt, /status vẫn chạy) và ngược lại.
+
+## Bản vá nội dung V17.1.1
+
+- [x] Đồng bộ main (đã gồm commit "Update landing.php" 6996c83 của chủ repo: câu mô tả bỏ "để chạy Webserver", đoạn giới thiệu viết lại).
+- [x] Bump `Platform V17.1.1` trong config/app.php và `tms-os-v17.1.1` trong public/service-worker.js, kênh stable giữ nguyên.
+- [x] Thêm tests/build_v17_1_1_payload.sh + tests/v17_1_1_update_payload_test.php (kiểm checksum, channel stable, 2 công tắc Telegram và nội dung landing mới trong payload).
+- [x] Thêm workflow .github/workflows/release-v17.1.1.yml (chủ repo upload qua GitHub web vì GitHub App không ghi được thư mục workflows).
+- [ ] Xác minh thực địa trên Xperia: cập nhật thẳng từ V17.1.0-beta.5 lên V17.1.1 qua kênh Stable, mở trang landing thấy nội dung mới, trang Cron Jobs có 2 thẻ công tắc Telegram độc lập.
