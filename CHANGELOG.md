@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.4] — 2026-11-08
+
+V17.1.4: Nút 'Chạy backup tự động ngay' chuyển sang chạy ở chế độ nền. Trước đây vòng backup chạy ngay trong trang web: nén và đẩy bản sao lưu lớn lên cloud mất nhiều phút nên bị quá thời gian chờ (lỗi 524) và bị giết giữa chừng — bản sao lưu không lên được cloud, panel còn treo theo. Nay bấm nút là vòng backup chạy nền bằng tiến trình riêng (giống hệt vòng backup theo lịch), bấm xong rời trang thoải mái; kết quả hiện ở trang Backup và qua Telegram khi chạy xong. Thêm khóa chống hai vòng backup chạy chồng nhau; trang Backup hiển thị trạng thái đang chạy nền.
+- Backup tự động & Offsite: nút Chạy ngay nay chạy nền — hết lỗi quá thời gian chờ và bị giết giữa chừng khi đẩy bản sao lưu lớn lên cloud qua giao diện web.
+- Chống chạy trùng: vòng backup theo lịch, nút bấm tay và tiến trình nền dùng chung một khóa — không bao giờ nén/đẩy hai vòng cùng lúc; trang Backup hiện rõ trạng thái đang chạy nền và tạm vô hiệu nút chạy.
+- Giữ nguyên bản vá V17.1.3 (tạo backup trả đúng mã ID để vòng tự động đẩy offsite) và mọi tính năng của V17.1.2.
+
 ## [17.1.3] — 2026-11-08
 
 V17.1.3: Sửa lỗi đẩy backup offsite lên cloud luôn báo 'Không tìm thấy tệp archive để đẩy' dù bản sao lưu đã tạo thành công — nguyên nhân là hàm tạo backup trả câu thông báo thay vì mã ID của bản sao lưu cho vòng backup tự động. Nay tạo backup trả đúng ID; thông báo khi tạo backup thủ công giữ nguyên như trước.

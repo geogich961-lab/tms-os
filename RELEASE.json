@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.3","build":"20261108-v17.1.3","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-11-08","name":"TMS OS V17.1.3","version":"17.1.3",
-  "notes":"V17.1.3: Sửa lỗi đẩy backup offsite lên cloud luôn báo 'Không tìm thấy tệp archive để đẩy' dù bản sao lưu đã tạo thành công — nguyên nhân là hàm tạo backup trả câu thông báo thay vì mã ID của bản sao lưu cho vòng backup tự động. Nay tạo backup trả đúng ID; thông báo khi tạo backup thủ công giữ nguyên như trước.",
-  "features":["Backup tự động & Offsite: sửa lỗi vòng backup không tìm thấy tệp archive khi đẩy lên cloud (rclone) — bản sao lưu tạo xong nay được đẩy offsite đúng như cấu hình.","Giữ nguyên mọi hành vi còn lại của V17.1.2: Terminal lệnh thủ công, gói rclone, nút Kiểm tra kết nối rclone, nhãn Thùng rác, hàng Pin đã gộp."],
-  "checksum_sha256":"e78e7717a68a8fd25557b94733e99d1bbfe91a67e3e4eff01ecdd99e21a1bb8a","build_date":"2026-11-08","version_display":"TMS OS V17.1.3",
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.4","build":"20261108-v17.1.4","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-08","name":"TMS OS V17.1.4","version":"17.1.4",
+  "notes":"V17.1.4: Nút 'Chạy backup tự động ngay' chuyển sang chạy ở chế độ nền. Trước đây vòng backup chạy ngay trong trang web: nén và đẩy bản sao lưu lớn lên cloud mất nhiều phút nên bị quá thời gian chờ (lỗi 524) và bị giết giữa chừng — bản sao lưu không lên được cloud, panel còn treo theo. Nay bấm nút là vòng backup chạy nền bằng tiến trình riêng (giống hệt vòng backup theo lịch), bấm xong rời trang thoải mái; kết quả hiện ở trang Backup và qua Telegram khi chạy xong. Thêm khóa chống hai vòng backup chạy chồng nhau; trang Backup hiển thị trạng thái đang chạy nền.",
+  "features":["Backup tự động & Offsite: nút Chạy ngay nay chạy nền — hết lỗi quá thời gian chờ và bị giết giữa chừng khi đẩy bản sao lưu lớn lên cloud qua giao diện web.","Chống chạy trùng: vòng backup theo lịch, nút bấm tay và tiến trình nền dùng chung một khóa — không bao giờ nén/đẩy hai vòng cùng lúc; trang Backup hiện rõ trạng thái đang chạy nền và tạm vô hiệu nút chạy.","Giữ nguyên bản vá V17.1.3 (tạo backup trả đúng mã ID để vòng tự động đẩy offsite) và mọi tính năng của V17.1.2."],
+  "checksum_sha256":"171f0bcc8b72c6261efa06ab058d8571bb5f41f6c2c267943db440209d3f803b","build_date":"2026-11-08","version_display":"TMS OS V17.1.4",
   "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-08"
 }
