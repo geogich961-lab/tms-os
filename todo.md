@@ -715,3 +715,12 @@ Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope s
 - [x] Hồi quy: `tests/php_cgi_pool_test.sh` chạy php-cgi THẬT qua engine script (pool có children, sống qua 650 request; FAIL trên code cũ) + `tests/repair_budget_per_service_test.sh` trích xuất hàm thật của watchdog/Guardian (FAIL trên code cũ); test payload mô phỏng V17.1.6 → V17.1.7, bảo toàn storage/Cloudflare.
 - [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.7 (release-auto).
 - [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.7, BẬT LẠI website Loto, mở panel + dùng Loto liên tục >15 phút — panel, thc.io.vn và loto đều sống; log php-engine không còn chuỗi WARN lặp, tiến trình php-cgi có children.
+
+## Bản vá V17.1.8 — Nút Áp dụng ở "Gói đã lưu trữ" biến thành Xóa (form lồng nhau)
+
+- [x] User gặp 08/11 khi cập nhật thủ công: tải gói lên + "Kiểm tra và lưu" thành công, vào "Gói đã lưu trữ" bấm Áp dụng thì gói bị XÓA (toast "Đã xóa các gói cập nhật được chọn").
+- [x] Gốc lỗi trong `app/Views/updates/index.php`: form xóa hàng loạt `<form id="batch-delete-form">` BỌC cả bảng danh sách, trong khi mỗi dòng có form Áp dụng/Xóa riêng — HTML cấm form lồng nhau, trình duyệt bỏ qua thẻ form con nên mọi nút trong bảng đều submit về form XÓA. Nút Áp dụng của mục này chưa bao giờ hoạt động.
+- [x] Vá: form batch đóng ngay sau thẻ mở (chỉ giữ csrf), checkbox mỗi gói liên kết qua thuộc tính `form="batch-delete-form"`; các form Áp dụng/Xóa từng gói thành form độc lập đúng nghĩa. Nút xóa hàng loạt vẫn hoạt động qua submit theo id như cũ.
+- [x] Hồi quy: `tests/staged_package_forms_test.php` kiểm tra cấu trúc view (PASS trên view mới, FAIL trên view cũ); test payload mô phỏng V17.1.7 → V17.1.8, bảo toàn storage/Cloudflare.
+- [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.8 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: tải gói thủ công lên, bấm Áp dụng ở "Gói đã lưu trữ" — gói được áp dụng thật, không bị xóa.
