@@ -1,0 +1,96 @@
+name: Release TMS OS V17.1.1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tests/build_v17_1_1_payload.sh'
+      - 'tests/v17_1_1_update_payload_test.php'
+      - 'tests/telegram_command_service_test.php'
+      - '.github/workflows/release-v17.1.1.yml'
+      - 'app/Services/UpdateService.php'
+      - 'app/Services/TelegramCommandService.php'
+      - 'app/Controllers/UpdateController.php'
+      - 'app/Controllers/TelegramWebhookController.php'
+      - 'app/Views/updates/index.php'
+      - 'app/Views/cron/index.php'
+      - 'app/Views/dashboard/landing.php'
+      - 'routes/web.php'
+      - 'config/app.php'
+      - 'public/service-worker.js'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build, verify and publish V17.1.1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up PHP 8.3
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: zip, mbstring, curl
+
+      - name: Verify source
+        run: |
+          set -Eeuo pipefail
+          grep -F "'build' => 'Platform V17.1.1'" config/app.php
+          grep -F "'channel' => 'stable'" config/app.php
+          grep -F "const VERSION='tms-os-v17.1.1';" public/service-worker.js
+          php tests/update_channels_release_test.php
+          php tests/update_center_ui_test.php
+          php tests/update_connectivity_resilience_test.php
+          php tests/telegram_command_service_test.php
+          php -l app/Services/UpdateService.php
+          php -l app/Services/TelegramCommandService.php
+          php -l app/Controllers/UpdateController.php
+          php -l app/Controllers/TelegramWebhookController.php
+
+      - name: Build and test payload
+        run: |
+          set -Eeuo pipefail
+          bash tests/build_v17_1_1_payload.sh
+          php tests/v17_1_1_update_payload_test.php
+
+      - name: Finalize release metadata
+        run: |
+          set -Eeuo pipefail
+          cp .build/v17.1.1/release/RELEASE.json RELEASE.json
+          php scripts/generate-changelog.php .build/v17.1.1/release/RELEASE.json
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add RELEASE.json CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git commit -m 'chore: finalize V17.1.1 release metadata'
+            git push origin HEAD:main
+          fi
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          if gh release view v17.1.1 >/dev/null 2>&1; then exit 0; fi
+          git tag -a v17.1.1 -m 'TMS OS V17.1.1'
+          git push origin v17.1.1
+          cat > .build/v17.1.1/release/NOTES.md <<'EOF'
+          TMS OS V17.1.1 — Bản vá nội dung trang giới thiệu
+
+          ## Thay đổi
+          - Cập nhật câu chữ trang giới thiệu (landing): câu mô tả và đoạn giới thiệu mới.
+          - Giữ nguyên toàn bộ V17.1.0: watchdog/Guardian tự phục hồi khi web treo, bot Telegram polling + lệnh /restart từ xa, hai công tắc Telegram /status và /restart độc lập.
+          - Mọi gói vẫn bắt buộc checksum SHA-256, backup source, health check và rollback nếu lỗi.
+          EOF
+          gh release create v17.1.1 \
+            .build/v17.1.1/release/TMS_OS_LATEST.zip \
+            .build/v17.1.1/release/RELEASE.json \
+            --title 'TMS OS V17.1.1' \
+            --notes-file .build/v17.1.1/release/NOTES.md \
+            --latest
