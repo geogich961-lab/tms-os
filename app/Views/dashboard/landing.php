@@ -111,13 +111,13 @@
         <div class="brand-section">
             <img src="/assets/logo-landing.png" alt="TMS OS" class="brand-logo-large">
             <div class="brand-info">
-                <p>• Bạn đang sử dụng TMS OS Tận dụng thiết bị Android cũ thành một mini VPS để chạy Webserver.</p>
+                <p>• Bạn đang sử dụng TMS OS Tận dụng thiết bị Android cũ thành một mini VPS.</p>
                 <p>• Phiên bản hiện tại<br><span class="version-tag">V <?=tms_h(preg_replace('/^Platform /','',$build))?></span></p>
             </div>
         </div>
 
         <div class="intro-box">
-            Giới thiệu: TMS OS là một dự án được xây dựng hoàn toàn bằng AI (Vibe code) nên không tránh khỏi các sai sót, THCGaming chỉ đưa vào các tính năng phù hợp với nhu cầu cá nhân. Nếu các bạn có nhiều ý tưởng hơn, muốn thêm nhiều tính năng hữu ích hơn có thể góp ý cho mình để tiếp tục cập nhật thêm vào các phiên bản sắp tới, rất cảm ơn sự quan tâm và góp ý của các bạn.
+            Giới thiệu: TMS OS là một dự án được xây dựng bằng AI, nên không tránh khỏi các sai sót và lỗi không mong muốn, THCGaming chỉ đưa vào các tính năng phù hợp với nhu cầu cá nhân. Nếu các bạn có nhiều ý tưởng hơn, muốn thêm nhiều tính năng hữu ích hơn có thể góp ý cho mình để tiếp tục cập nhật thêm vào các phiên bản sắp tới, rất cảm ơn sự quan tâm và góp ý của các bạn.
         </div>
 
         <a href="/dashboard" class="btn-landing">Truy cập Panel</a>
