@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.7] — 2026-11-08
+
+V17.1.7: Sửa triệt để lỗi panel + website PHP sập sau vài phút trên máy không có php-fpm. Nguyên nhân: engine dự phòng php-cgi chạy trần — mặc định tự thoát sau 500 request và chỉ có 1 tiến trình nối tiếp; watchdog/Guardian sửa liên tục đến cạn hạn mức chung 6 lần/giờ rồi buông. Nay php-cgi chạy dạng pool tự quản (tự hồi sinh, không tự thoát), và hạn mức tự sửa tính theo từng dịch vụ.
+- PHP engine: php-cgi chạy pool 4 children tự hồi sinh (PHP_FCGI_CHILDREN) và tắt giới hạn tự thoát sau 500 request (PHP_FCGI_MAX_REQUESTS=0) — panel và website PHP không còn sập sau vài phút.
+- PHP engine: máy không có binary php-fpm thì đi thẳng PHP-CGI, bỏ vòng thử khởi động vô ích và WARN lặp trong log.
+- Tự phục hồi: hạn mức tự sửa 6 lần/giờ tính theo TỪNG dịch vụ ở cả watchdog và Guardian — một dịch vụ lỗi lặp không còn nuốt hết hạn mức của PHP engine.
+
 ## [17.1.6] — 2026-11-08
 
 V17.1.6: Sửa tương thích PHP HTTP cho Website Control Center. Khi thiết bị phải chạy PHP built-in HTTP server, website tạo bởi TMS nay proxy đúng giao thức HTTP và truyền document root riêng; không còn gửi FastCGI nhầm gây 502 cho api/index.php. Nạp lại website cũ để TMS tự chuyển vhost an toàn.

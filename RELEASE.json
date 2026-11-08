@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.6","build":"20261108-v17.1.6","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-11-08","name":"TMS OS V17.1.6","version":"17.1.6",
-  "notes":"V17.1.6: Sửa tương thích PHP HTTP cho Website Control Center. Khi thiết bị phải chạy PHP built-in HTTP server, website tạo bởi TMS nay proxy đúng giao thức HTTP và truyền document root riêng; không còn gửi FastCGI nhầm gây 502 cho api/index.php. Nạp lại website cũ để TMS tự chuyển vhost an toàn.",
-  "features":["Website: tự chọn handler theo php-engine-policy (FastCGI hoặc php-http), bảo toàn hai chế độ cài đặt.","PHP HTTP router: thực thi đúng PHP và trả file tĩnh từ document root của từng website thay vì chỉ root panel.","Website cũ: nút Nạp lại tự chuyển vhost FastCGI cũ sang php-http khi thiết bị đang dùng engine này, có rollback nếu Nginx không hợp lệ."],
-  "checksum_sha256":"b33c225b2f5f4e560dc3eedbfc0155ec839d6550bbc9f29c3087268e42b7e603","build_date":"2026-11-08","version_display":"TMS OS V17.1.6",
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.7","build":"20261108-v17.1.7","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-08","name":"TMS OS V17.1.7","version":"17.1.7",
+  "notes":"V17.1.7: Sửa triệt để lỗi panel + website PHP sập sau vài phút trên máy không có php-fpm. Nguyên nhân: engine dự phòng php-cgi chạy trần — mặc định tự thoát sau 500 request và chỉ có 1 tiến trình nối tiếp; watchdog/Guardian sửa liên tục đến cạn hạn mức chung 6 lần/giờ rồi buông. Nay php-cgi chạy dạng pool tự quản (tự hồi sinh, không tự thoát), và hạn mức tự sửa tính theo từng dịch vụ.",
+  "features":["PHP engine: php-cgi chạy pool 4 children tự hồi sinh (PHP_FCGI_CHILDREN) và tắt giới hạn tự thoát sau 500 request (PHP_FCGI_MAX_REQUESTS=0) — panel và website PHP không còn sập sau vài phút.","PHP engine: máy không có binary php-fpm thì đi thẳng PHP-CGI, bỏ vòng thử khởi động vô ích và WARN lặp trong log.","Tự phục hồi: hạn mức tự sửa 6 lần/giờ tính theo TỪNG dịch vụ ở cả watchdog và Guardian — một dịch vụ lỗi lặp không còn nuốt hết hạn mức của PHP engine."],
+  "checksum_sha256":"4b154e1d2e7be8c11c0d5a8183eb6ed508fc5f51f99c451152f89a02531683a3","build_date":"2026-11-08","version_display":"TMS OS V17.1.7",
   "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-08"
 }
