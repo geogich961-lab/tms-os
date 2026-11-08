@@ -22,7 +22,7 @@
 
 ### Yêu cầu chuẩn bị
 
-Thiết bị nên chạy **Android 7.0 trở lên**, có đủ dung lượng trống và dùng kiến trúc được Termux hỗ trợ. Với Xperia XZ Premium Android 7, hãy cài Termux mới nhất tương thích từ [F-Droid](https://f-droid.org/packages/com.termux). Không trộn Termux từ Google Play với Termux:API hoặc Termux:Boot từ nguồn khác vì các ứng dụng bổ trợ có thể không cùng chữ ký.
+Thiết bị nên chạy **Android 7.0 trở lên**, có đủ dung lượng trống và dùng kiến trúc được Termux hỗ trợ. Cài Termux mới nhất tương thích từ [F-Droid](https://f-droid.org/packages/com.termux). Không trộn Termux từ Google Play với Termux:API hoặc Termux:Boot từ nguồn khác vì các ứng dụng bổ trợ có thể không cùng chữ ký.
 
 Cài **Termux:API** nếu muốn đọc pin, nhiệt độ và thông tin thiết bị. Cài **Termux:Boot** nếu muốn tự khởi động dịch vụ sau khi bật máy. Hai ứng dụng này không bắt buộc để cài panel.
 
@@ -100,7 +100,7 @@ Sau khi cài đặt hoàn tất, bạn có thể truy cập vào giao diện qu�
 Dự án được phát triển liên tục bởi THCGaming. Nếu bạn gặp lỗi hoặc có ý tưởng nâng cấp, hãy tạo **Issue** hoặc **Pull Request** trên GitHub.
 
 - **GitHub**: [geogich961-lab/tms-os](https://github.com/geogich961-lab/tms-os)
-- **Phiên bản hiện tại**: V17.0.26 (Latest Stable)
+- **Phiên bản hiện tại**: V17.1.1 (Latest Stable)
 
 ---
 *Phát triển bởi THCGaming. Tận dụng đồ cũ - Bảo vệ môi trường - Sáng tạo công nghệ.*
