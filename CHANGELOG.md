@@ -1,4 +1,13 @@
 # Changelog
+## [17.1.2] — 2026-11-08
+
+V17.1.2: Terminal hỗ trợ lệnh thủ công cho quản trị viên (timeout 60 giây, ghi nhật ký kiểm toán); thêm gói rclone vào Runtime Packages; Backup offsite không còn chặn lưu cấu hình khi chưa cài rclone, có thêm nút Kiểm tra kết nối rclone và hướng dẫn điền remote; nút Thùng rác trong File Manager có thêm chữ; gộp hàng Pin bị trùng trong Resource Monitor.
+- Terminal: thêm mục Lệnh thủ công — chạy lệnh bash trong thư mục home, timeout 60 giây, output tối đa 100KB, ghi nhật ký kiểm toán; lệnh chẩn đoán preset giữ nguyên.
+- Runtime Packages: thêm gói rclone (cài một chạm) phục vụ Backup offsite lên Google Drive.
+- Backup tự động & Offsite: chưa cài rclone/chưa nhập remote không còn chặn lưu cấu hình — backup nội bộ vẫn chạy, offsite báo trạng thái chưa sẵn sàng; thêm chú thích cách điền rclone remote và nút Kiểm tra kết nối rclone.
+- File Manager: nút vào Thùng rác có thêm chữ 'Thùng rác' bên cạnh icon cho dễ nhận biết.
+- Resource Monitor: gộp hai hàng 'Pin' bị trùng (chữ trạng thái và thanh %) thành một hàng duy nhất.
+
 ## [17.1.1] — 2026-11-08
 
 V17.1.1: bản vá nội dung — cập nhật câu chữ trang giới thiệu (landing); giữ nguyên toàn bộ V17.1.0: watchdog/Guardian tự phục hồi khi web treo, bot Telegram polling kèm lệnh /restart từ xa, hai công tắc Telegram /status và /restart độc lập.
