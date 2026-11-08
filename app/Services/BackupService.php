@@ -57,7 +57,10 @@ final class BackupService
         if($code!==0||!is_file($archive)){@unlink($archive);throw new RuntimeException("Tạo backup thất bại:\n".implode("\n",$out));}
         file_put_contents($this->metaDir.'/'.$id.'.json',json_encode($manifest,JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES),LOCK_EX);
         $this->log('CREATE',$manifest);
-        return 'Đã tạo '.($scope==='website'?'snapshot website '.$website:'bản sao lưu '.$scope).'.';
+        // Hợp đồng: trả ID của bản backup vừa tạo (không phải câu thông báo) —
+        // AutoBackupService::runNow() dùng ID này để tìm archive đẩy offsite.
+        // Nơi cần câu thông báo (controller) tự dựng từ scope/website.
+        return $id;
     }
 
     public function quickWebsiteSnapshot(string $website,string $note):void
