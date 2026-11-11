@@ -1,4 +1,10 @@
 # Changelog
+## [17.1.11] — 2026-11-11
+
+V17.1.11: Vá hộp thoại Tạo backup không chọn được website. Ô chọn website trong hộp thoại vốn bị ẩn và không có mã nào hiện nó lên khi chọn phạm vi 'Một website', nên bản sao lưu luôn lặng lẽ lấy website đầu tiên trong danh sách (site mặc định, chỉ vài KB) thay vì website người dùng muốn. Nay ô chọn website hiện đúng khi chọn phạm vi 'Một website', có lựa chọn trống '-- Chọn website --' để tránh gửi nhầm giá trị mặc định, và server từ chối tạo snapshot khi chưa chọn hoặc chọn website không tồn tại, kèm thông báo lỗi rõ ràng.
+- Backup: ô chọn website trong hộp thoại Tạo backup nay hiện đúng khi chọn phạm vi 'Một website' — trước đây ô này bị ẩn vĩnh viễn nên không cách nào chọn được website cần sao lưu.
+- Backup: select website có lựa chọn trống '-- Chọn website --' và bắt buộc chọn; server báo lỗi rõ ràng khi chưa chọn thay vì lặng lẽ sao lưu website đầu tiên trong danh sách.
+
 ## [17.1.10] — 2026-11-11
 
 V17.1.10: Vá banner 'Có phiên bản giao diện mới' hiện lặp vô hạn ở panel. Nguyên nhân: template Nginx gắn cache 1 năm immutable cho mọi file .js, kể cả service-worker.js — chính là file quyết định việc phát hiện bản giao diện mới — nên sau đợt phát hành dồn dập, trình duyệt và Cloudflare ghim các bản service worker khác nhau khiến banner bật lại mãi dù đã bấm Cập nhật. Nay service-worker.js có location riêng với Cache-Control no-cache (áp dụng cho cả cài mới qua install.sh và máy đã cài qua công cụ repair tms-nginx-compat), đồng thời banner chỉ hiện khi bản service worker thật sự mới hơn bản đang chạy và có thêm nút Bỏ qua ghi nhớ theo từng phiên bản.
