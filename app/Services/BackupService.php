@@ -107,6 +107,35 @@ final class BackupService
         if(!is_file($path))throw new RuntimeException('Backup không tồn tại.');return $path;
     }
 
+    /**
+     * Tạo liên kết tải tĩnh một lần cho 1 backup: thư mục token ngẫu nhiên
+     * trong public/_backup_downloads/<token>/<tên file> chứa symlink tới
+     * archive, để nginx phục vụ trực tiếp (sendfile + Range) thay vì PHP
+     * readfile() qua php-cgi — cơ chế cũ đứt giữa chừng (502/520) với file
+     * ~1 GB. Tự dọn các liên kết cũ hơn 2 giờ. Trả '' khi không tạo được
+     * (caller tự quay về cách tải cũ).
+     */
+    public function downloadUrl(string $id):string
+    {
+        $path=$this->file($id);$name=basename($path);
+        $pub=$this->home.'/tms-os/public';$root=$pub.'/_backup_downloads';
+        if(!is_dir($pub))return '';
+        if(!is_dir($root)&&!@mkdir($root,0775,true)&&!is_dir($root))return '';
+        $idx=$root.'/index.html';if(!is_file($idx))@file_put_contents($idx,"");
+        foreach(glob($root.'/*')?:[] as $dir){
+            if(!is_dir($dir))continue;
+            $mt=@filemtime($dir);if($mt!==false&&$mt<time()-7200){
+                foreach(glob($dir.'/*')?:[] as $f){if(is_link($f)||is_file($f))@unlink($f);}
+                @rmdir($dir);
+            }
+        }
+        try{$token=bin2hex(random_bytes(12));}catch(Throwable){return '';}
+        $dir=$root.'/'.$token;
+        if(!@mkdir($dir,0775)&&!is_dir($dir))return '';
+        if(!@symlink($path,$dir.'/'.$name)){@rmdir($dir);return '';}
+        return '/_backup_downloads/'.$token.'/'.$name;
+    }
+
     public function delete(string $id):void
     {
         $meta=$this->meta($id);if(!empty($meta['locked']))throw new RuntimeException('Snapshot đang được khóa. Hãy mở khóa trước khi xóa.');
