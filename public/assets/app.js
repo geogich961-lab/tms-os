@@ -592,6 +592,16 @@ document.querySelectorAll('[data-dialog-open]').forEach(button => {
 });
 document.querySelectorAll('[data-dialog-close]').forEach(button => button.addEventListener('click', () => button.closest('dialog')?.close()));
 
+// ===== Backup: chỉ hiện ô chọn website khi phạm vi là "Một website" (V17.1.11) =====
+document.querySelectorAll('[data-backup-scope]').forEach(scopeSelect => {
+  const form = scopeSelect.closest('form');
+  const websiteField = form ? form.querySelector('[data-backup-website]') : null;
+  if (!websiteField) return;
+  const syncBackupWebsite = () => { websiteField.hidden = scopeSelect.value !== 'website'; };
+  scopeSelect.addEventListener('change', syncBackupWebsite);
+  syncBackupWebsite();
+});
+
 // ===== Resource Monitor logic (V15.4.7) =====
 function drawMonitorChart(canvas, rows) {
   if (!canvas || !Array.isArray(rows) || rows.length < 1) return;

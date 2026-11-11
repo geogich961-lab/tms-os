@@ -1,4 +1,4 @@
-const VERSION='tms-os-v17.1.10';
+const VERSION='tms-os-v17.1.11';
 const STATIC_CACHE=VERSION+'-static';
 const STATIC_ASSETS=[
   '/offline.html','/tms-pwa-v21.json?v=17.1.0-beta.3',
