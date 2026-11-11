@@ -402,6 +402,12 @@ http {
 server { listen 127.0.0.1:8888; server_name localhost; root $TARGET/public; index index.php;
 access_log $HOME/logs/nginx/tms-access.log tms_access; error_log $HOME/logs/nginx/tms-error.log;
 $PANEL_HANDLER
+  # Service worker phải luôn tươi: nếu bị cache 1 năm như file tĩnh, trình duyệt sẽ
+  # liên tục "phát hiện" bản giao diện mới và bật banner cập nhật lặp vô hạn.
+  location = /service-worker.js {
+    add_header Cache-Control "no-cache";
+    access_log off;
+  }
   # Cache browser cho file tĩnh
   location ~* \\.(jpg|jpeg|png|gif|webp|ico|svg|css|js|woff2?|ttf|eot|mp3|mp4|webm)$ {
     expires 1y;
