@@ -18,6 +18,10 @@ final class AutoBackupService
     private string $stateFile;
     private string $runLockFile;
     private string $runMarkFile;
+    private string $manualJobFile;
+    private string $manualStateFile;
+    private string $manualLockFile;
+    private string $manualMarkFile;
     private const AUTO_NOTE = '[auto] TMS OS tự động sao lưu';
     private const CRON_JOB_ID = 'tms-auto-backup';
     private const MAX_RETENTION = 90;
@@ -31,6 +35,10 @@ final class AutoBackupService
         $this->stateFile = $this->home . '/.tms-os/config/auto-backup-state.json';
         $this->runLockFile = $this->home . '/.tms-os/config/auto-backup-run.lock';
         $this->runMarkFile = $this->home . '/.tms-os/config/auto-backup-running.json';
+        $this->manualJobFile = $this->home . '/.tms-os/config/manual-backup-job.json';
+        $this->manualStateFile = $this->home . '/.tms-os/config/manual-backup-state.json';
+        $this->manualLockFile = $this->home . '/.tms-os/config/manual-backup-run.lock';
+        $this->manualMarkFile = $this->home . '/.tms-os/config/manual-backup-running.json';
         $this->targetRoot = $this->targetRoot !== '' ? $this->targetRoot : $this->home . '/tms-os';
     }
 
@@ -193,6 +201,121 @@ final class AutoBackupService
         ];
     }
 
+    /**
+     * Yêu cầu tạo backup THỦ CÔNG ở chế độ nền (V17.1.12) — đường đi của nút
+     * "Tạo backup ngay". Trước đây controller gọi thẳng BackupService::create()
+     * trong request web: nén website nặng (volam: hàng nghìn file ảnh + DB)
+     * quá ~100 giây bị Cloudflare cắt (lỗi 524). Nay request web chỉ ghi file
+     * yêu cầu (job) rồi khởi chạy worker CLI scripts/tms-manual-backup.php
+     * tách rời (cùng mẫu requestRun() của V17.1.4) và trả về ngay; worker gọi
+     * runManualJob() nên không còn giới hạn thời gian của request web.
+     * Theo yêu cầu của user, khi tạo xong hệ thống báo cáo qua Telegram.
+     */
+    public function requestManualCreate(string $scope, string $website, string $note, bool $locked): array
+    {
+        if ($this->probeManualRunning()) {
+            $since = $this->formatStartedAt((string)($this->readManualMark()['started_at'] ?? ''));
+            return [
+                'ok' => true,
+                'started' => false,
+                'message' => 'Đang có một lần tạo backup thủ công đang chạy ở chế độ nền' . ($since !== '' ? ' (bắt đầu lúc ' . $since . ')' : '')
+                    . '. Kết quả sẽ hiện tại đây và được báo qua Telegram khi chạy xong.',
+            ];
+        }
+        $this->writeJson($this->manualJobFile, [
+            'scope' => $scope,
+            'website' => $website,
+            'note' => $note,
+            'locked' => $locked,
+            'requested_at' => date('c'),
+        ]);
+        if (!$this->launchManualWorker()) {
+            return [
+                'ok' => false,
+                'started' => false,
+                'message' => 'Không khởi chạy được tiến trình tạo backup nền (thiếu worker scripts/tms-manual-backup.php). Hãy thử lại sau.',
+            ];
+        }
+        return [
+            'ok' => true,
+            'started' => true,
+            'message' => 'Đã bắt đầu tạo backup ở chế độ nền. Bạn không cần chờ ở trang này — khi xong, bản sao lưu sẽ xuất hiện trong danh sách bên dưới và được báo qua Telegram (nếu đã cấu hình).',
+        ];
+    }
+
+    /**
+     * Thân vòng tạo backup thủ công — chỉ worker CLI gọi. Giữ khóa flock
+     * riêng (manual-backup-run.lock) nên không bao giờ có 2 vòng thủ công
+     * chạy chồng nhau; vòng trùng trả skipped=true ngay, KHÔNG ghi state,
+     * KHÔNG gửi Telegram (giữ đúng kỷ luật của runNow()). Hoàn tất — thành
+     * công hay thất bại — đều ghi state để trang Sao lưu hiển thị và gửi
+     * báo cáo Telegram.
+     */
+    public function runManualJob(): array
+    {
+        $lock = $this->tryAcquireManualLock();
+        if ($lock === null) {
+            return ['ok' => false, 'skipped' => true, 'at' => date('c'), 'message' => 'Đã có một lần tạo backup thủ công đang chạy, bỏ qua lần này.'];
+        }
+        try {
+            $this->writeJson($this->manualMarkFile, ['started_at' => date('c'), 'pid' => (int)(getmypid() ?: 0)]);
+            return $this->runManualJobLocked();
+        } finally {
+            @unlink($this->manualMarkFile);
+            flock($lock, LOCK_UN);
+            fclose($lock);
+        }
+    }
+
+    /** Chỉ chạy khi đã giữ khóa chạy thủ công (xem runManualJob()). */
+    private function runManualJobLocked(): array
+    {
+        $job = @json_decode((string)@file_get_contents($this->manualJobFile), true);
+        $result = ['ok' => false, 'at' => date('c')];
+        try {
+            if (!is_array($job)) {
+                throw new RuntimeException('Không tìm thấy yêu cầu tạo backup (file job bị thiếu hoặc hỏng).');
+            }
+            $scope = in_array($job['scope'] ?? 'system', ['system', 'website', 'config'], true) ? (string)$job['scope'] : 'system';
+            $website = (string)($job['website'] ?? '');
+            $id = (string)$this->backups->create($scope, $website, (string)($job['note'] ?? ''), !empty($job['locked']));
+            $result['backup_id'] = $id;
+            $result['scope'] = $scope;
+            $result['website'] = $website;
+            $size = 0;
+            foreach ((array)$this->backups->all() as $meta) {
+                if ((string)($meta['id'] ?? '') === $id) {
+                    $size = (int)($meta['size'] ?? 0);
+                    break;
+                }
+            }
+            $result['size'] = $size;
+            $label = $scope === 'website' ? 'snapshot website ' . $website : ($scope === 'config' ? 'bản sao lưu cấu hình' : 'bản sao lưu toàn hệ thống');
+            $result['message'] = 'Đã tạo ' . $label . ($size > 0 ? ' (' . $this->formatBytesVi($size) . ')' : '') . '.';
+            $result['ok'] = true;
+        } catch (Throwable $e) {
+            $result['ok'] = false;
+            $result['message'] = mb_substr($e->getMessage(), 0, 300);
+        }
+        $this->writeJson($this->manualStateFile, $result);
+        @unlink($this->manualJobFile);
+        $this->notifyManualTelegram($result);
+        return $result;
+    }
+
+    /** Trạng thái tạo backup thủ công cho trang Sao lưu: đang chạy + kết quả gần nhất. */
+    public function manualStatus(): array
+    {
+        $state = @json_decode((string)@file_get_contents($this->manualStateFile), true);
+        $running = $this->probeManualRunning();
+        $mark = $running ? $this->readManualMark() : [];
+        return [
+            'running' => $running,
+            'running_since' => (string)($mark['started_at'] ?? ''),
+            'last' => is_array($state) ? $state : null,
+        ];
+    }
+
     public function status(): array
     {
         $state = @json_decode((string)@file_get_contents($this->stateFile), true);
@@ -340,6 +463,112 @@ final class AutoBackupService
         }
         @exec($cmd);
         return true;
+    }
+
+    // ===== Nội bộ: tạo backup thủ công ở chế độ nền (V17.1.12) =====
+
+    /** Giữ khóa chạy của vòng thủ công bằng flock không chờ (bản sao của tryAcquireRunLock(), file khóa riêng). */
+    private function tryAcquireManualLock()
+    {
+        $dir = dirname($this->manualLockFile);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0700, true);
+        }
+        $fh = @fopen($this->manualLockFile, 'c');
+        if ($fh === false) {
+            return null;
+        }
+        if (!flock($fh, LOCK_EX | LOCK_NB)) {
+            fclose($fh);
+            return null;
+        }
+        return $fh;
+    }
+
+    /** Có vòng tạo backup thủ công nào đang giữ khóa chạy hay không (thăm dò, không giữ). */
+    private function probeManualRunning(): bool
+    {
+        $fh = @fopen($this->manualLockFile, 'c');
+        if ($fh === false) {
+            return false;
+        }
+        $locked = !flock($fh, LOCK_EX | LOCK_NB);
+        if (!$locked) {
+            flock($fh, LOCK_UN);
+        }
+        fclose($fh);
+        return $locked;
+    }
+
+    /** Dấu vết vòng thủ công đang chạy (started_at, pid) do runManualJob() ghi — chỉ để hiển thị. */
+    private function readManualMark(): array
+    {
+        $mark = @json_decode((string)@file_get_contents($this->manualMarkFile), true);
+        return is_array($mark) ? $mark : [];
+    }
+
+    /**
+     * Khởi chạy worker tạo backup thủ công tách rời khỏi request web (nohup +
+     * setsid, log vào ~/.tms-os/logs/manual-backup.log) — cùng mẫu
+     * launchBackgroundWorker().
+     */
+    private function launchManualWorker(): bool
+    {
+        $script = $this->targetRoot . '/scripts/tms-manual-backup.php';
+        if (!is_file($script)) {
+            return false;
+        }
+        $logFile = $this->home . '/.tms-os/logs/manual-backup.log';
+        if (!is_dir(dirname($logFile))) {
+            @mkdir(dirname($logFile), 0700, true);
+        }
+        $prefix = getenv('PREFIX') ?: '/data/data/com.termux/files/usr';
+        $php = is_file($prefix . '/bin/php') ? $prefix . '/bin/php' : 'php';
+        $setsid = is_executable($prefix . '/bin/setsid') ? 'setsid ' : '';
+        $cmd = 'nohup ' . $setsid . escapeshellarg($php) . ' ' . escapeshellarg($script)
+            . ' >>' . escapeshellarg($logFile) . ' 2>&1 < /dev/null &';
+        if ($this->launcher !== null) {
+            return (bool)call_user_func($this->launcher, $cmd);
+        }
+        @exec($cmd);
+        return true;
+    }
+
+    /**
+     * Báo cáo Telegram khi tạo backup thủ công hoàn tất — theo yêu cầu trực
+     * tiếp của user (khác backup tự động, vốn có công tắc notify_telegram
+     * riêng trong cấu hình tự động). Chưa cấu hình bot thì
+     * sendTelegramNotification tự trả not_configured, không thành lỗi; mọi
+     * lỗi thông báo đều bị nuốt để không làm hỏng kết quả backup.
+     */
+    private function notifyManualTelegram(array $result): void
+    {
+        if (!method_exists($this->cron, 'sendTelegramNotification')) {
+            return;
+        }
+        $icon = $result['ok'] ? '✅' : '❌';
+        $text = $icon . " TMS Backup thủ công\n" . (string)($result['message'] ?? '');
+        try {
+            $this->cron->sendTelegramNotification($text);
+        } catch (Throwable) {
+            // Không cho lỗi thông báo làm hỏng kết quả backup.
+        }
+    }
+
+    /** Định dạng dung lượng kiểu Việt Nam (dấu phẩy thập phân) cho câu thông báo. */
+    private function formatBytesVi(int $bytes): string
+    {
+        if ($bytes < 1024) {
+            return $bytes . ' B';
+        }
+        $units = ['KB', 'MB', 'GB', 'TB'];
+        $value = (float)$bytes;
+        $i = -1;
+        do {
+            $value /= 1024;
+            $i++;
+        } while ($value >= 1024 && $i < count($units) - 1);
+        return str_replace('.', ',', number_format($value, $value >= 100 ? 0 : 1)) . ' ' . $units[$i];
     }
 
     /** Xoá các bản backup tự động cũ nhất vượt retention; trả số bản đã xoá. */
