@@ -1,8 +1,8 @@
 {
-  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.9","build":"20261108-v17.1.9","channel":"stable","version_visible_to_user":true,
-  "released_at":"2026-11-08","name":"TMS OS V17.1.9","version":"17.1.9",
-  "notes":"V17.1.9: Thêm đường tải dự phòng cho Update Center. Khi đường tải gói qua github.com lỗi (sự cố 504 diện rộng 08/11/2026 khiến không cập nhật được dù api.github.com vẫn thông), UpdateService tự chuyển sang tải qua API asset của GitHub (kèm header Accept: application/octet-stream bắt buộc) cho cả file ZIP và RELEASE.json kiểm checksum. Cả hai đường cùng lỗi mới báo thất bại như trước.",
-  "features":["Update Center: tự chuyển đường tải dự phòng qua GitHub API khi đường tải chính github.com lỗi (504/timeout) — áp dụng cho cả nút Cập nhật ngay, quay về bản cũ và cập nhật qua Telegram.","Tải checksum RELEASE.json cũng có đường dự phòng tương ứng; vẫn bắt buộc khớp SHA-256 mới cho cài."],
-  "checksum_sha256":"ade304b1902b056baa5f8e41a5d4c2f1c4c438bafc2b3479f971f8f56d7c2805","build_date":"2026-11-08","version_display":"TMS OS V17.1.9",
-  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-08"
+  "product":"TMS OS","display_name":"TMS OS","internal_version":"17.1.10","build":"20261111-v17.1.10","channel":"stable","version_visible_to_user":true,
+  "released_at":"2026-11-11","name":"TMS OS V17.1.10","version":"17.1.10",
+  "notes":"V17.1.10: Vá banner 'Có phiên bản giao diện mới' hiện lặp vô hạn ở panel. Nguyên nhân: template Nginx gắn cache 1 năm immutable cho mọi file .js, kể cả service-worker.js — chính là file quyết định việc phát hiện bản giao diện mới — nên sau đợt phát hành dồn dập, trình duyệt và Cloudflare ghim các bản service worker khác nhau khiến banner bật lại mãi dù đã bấm Cập nhật. Nay service-worker.js có location riêng với Cache-Control no-cache (áp dụng cho cả cài mới qua install.sh và máy đã cài qua công cụ repair tms-nginx-compat), đồng thời banner chỉ hiện khi bản service worker thật sự mới hơn bản đang chạy và có thêm nút Bỏ qua ghi nhớ theo từng phiên bản.",
+  "features":["Panel: service-worker.js không còn bị cache 1 năm immutable — location riêng no-cache trong template Nginx + hàm repair tms_repair_nginx_service_worker_cache cho máy đã cài (chạy qua scripts/tms-nginx-compat.php, có hiệu lực khi Nginx nạp lại cấu hình).","Banner PWA: chỉ hiện khi phiên bản service worker mới thật sự lớn hơn phiên bản đang chạy (so qua VERSION đọc tươi), hết hiện lặp do cache cũ lật qua lật lại.","Banner PWA: thêm nút Bỏ qua — ẩn banner và ghi nhớ theo đúng phiên bản đó, các bản mới hơn sau vẫn báo như thường."],
+  "checksum_sha256":"48f1564ecf696cfc4afa562f45d96d5a65538d4242831bddd5555770304d684f","build_date":"2026-11-11","version_display":"TMS OS V17.1.10",
+  "download_url":"https://github.com/geogich961-lab/tms-os/releases/latest/download/TMS_OS_LATEST.zip","release_date":"2026-11-11"
 }

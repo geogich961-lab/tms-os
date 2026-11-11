@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.10] — 2026-11-11
+
+V17.1.10: Vá banner 'Có phiên bản giao diện mới' hiện lặp vô hạn ở panel. Nguyên nhân: template Nginx gắn cache 1 năm immutable cho mọi file .js, kể cả service-worker.js — chính là file quyết định việc phát hiện bản giao diện mới — nên sau đợt phát hành dồn dập, trình duyệt và Cloudflare ghim các bản service worker khác nhau khiến banner bật lại mãi dù đã bấm Cập nhật. Nay service-worker.js có location riêng với Cache-Control no-cache (áp dụng cho cả cài mới qua install.sh và máy đã cài qua công cụ repair tms-nginx-compat), đồng thời banner chỉ hiện khi bản service worker thật sự mới hơn bản đang chạy và có thêm nút Bỏ qua ghi nhớ theo từng phiên bản.
+- Panel: service-worker.js không còn bị cache 1 năm immutable — location riêng no-cache trong template Nginx + hàm repair tms_repair_nginx_service_worker_cache cho máy đã cài (chạy qua scripts/tms-nginx-compat.php, có hiệu lực khi Nginx nạp lại cấu hình).
+- Banner PWA: chỉ hiện khi phiên bản service worker mới thật sự lớn hơn phiên bản đang chạy (so qua VERSION đọc tươi), hết hiện lặp do cache cũ lật qua lật lại.
+- Banner PWA: thêm nút Bỏ qua — ẩn banner và ghi nhớ theo đúng phiên bản đó, các bản mới hơn sau vẫn báo như thường.
+
 ## [17.1.9] — 2026-11-08
 
 V17.1.9: Thêm đường tải dự phòng cho Update Center. Khi đường tải gói qua github.com lỗi (sự cố 504 diện rộng 08/11/2026 khiến không cập nhật được dù api.github.com vẫn thông), UpdateService tự chuyển sang tải qua API asset của GitHub (kèm header Accept: application/octet-stream bắt buộc) cho cả file ZIP và RELEASE.json kiểm checksum. Cả hai đường cùng lỗi mới báo thất bại như trước.
