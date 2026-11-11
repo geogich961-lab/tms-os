@@ -17,7 +17,17 @@ $root = realpath(dirname(__DIR__));
 $baseZip = $root . '/.build/v17.1.11/release/TMS_OS_LATEST.zip';
 $zipFile = $root . '/.build/v17.1.12/release/TMS_OS_LATEST.zip';
 $metaFile = $root . '/.build/v17.1.12/release/RELEASE.json';
-okP17112(is_file($baseZip), 'Thiếu payload V17.1.11 (bản phát hành chính thức) để mô phỏng nâng cấp.');
+if (!is_file($baseZip)) {
+    $baseBuild = dirname(dirname($baseZip));
+    $basePayload = $baseBuild . '/payload';
+    @mkdir($basePayload, 0700, true);
+    @mkdir(dirname($baseZip), 0700, true);
+    exec('git -C ' . escapeshellarg($root) . ' archive v17.1.11 -- app config public routes scripts | tar -x -C ' . escapeshellarg($basePayload), $output, $code);
+    okP17112($code === 0, 'Không dựng được source V17.1.11 từ tag phát hành.');
+    @unlink($basePayload . '/scripts/verify-uci-payload.sh');
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg($root . '/tests/make_payload_zip.php') . ' ' . escapeshellarg($basePayload) . ' ' . escapeshellarg($baseZip), $output, $code);
+    okP17112($code === 0 && is_file($baseZip), 'Không dựng được payload V17.1.11 để mô phỏng nâng cấp.');
+}
 okP17112(is_file($zipFile) && is_file($metaFile), 'Thiếu artifact V17.1.12.');
 $meta = json_decode((string)file_get_contents($metaFile), true);
 okP17112(($meta['version'] ?? '') === '17.1.12', 'Sai version metadata.');
