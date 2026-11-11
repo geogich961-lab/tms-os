@@ -516,6 +516,28 @@ installButtons.forEach(button => button.addEventListener('click', async () => {
 }));
 window.addEventListener('appinstalled', () => installButtons.forEach(button => button.classList.add('pwa-install-hidden')));
 
+// Phiên bản build của trang đang chạy, đọc từ ?v= của chính app.js
+// (sinh bởi tms_asset_version() theo 'build' trong config/app.php).
+const tmsPwaPageVersion = (() => {
+  const src = document.currentScript?.src || document.querySelector('script[src*="/assets/app.js"]')?.src || '';
+  let v = '';
+  try { v = new URL(src, location.href).searchParams.get('v') || ''; } catch (error) {}
+  const match = v.match(/(\d+)\.(\d+)\.(\d+)/);
+  return match ? match.slice(1).map(Number) : null;
+})();
+
+// Chỉ coi là "có bản mới" khi VERSION của service worker ('tms-os-vX.Y.Z')
+// thật sự lớn hơn phiên bản trang đang chạy.
+const tmsPwaVersionNewer = (versionText) => {
+  const match = String(versionText || '').match(/(\d+)\.(\d+)\.(\d+)/);
+  if (!match || !tmsPwaPageVersion) return false;
+  const next = match.slice(1).map(Number);
+  for (let i = 0; i < 3; i++) {
+    if (next[i] !== tmsPwaPageVersion[i]) return next[i] > tmsPwaPageVersion[i];
+  }
+  return false;
+};
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
@@ -523,10 +545,26 @@ if ('serviceWorker' in navigator) {
       registration.addEventListener('updatefound', () => {
         const worker = registration.installing;
         if (!worker) return;
-        worker.addEventListener('statechange', () => {
-          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
-            const banner = document.querySelector('[data-pwa-update]');
-            if (banner) banner.hidden = false;
+        worker.addEventListener('statechange', async () => {
+          if (worker.state !== 'installed' || !navigator.serviceWorker.controller) return;
+          // Đọc VERSION từ bản script tươi của worker mới. Nếu không thật sự
+          // mới hơn bản đang chạy thì đây chỉ là cache cũ (trình duyệt hoặc
+          // Cloudflare ghim các bản khác nhau) lật qua lật lại — im lặng,
+          // tránh banner "Có phiên bản giao diện mới" hiện lặp vô hạn.
+          let newVersion = '';
+          try {
+            const probe = await fetch(worker.scriptURL + '?tmsprobe=' + Date.now(), {cache: 'no-store'});
+            const text = await probe.text();
+            newVersion = (text.match(/VERSION\s*=\s*'([^']+)'/) || [])[1] || '';
+          } catch (error) { /* Không đọc được thì không báo, tránh báo nhầm. */ }
+          if (!tmsPwaVersionNewer(newVersion)) return;
+          try {
+            if (localStorage.getItem('tms-pwa-dismissed') === newVersion) return;
+          } catch (error) {}
+          const banner = document.querySelector('[data-pwa-update]');
+          if (banner) {
+            banner.dataset.version = newVersion;
+            banner.hidden = false;
           }
         });
       });
@@ -536,6 +574,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 document.querySelectorAll('[data-pwa-reload]').forEach(button => button.addEventListener('click', () => location.reload()));
+document.querySelectorAll('[data-pwa-dismiss]').forEach(button => button.addEventListener('click', () => {
+  const banner = document.querySelector('[data-pwa-update]');
+  if (banner) {
+    try {
+      if (banner.dataset.version) localStorage.setItem('tms-pwa-dismissed', banner.dataset.version);
+    } catch (error) {}
+    banner.hidden = true;
+  }
+}));
 
 document.querySelectorAll('[data-dialog-open]').forEach(button => {
   button.addEventListener('click', () => {

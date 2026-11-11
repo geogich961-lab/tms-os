@@ -1434,6 +1434,7 @@ body.sheet-open { overflow: hidden; }
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.33);
 }
 .pwa-update-banner[hidden] { display: none; }
+.pwa-update-banner .pwa-update-actions { display: flex; gap: 8px; flex-shrink: 0; }
 
 .install-app-card .install-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
 .install-app-card .install-actions .btn { flex: 1; min-width: 160px; }
