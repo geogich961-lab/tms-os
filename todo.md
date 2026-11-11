@@ -742,3 +742,14 @@ Phát hiện thực địa 08/11/2026: `BackupService::pathsFor()` với scope s
 - [x] Hồi quy: `tests/nginx_service_worker_cache_test.php` (repair trên fixture nginx.conf mô phỏng bản sinh bởi install.sh — chèn đúng vị trí, idempotent, không đụng conf thiếu block panel; assert template install.sh, CLI compat, app.js, footer) — PASS trên code mới, FAIL trên code cũ (thiếu hàm repair); test payload mô phỏng V17.1.9 → V17.1.10, bảo toàn storage/Cloudflare.
 - [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.10 (release-auto).
 - [ ] Xác minh thực địa trên Xperia/trình duyệt của user: cập nhật V17.1.10; dọn một lần cache phía user (purge URL service-worker.js trên Cloudflare + xóa dữ liệu site của panel trong Opera) rồi dùng panel nhiều phiên — banner không còn hiện lặp; chạy `php ~/tms-os/scripts/tms-nginx-compat.php` một lần và khởi động lại dịch vụ Nginx để header no-cache có hiệu lực ở origin.
+
+## Bản vá V17.1.11 — Không chọn được website khi tạo backup
+
+- [x] User báo 11/11/2026: ở trang Sao lưu, hộp thoại "Tạo backup" chọn phạm vi "Một website" nhưng không có chỗ nào để chọn website; bản snapshot tạo ra lặng lẽ là website "default" (1,17 KB) thay vì website cần sao lưu.
+- [x] Chốt gốc lỗi bằng code: `app/Views/backups/index.php` có sẵn select website nhưng bị `hidden`, và không có dòng JS nào trong `public/assets/app.js` bật nó lên khi đổi phạm vi (`data-backup-scope`/`data-backup-website` không xuất hiện trong bất kỳ file JS nào). Select bị ẩn vẫn gửi giá trị option đầu tiên khi submit form. Tầng server (BackupController/BackupService) xử lý đúng scope website.
+- [x] Vá giao diện trong `public/assets/app.js`: gắn toggle cho `[data-backup-scope]` — chỉ hiện ô chọn website khi phạm vi là "website", đồng bộ ngay khi nạp trang.
+- [x] Vá view: select website thêm option trống "-- Chọn website --" đứng đầu + thuộc tính `required` để trình duyệt chặn submit khi chưa chọn, hết đường gửi nhầm website đầu tiên trong danh sách.
+- [x] Vá server trong `BackupController::create()`: phạm vi website mà website rỗng → lỗi "Vui lòng chọn website cần sao lưu."; tên không có trong danh sách site → lỗi "Website cần sao lưu không tồn tại." (hàng phòng thủ cuối ở BackupService vốn đã từ chối tên rỗng/ sai định dạng).
+- [x] Hồi quy: `tests/backup_website_picker_test.php` (assert view/app.js/controller + hợp đồng BackupService từ chối tên rỗng) — PASS trên code mới, FAIL trên code cũ đúng tại option trống bị thiếu; test payload mô phỏng V17.1.10 → V17.1.11, bảo toàn storage/Cloudflare.
+- [ ] Đóng gói, kiểm thử và phát hành GitHub Release V17.1.11 (release-auto).
+- [ ] Xác minh thực địa trên Xperia: cập nhật V17.1.11, mở Sao lưu → Tạo backup → chọn phạm vi "Một website" — ô chọn website hiện ra; chọn đúng website (ví dụ volam) và tạo snapshot, kiểm tra thẻ bản sao lưu ghi đúng tên website đó; thử bấm tạo khi vẫn để "-- Chọn website --" phải bị chặn kèm thông báo lỗi.
