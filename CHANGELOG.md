@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.13] — 2026-11-11
+
+V17.1.13: Đổi cơ chế tải backup — hết lỗi 520/502 khi tải file backup lớn. Trước đây nút Tải xuống cho PHP đọc file rồi bơm qua trình duyệt bằng readfile(); với file gần 1 GB, toàn bộ dữ liệu phải chảy qua đúng một tiến trình php-cgi, chạy vài phút là bị ngắt giữa chừng (bản 815 MB báo 502, bản 998 MB của volam báo 520). Nay khi bấm Tải xuống, panel tạo một liên kết tĩnh dùng một lần (thư mục mã ngẫu nhiên khó đoán, tự dọn sau 2 giờ) trỏ tới file backup rồi chuyển trình duyệt sang đó; nginx phục vụ file trực tiếp ở tốc độ tối đa và hỗ trợ tải tiếp (Range) khi mạng chập chờn. Nếu không tạo được liên kết, hệ thống tự quay về cách tải cũ nên các file nhỏ không bị ảnh hưởng.
+- Backup: tải bản backup lớn (~1 GB) không còn lỗi 520/502 — nginx phục vụ trực tiếp qua liên kết tĩnh dùng một lần.
+- Backup: hỗ trợ tải tiếp (Range) — mạng đứt giữa chừng thì trình duyệt nối tiếp được thay vì hỏng cả lượt tải.
+- Backup: liên kết tải tự dọn sau 2 giờ; không tạo được liên kết thì tự quay về cách tải cũ.
+
 ## [17.1.12] — 2026-11-11
 
 V17.1.12: Tạo backup thủ công nay chạy ở chế độ nền và báo cáo qua Telegram khi xong. Sau khi V17.1.11 sửa xong phần chọn website, việc bấm Tạo backup cho website nặng như volam vẫn lỗi 524 vì quá trình nén chạy đồng bộ ngay trong yêu cầu web, quá ~100 giây thì bị Cloudflare cắt. Nay nút Tạo backup ngay chỉ đăng ký yêu cầu rồi trả về ngay; worker tách rời scripts/tms-manual-backup.php (cùng mẫu với backup tự động chạy nền của V17.1.4) thực hiện việc nén không giới hạn thời gian. Trạng thái đang tạo và kết quả lần tạo gần nhất hiện ngay trên trang Sao lưu, và khi hoàn tất — thành công hay thất bại — hệ thống gửi báo cáo Telegram (thành công kèm phạm vi/website và dung lượng, thất bại kèm lý do).
