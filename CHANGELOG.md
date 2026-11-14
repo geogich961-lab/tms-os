@@ -1,4 +1,11 @@
 # Changelog
+## [17.1.14] — 2026-11-14
+
+V17.1.14: Cảnh báo vận hành qua Telegram nay theo dõi thêm PIN CẠN KHI KHÔNG CÓ ĐIỆN VÀO — đúng nguyên nhân làm server tắt nguồn hai đêm 12/11 và 14/11 mà không ai hay biết. Trước đây mục Cảnh báo vận hành (trang Thông báo) chỉ lo pin sạc đầy 100% quá lâu, bộ nhớ, RAM, nhiệt độ và Tunnel rớt. Nay khi pin xuống dưới ngưỡng báo sớm (mặc định 30%) mà máy không có điện vào, Telegram sẽ cảnh báo ngay để kịp bật ổ cắm từ xa hoặc nhờ người cắm sạc; xuống dưới ngưỡng nguy kịch (mặc định 20%) sẽ có cảnh báo khẩn và nhắc lại dày hơn (mặc định mỗi 15 phút). Mọi bất thường (kể cả các loại có từ trước) khi trở lại bình thường đều có thêm một tin Telegram báo đã hồi phục. Các ngưỡng đều chỉnh được trong trang Thông báo, mục Cảnh báo vận hành. Lưu ý: muốn cảnh báo chạy thì mục này phải đang BẬT (kiểm tra mỗi 15 phút) và máy đã cài termux-api để đo pin.
+- Cảnh báo vận hành: thêm cảnh báo pin thấp khi không có điện vào — báo sớm ở 30%, báo khẩn ở 20% kèm nhắc lại mỗi 15 phút (các ngưỡng chỉnh được ở trang Thông báo).
+- Cảnh báo vận hành: bất thường nào trở lại bình thường (pin có điện vào lại, RAM hạ, Tunnel sống lại...) đều có tin Telegram báo đã hồi phục.
+- Giữ nguyên các cảnh báo cũ: bộ nhớ sắp đầy, RAM quá tải, pin đầy quá lâu, quá nóng, Tunnel rớt — cùng cơ chế cooldown chống spam.
+
 ## [17.1.13] — 2026-11-11
 
 V17.1.13: Đổi cơ chế tải backup — hết lỗi 520/502 khi tải file backup lớn. Trước đây nút Tải xuống cho PHP đọc file rồi bơm qua trình duyệt bằng readfile(); với file gần 1 GB, toàn bộ dữ liệu phải chảy qua đúng một tiến trình php-cgi, chạy vài phút là bị ngắt giữa chừng (bản 815 MB báo 502, bản 998 MB của volam báo 520). Nay khi bấm Tải xuống, panel tạo một liên kết tĩnh dùng một lần (thư mục mã ngẫu nhiên khó đoán, tự dọn sau 2 giờ) trỏ tới file backup rồi chuyển trình duyệt sang đó; nginx phục vụ file trực tiếp ở tốc độ tối đa và hỗ trợ tải tiếp (Range) khi mạng chập chờn. Nếu không tạo được liên kết, hệ thống tự quay về cách tải cũ nên các file nhỏ không bị ảnh hưởng.
