@@ -84,6 +84,41 @@ try {
     $alerts = $service->evaluate($config, $metrics(['tunnel' => ['configured' => false, 'running' => false]]), $state);
     expectOA(!isset($alerts['tunnel']), 'Chưa cấu hình tunnel không được cảnh báo.');
 
+    // 2b. Pin thấp khi không có điện vào (V17.1.14): báo sớm, báo khẩn, đang sạc thì không báo
+    $batt = static fn(int $pct, string $plugged, string $status): array => ['battery' => ['available' => true, 'percentage' => $pct, 'status' => $status, 'plugged' => $plugged, 'temperature_c' => 30.0]];
+    $state = [];
+    $alerts = $service->evaluate($config, $metrics($batt(25, 'UNPLUGGED', 'DISCHARGING')), $state);
+    expectOA(isset($alerts['battery_low']) && !isset($alerts['battery_critical']), 'Pin 25% không sạc phải báo mức thấp, chưa tới mức nguy kịch.');
+    expectOA(in_array('battery_low', $state['active'] ?? [], true), 'evaluate phải ghi key đang vi phạm vào state.active.');
+    $state = [];
+    $alerts = $service->evaluate($config, $metrics($batt(25, 'AC', 'CHARGING')), $state);
+    expectOA(!isset($alerts['battery_low']) && !isset($alerts['battery_critical']), 'Pin thấp nhưng đang sạc thì không được báo.');
+    $state = [];
+    $alerts = $service->evaluate($config, $metrics($batt(15, 'UNPLUGGED', 'DISCHARGING')), $state);
+    expectOA(isset($alerts['battery_critical']) && !isset($alerts['battery_low']), 'Pin 15% không sạc phải chỉ báo mức nguy kịch.');
+    $state = [];
+    $alerts = $service->evaluate($config, $metrics($batt(15, '', 'CHARGING')), $state);
+    expectOA(!isset($alerts['battery_critical']), 'Trạng thái CHARGING (kể cả thiếu plugged) phải coi là đang có điện vào.');
+    // Cooldown mức nguy kịch ngắn hơn cooldown thường (15 < 30): gửi lại sau 20 phút vẫn được, sau 10 phút thì chặn
+    $state = ['last_sent' => ['battery_critical' => time() - 20 * 60]];
+    $alerts = $service->evaluate($config, $metrics($batt(15, 'UNPLUGGED', 'DISCHARGING')), $state);
+    expectOA(isset($alerts['battery_critical']), 'Mức nguy kịch phải nhắc lại theo cooldown khẩn 15 phút, không theo cooldown thường 30 phút.');
+    $state = ['last_sent' => ['battery_critical' => time() - 10 * 60]];
+    $alerts = $service->evaluate($config, $metrics($batt(15, 'UNPLUGGED', 'DISCHARGING')), $state);
+    expectOA(!isset($alerts['battery_critical']), 'Mức nguy kịch vẫn phải tôn trọng cooldown khẩn.');
+    // Hồi phục ở tầng evaluate: vòng trước vi phạm storage, vòng này hết → recovered chứa storage, active rỗng
+    $state = [];
+    $service->evaluate($config, $metrics(['storage_free_percent' => 5]), $state);
+    expectOA(($state['active'] ?? []) === ['storage'], 'Vòng vi phạm phải ghi active=[storage].');
+    $service->evaluate($config, $metrics([]), $state);
+    expectOA(($state['recovered'] ?? []) === ['storage'] && ($state['active'] ?? []) === [], 'Hết vi phạm phải sinh recovered=[storage] và active rỗng.');
+    // Tắt check_battery_low thì không báo pin thấp
+    $configNoLow = $service->saveConfig(['enabled' => '1', 'cooldown_minutes' => 30, 'check_battery_low' => '']);
+    $state = [];
+    $alerts = $service->evaluate($configNoLow, $metrics($batt(15, 'UNPLUGGED', 'DISCHARGING')), $state);
+    expectOA(!isset($alerts['battery_critical']) && !isset($alerts['battery_low']), 'Tắt theo dõi pin thấp thì không được báo.');
+    $service->saveConfig(['enabled' => '1', 'cooldown_minutes' => 30]);
+
     // 3. run(): bật → gửi Telegram khi vượt ngưỡng; tắt → không gửi
     $service->saveConfig(['enabled' => '1', 'cooldown_minutes' => 30]);
     $stateFile = $home . '/.tms-os/config/alerts-state.json';
@@ -93,6 +128,14 @@ try {
     $result = $service->run();
     $stateNow = json_decode((string)file_get_contents($stateFile), true);
     expectOA(is_array($stateNow) && isset($stateNow['last_run']), 'run() phải ghi state với last_run.');
+    // Hồi phục qua run(): state cũ ghi active=[battery_low], metrics thật không còn vi phạm đó → gửi tin hồi phục
+    file_put_contents($stateFile, json_encode(['active' => ['battery_low'], 'last_sent' => []]));
+    $beforeRec = count($cron->telegram);
+    $service->run();
+    $recMsgs = array_slice($cron->telegram, $beforeRec);
+    $hasRecovery = false;
+    foreach ($recMsgs as $msg) { if (str_contains($msg, 'hồi phục') && str_contains($msg, 'Pin thấp')) { $hasRecovery = true; } }
+    expectOA($hasRecovery, 'run() phải gửi Telegram tin hồi phục cho bất thường đã hết.');
     // Tắt → run không gửi gì dù ngưỡng vượt
     $service->saveConfig(['enabled' => '']);
     $before2 = count($cron->telegram);
