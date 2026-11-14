@@ -4,7 +4,7 @@
 <section class="panel-card"><h2>Theo dõi dịch vụ</h2><label class="check-line"><input type="checkbox" data-service-alert checked> Báo khi Nginx, PHP Engine, MariaDB hoặc SSH chuyển từ chạy sang dừng.</label><p class="muted">Trình duyệt Android có thể ngừng kiểm tra khi hệ thống đóng hoàn toàn PWA. TMS OS không tuyên bố thay thế dịch vụ giám sát nền của Android.</p></section>
 <?php $alertConfig=$alerts['config']??[];$alertState=$alerts['state']??[];?>
 <section class="panel-card" id="ops-alerts-card"><h2>Cảnh báo vận hành qua Telegram</h2>
-<p class="muted">Kiểm tra mỗi 15 phút qua cron và gửi Telegram khi vượt ngưỡng — bảo vệ điện thoại cắm điện 24/7: bộ nhớ đầy, RAM cạn, pin sạc 100% quá lâu (nguy cơ phồng pin), quá nóng và Tunnel rớt. Mỗi loại chỉ nhắc lại sau khoảng cooldown.</p>
+<p class="muted">Kiểm tra mỗi 15 phút qua cron và gửi Telegram khi vượt ngưỡng — bảo vệ điện thoại cắm điện 24/7: pin cạn khi không có điện vào (nguy cơ tắt nguồn), bộ nhớ đầy, RAM cạn, pin sạc 100% quá lâu (nguy cơ phồng pin), quá nóng và Tunnel rớt. Mỗi loại chỉ nhắc lại sau khoảng cooldown; bất thường nào hết sẽ có tin báo đã hồi phục.</p>
 <form method="post" action="/notifications/alerts/config" class="form-stack">
 	<input type="hidden" name="csrf" value="<?=tms_h($csrf)?>">
 	<label class="check-line"><input type="checkbox" name="enabled" value="1" <?=!empty($alertConfig['enabled'])?'checked':''?>><span>Bật cảnh báo vận hành</span></label>
@@ -17,6 +17,12 @@
 		<label>Pin đầy quá (phút)<input type="number" name="battery_full_max_minutes" min="30" max="2880" value="<?=tms_h((string)($alertConfig['battery_full_max_minutes']??'240'))?>"></label>
 		<label>Nhiệt độ trên (°C)<input type="number" name="temp_max_c" min="35" max="80" value="<?=tms_h((string)($alertConfig['temp_max_c']??'48'))?>"></label>
 	</div>
+	<div class="auto-backup-row">
+		<label>Pin thấp — báo ở (%)<input type="number" name="battery_low_percent" min="10" max="60" value="<?=tms_h((string)($alertConfig['battery_low_percent']??'30'))?>"></label>
+		<label>Pin nguy kịch ở (%)<input type="number" name="battery_critical_percent" min="5" max="40" value="<?=tms_h((string)($alertConfig['battery_critical_percent']??'20'))?>"></label>
+		<label>Nhắc mức nguy kịch mỗi (phút)<input type="number" name="battery_critical_cooldown_minutes" min="5" max="60" value="<?=tms_h((string)($alertConfig['battery_critical_cooldown_minutes']??'15'))?>"></label>
+	</div>
+	<label class="check-line"><input type="checkbox" name="check_battery_low" value="1" <?=!empty($alertConfig['check_battery_low'])?'checked':''?>><span>Cảnh báo pin thấp khi không có điện vào (chống tắt nguồn)</span></label>
 	<label class="check-line"><input type="checkbox" name="check_battery" value="1" <?=!empty($alertConfig['check_battery'])?'checked':''?>><span>Theo dõi pin (cần termux-api: pkg install termux-api)</span></label>
 	<label class="check-line"><input type="checkbox" name="check_tunnel" value="1" <?=!empty($alertConfig['check_tunnel'])?'checked':''?>><span>Cảnh báo Cloudflare Tunnel rớt</span></label>
 	<button class="btn btn-primary">Lưu cấu hình cảnh báo</button>

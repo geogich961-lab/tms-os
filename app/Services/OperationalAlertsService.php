@@ -5,9 +5,11 @@ declare(strict_types=1);
  * OperationalAlertsService — cảnh báo vận hành qua Telegram theo ngưỡng.
  *
  * Chạy mỗi 15 phút qua cron job "tms-alerts-check". Thu thập chỉ số đặc thù
- * của điện thoại cắm điện 24/7: dung lượng, RAM, pin 100% quá lâu (nguy cơ
- * phồng pin), nhiệt độ (termux-api nếu có) và Cloudflare Tunnel rớt.
- * Mỗi loại cảnh báo chỉ gửi lại sau khoảng cooldown để không spam.
+ * của điện thoại cắm điện 24/7: dung lượng, RAM, pin cạn khi không có điện vào
+ * (nguy cơ tắt nguồn — bổ sung V17.1.14), pin 100% quá lâu (nguy cơ phồng pin),
+ * nhiệt độ (termux-api nếu có) và Cloudflare Tunnel rớt.
+ * Mỗi loại cảnh báo chỉ gửi lại sau khoảng cooldown để không spam; khi một
+ * bất thường đang theo dõi trở lại bình thường, gửi một tin "đã hồi phục".
  */
 final class OperationalAlertsService
 {
@@ -28,6 +30,11 @@ final class OperationalAlertsService
     {
         $data = @json_decode((string)@file_get_contents($this->configFile), true);
         $config = is_array($data) ? $data : [];
+        $low = max(10, min(60, (int)($config['battery_low_percent'] ?? 30)));
+        $critical = max(5, min(40, (int)($config['battery_critical_percent'] ?? 20)));
+        if ($critical >= $low) {
+            $critical = max(5, $low - 5);
+        }
         return [
             'enabled' => (bool)($config['enabled'] ?? false),
             'cooldown_minutes' => max(5, min(720, (int)($config['cooldown_minutes'] ?? 60))),
@@ -37,11 +44,20 @@ final class OperationalAlertsService
             'temp_max_c' => max(35, min(80, (int)($config['temp_max_c'] ?? 48))),
             'check_tunnel' => (bool)($config['check_tunnel'] ?? true),
             'check_battery' => (bool)($config['check_battery'] ?? true),
+            'check_battery_low' => (bool)($config['check_battery_low'] ?? true),
+            'battery_low_percent' => $low,
+            'battery_critical_percent' => $critical,
+            'battery_critical_cooldown_minutes' => max(5, min(60, (int)($config['battery_critical_cooldown_minutes'] ?? 15))),
         ];
     }
 
     public function saveConfig(array $input): array
     {
+        $low = max(10, min(60, (int)($input['battery_low_percent'] ?? 30)));
+        $critical = max(5, min(40, (int)($input['battery_critical_percent'] ?? 20)));
+        if ($critical >= $low) {
+            $critical = max(5, $low - 5);
+        }
         $config = [
             'enabled' => (bool)($input['enabled'] ?? false),
             'cooldown_minutes' => max(5, min(720, (int)($input['cooldown_minutes'] ?? 60))),
@@ -51,6 +67,10 @@ final class OperationalAlertsService
             'temp_max_c' => max(35, min(80, (int)($input['temp_max_c'] ?? 48))),
             'check_tunnel' => (bool)($input['check_tunnel'] ?? true),
             'check_battery' => (bool)($input['check_battery'] ?? true),
+            'check_battery_low' => (bool)($input['check_battery_low'] ?? true),
+            'battery_low_percent' => $low,
+            'battery_critical_percent' => $critical,
+            'battery_critical_cooldown_minutes' => max(5, min(60, (int)($input['battery_critical_cooldown_minutes'] ?? 15))),
         ];
         $this->writeJson($this->configFile, $config);
         $this->syncCron();
@@ -83,7 +103,7 @@ final class OperationalAlertsService
         $metrics = [
             'storage_free_percent' => ($total && $free) ? (int)round($free / $total * 100) : null,
             'ram_used_percent' => null,
-            'battery' => ['available' => false, 'percentage' => null, 'status' => '', 'temperature_c' => null],
+            'battery' => ['available' => false, 'percentage' => null, 'status' => '', 'plugged' => '', 'temperature_c' => null],
             'tunnel' => ['configured' => is_file($home . '/.tms-os/cloudflare-hosting/config.json'), 'running' => false],
         ];
 
@@ -102,6 +122,7 @@ final class OperationalAlertsService
                 'available' => true,
                 'percentage' => (int)$data['percentage'],
                 'status' => (string)($data['status'] ?? ''),
+                'plugged' => (string)($data['plugged'] ?? ''),
                 'temperature_c' => isset($data['temperature']) ? (float)$data['temperature'] : null,
             ];
         }
@@ -116,9 +137,24 @@ final class OperationalAlertsService
         return $metrics;
     }
 
+    /** Nhãn thân thiện cho tin "đã hồi phục". */
+    private const LABELS = [
+        'storage' => 'Bộ nhớ sắp đầy',
+        'ram' => 'RAM quá tải',
+        'battery' => 'Pin đầy quá lâu',
+        'battery_low' => 'Pin thấp, không có điện vào',
+        'battery_critical' => 'Pin nguy kịch, không có điện vào',
+        'temp' => 'Nhiệt độ cao',
+        'tunnel' => 'Cloudflare Tunnel rớt',
+    ];
+
     /**
      * So ngưỡng và chọn cảnh báo cần gửi, tôn trọng cooldown trong state.
      * Hàm thuần để test; không đụng mạng.
+     *
+     * Ngoài alerts cần gửi, hàm còn cập nhật vào $state:
+     * - 'active': danh sách key đang vượt ngưỡng ở vòng này.
+     * - 'recovered': key từng vượt ngưỡng ở vòng trước nhưng vòng này đã hết.
      *
      * @return array<string,string> alert_key => message
      */
@@ -138,40 +174,66 @@ final class OperationalAlertsService
             $state['battery_full_since'] = null;
         }
 
-        $alerts = [];
-        $cooldown = $config['cooldown_minutes'] * 60;
-        $canSend = static fn(string $key): bool => (int)($state['last_sent'][$key] ?? 0) <= time() - $cooldown;
+        $previousActive = array_values(array_filter((array)($state['active'] ?? []), 'is_string'));
+
+        // --- Điều kiện vượt ngưỡng hiện tại (chưa lọc cooldown) ---
+        $conditions = [];
 
         $storageFree = $metrics['storage_free_percent'] ?? null;
-        if ($storageFree !== null && $storageFree <= $config['storage_min_free_percent'] && $canSend('storage')) {
-            $alerts['storage'] = '💾 Bộ nhớ còn trống ' . $storageFree . '% (ngưỡng ' . $config['storage_min_free_percent'] . '%). Hãy dọn bớt file hoặc backup rồi xoá.';
+        if ($storageFree !== null && $storageFree <= $config['storage_min_free_percent']) {
+            $conditions['storage'] = '💾 Bộ nhớ còn trống ' . $storageFree . '% (ngưỡng ' . $config['storage_min_free_percent'] . '%). Hãy dọn bớt file hoặc backup rồi xoá.';
         }
 
         $ramUsed = $metrics['ram_used_percent'] ?? null;
-        if ($ramUsed !== null && $ramUsed >= $config['ram_max_percent'] && $canSend('ram')) {
-            $alerts['ram'] = '🧠 RAM đang dùng ' . $ramUsed . '% (ngưỡng ' . $config['ram_max_percent'] . '%). Nhiều dịch vụ có thể bị kill ngẫu nhiên.';
+        if ($ramUsed !== null && $ramUsed >= $config['ram_max_percent']) {
+            $conditions['ram'] = '🧠 RAM đang dùng ' . $ramUsed . '% (ngưỡng ' . $config['ram_max_percent'] . '%). Nhiều dịch vụ có thể bị kill ngẫu nhiên.';
         }
 
         if ($config['check_battery'] && $isFull && $state['battery_full_since'] !== null) {
             $fullMinutes = (int)round((time() - (int)$state['battery_full_since']) / 60);
-            if ($fullMinutes >= $config['battery_full_max_minutes'] && $canSend('battery')) {
+            if ($fullMinutes >= $config['battery_full_max_minutes']) {
                 $hours = (int)round($fullMinutes / 60);
-                $alerts['battery'] = '🔋 Pin đã đầy ' . $hours . ' giờ liên tục. Pin sạc 100% quá lâu dễ phồng — nên ngắt sạc một lát nếu không dùng.';
+                $conditions['battery'] = '🔋 Pin đã đầy ' . $hours . ' giờ liên tục. Pin sạc 100% quá lâu dễ phồng — nên ngắt sạc một lát nếu không dùng.';
+            }
+        }
+
+        // Pin cạn + không có điện vào: tổ hợp làm máy tắt nguồn (bổ sung V17.1.14).
+        $pct = $battery['percentage'] ?? null;
+        if (($config['check_battery_low'] ?? true) && ($battery['available'] ?? false) && $pct !== null) {
+            $status = strtoupper((string)($battery['status'] ?? ''));
+            $plugged = strtoupper((string)($battery['plugged'] ?? ''));
+            $charging = in_array($status, ['CHARGING', 'FULL'], true)
+                || ($plugged !== '' && $plugged !== 'UNPLUGGED');
+            if (!$charging && $pct <= (int)$config['battery_critical_percent']) {
+                $conditions['battery_critical'] = '🆘 Pin chỉ còn ' . $pct . '% và KHÔNG có điện vào! Máy sắp tắt nguồn — xử lý ngay: bật ổ cắm qua ứng dụng Mi Home hoặc nhờ người ở nhà cắm sạc.';
+            } elseif (!$charging && $pct <= (int)$config['battery_low_percent']) {
+                $conditions['battery_low'] = '🔋 Pin còn ' . $pct . '% và đang không có điện vào (ngưỡng ' . (int)$config['battery_low_percent'] . '%). Nếu để cạn, máy sẽ tắt nguồn — hãy kiểm tra ổ cắm/bộ sạc sớm.';
             }
         }
 
         $temp = $battery['temperature_c'] ?? null;
-        if ($temp !== null && $temp >= $config['temp_max_c'] && $canSend('temp')) {
-            $alerts['temp'] = '🌡️ Nhiệt độ pin ' . $temp . '°C (ngưỡng ' . $config['temp_max_c'] . '°C). Kiểm tra chỗ thoát nhiệt của thiết bị.';
+        if ($temp !== null && $temp >= $config['temp_max_c']) {
+            $conditions['temp'] = '🌡️ Nhiệt độ pin ' . $temp . '°C (ngưỡng ' . $config['temp_max_c'] . '°C). Kiểm tra chỗ thoát nhiệt của thiết bị.';
         }
 
-        if ($config['check_tunnel'] && ($metrics['tunnel']['configured'] ?? false) && !($metrics['tunnel']['running'] ?? true) && $canSend('tunnel')) {
-            $alerts['tunnel'] = '🌐 Cloudflare Tunnel đã cấu hình nhưng cloudflared không chạy. Website công khai đang offline — vào Guardian/Cloudflare để khởi động lại.';
+        if ($config['check_tunnel'] && ($metrics['tunnel']['configured'] ?? false) && !($metrics['tunnel']['running'] ?? true)) {
+            $conditions['tunnel'] = '🌐 Cloudflare Tunnel đã cấu hình nhưng cloudflared không chạy. Website công khai đang offline — vào Guardian/Cloudflare để khởi động lại.';
         }
 
-        foreach (array_keys($alerts) as $key) {
-            $state['last_sent'][$key] = time();
+        // --- Lọc theo cooldown từng loại (mức pin nguy kịch nhắc dày hơn) ---
+        $cooldown = $config['cooldown_minutes'] * 60;
+        $criticalCooldown = (int)($config['battery_critical_cooldown_minutes'] ?? 15) * 60;
+        $alerts = [];
+        foreach ($conditions as $key => $message) {
+            $limit = $key === 'battery_critical' ? $criticalCooldown : $cooldown;
+            if ((int)($state['last_sent'][$key] ?? 0) <= time() - $limit) {
+                $alerts[$key] = $message;
+                $state['last_sent'][$key] = time();
+            }
         }
+
+        $state['active'] = array_keys($conditions);
+        $state['recovered'] = array_values(array_diff($previousActive, $state['active']));
         return $alerts;
     }
 
@@ -191,6 +253,17 @@ final class OperationalAlertsService
                 // Không cho lỗi gửi Telegram chặn vòng kiểm tra.
             }
         }
+        $recovered = $config['enabled'] ? array_values((array)($state['recovered'] ?? [])) : [];
+        if ($recovered !== []) {
+            $labels = array_map(static fn(string $key): string => self::LABELS[$key] ?? $key, $recovered);
+            try {
+                $this->cron->sendTelegramNotification("✅ TMS OS — đã hồi phục\nCác bất thường sau đã trở lại bình thường: " . implode('; ', $labels) . '.');
+            } catch (Throwable) {
+                // Không cho lỗi gửi Telegram chặn vòng kiểm tra.
+            }
+            $state['last_recovered'] = $recovered;
+        }
+        unset($state['recovered']);
         $state['last_run'] = date('c');
         $state['last_alerts'] = array_keys($alerts);
         $state['last_metrics'] = $metrics;
